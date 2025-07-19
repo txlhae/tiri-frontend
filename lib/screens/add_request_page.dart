@@ -1,0 +1,223 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:get/get.dart';
+import 'package:kind_clock/controllers/notification_controller.dart';
+import 'package:kind_clock/controllers/request_controller.dart';
+import 'package:kind_clock/screens/widgets/custom_widgets/custom_back_button.dart';
+import 'package:kind_clock/screens/widgets/custom_widgets/custom_button.dart';
+import 'package:kind_clock/screens/widgets/custom_widgets/custom_form_field.dart';
+
+class AddRequestPage extends StatelessWidget {
+  const AddRequestPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final RequestController controller = Get.find<RequestController>();
+    final NotificationController notificationController =
+        Get.find<NotificationController>();
+    return GestureDetector(
+      onTap: () {
+        FocusScope.of(context).requestFocus(FocusNode());
+      },
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: SingleChildScrollView(
+          child: Column(
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 30),
+                decoration: const BoxDecoration(
+                    color: Color.fromRGBO(0, 140, 170, 1),
+                    borderRadius: BorderRadius.vertical(
+                      bottom: Radius.circular(20),
+                    )),
+                height: 180,
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        CustomBackButton(
+                          controller: controller,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(
+                      height: 40,
+                    ),
+                    const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Add request',
+                          style: TextStyle(
+                              fontSize: 20, fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 25.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    const SizedBox(
+                      height: 20,
+                    ),
+                    Obx(() => Column(
+                          children: [
+                            CustomFormField(
+                              hintText: "Title",
+                              haveObscure: false,
+                              textController: controller.titleController.value,
+                            ),
+                            if (controller.titleError.value != null)
+                              Text(controller.titleError.value!,
+                                  style: const TextStyle(color: Colors.red)),
+                          ],
+                        )),
+                    const SizedBox(
+                      height: 20,
+                    ),
+                    Obx(() => Column(
+                          children: [
+                            CustomFormField(
+                              hintText: "Description",
+                              isdescription: true,
+                              haveObscure: false,
+                              textController:
+                                  controller.descriptionController.value,
+                            ),
+                            if (controller.descriptionError.value != null)
+                              Text(controller.descriptionError.value!,
+                                  style: const TextStyle(color: Colors.red)),
+                          ],
+                        )),
+                    const SizedBox(
+                      height: 10,
+                    ),
+               Row(
+                children: [
+                  Expanded(
+                    child: Obx(() => CustomFormField(
+                          hintText: 'Select Date',
+                          haveObscure: false,
+                          textController: controller.selectedDateController.value,
+                          iconSuffix: 'assets/icons/calender_icon.svg',
+                          onTapped: () => controller.selectDate(context),
+                        )),
+                  ),
+                  const SizedBox(width: 15), 
+                  Expanded(
+                    child: Obx(() => CustomFormField(
+                          hintText: 'Select Time',
+                          haveObscure: false,
+                          textController: controller.selectedTimeController.value,
+                          iconSuffix: 'assets/icons/clock_icon.svg',
+                          onTapped: () => controller.selectTime(context),
+                        )),
+                  ),
+                ],
+              ), 
+                const SizedBox(height: 10),
+                Obx(() => controller.dateTimeError.value != null
+                    ? Text(
+                        controller.dateTimeError.value!,
+                        style: const TextStyle(color: Colors.red),
+                      )
+                    : const SizedBox()),
+
+                    const SizedBox(
+                      height: 20,
+                    ),
+                    Obx(() => Column(
+                          children: [
+                            CustomFormField(
+                              hintText: "Location",
+                              haveObscure: false,
+                              textController:
+                                  controller.locationController.value,
+                            ),
+                            if (controller.locationError.value != null)
+                              Text(controller.locationError.value!,
+                                  style: const TextStyle(color: Colors.red)),
+                          ],
+                        )),
+                    const SizedBox(height: 20),
+                    Obx(() => Column(
+                      children: [
+                        CustomFormField(
+                          hintText: "Hours Needed : 1",
+                          haveObscure: false,
+                          textController: controller.hoursNeededController.value,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'\d'))],
+                          onChanged: (value) => controller.validateIntegerInput(
+                            value: value,
+                            warningText: controller.hoursNeededWarning,
+                            fieldName: 'Hours Needed',
+                          ),
+                        ),
+                        Obx(() => controller.hoursNeededWarning.value.isNotEmpty
+                            ? Text(
+                                controller.hoursNeededWarning.value,
+                                style: const TextStyle(color: Colors.orange),
+                              )
+                            : const SizedBox(),
+                        ),
+                      ],
+                    )),
+             const SizedBox(height: 20),
+                    Obx(() => Column(
+                          children: [
+                            CustomFormField(
+                              hintText: "Number of People  : 1",
+                              haveObscure: false,
+                              textController:
+                                  controller.numberOfPeopleController.value,
+                              keyboardType: TextInputType.number,                            
+                               inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'\d'))],
+                                // add this:
+                                onChanged: (value) => controller.validateIntegerInput(
+                                  value: value,
+                                  warningText: controller.numberOfPeopleWarning,
+                                  fieldName: 'Number of People',
+                                ),
+                              ),
+                              Obx(() => controller.numberOfPeopleWarning.value.isNotEmpty
+                                  ? Text(
+                                      controller.numberOfPeopleWarning.value,
+                                      style: const TextStyle(color: Colors.orange),
+                                    )
+                                  : const SizedBox()
+                                  ),    
+                                  ] 
+                                 )         
+                                )      
+                             ],
+                        )),
+                        const SizedBox(height: 20),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 10.0, horizontal: 60.0),
+                      child: CustomButton(
+                        buttonText: "Save",
+                        onButtonPressed: () {
+                          controller.saveRequest().then((value) {
+                            notificationController.loadNotification();
+                          });
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+           
+          ),
+        );
+      
+  }
+}

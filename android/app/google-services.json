@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "139235085545",
+    "project_id": "kind-clock-e28b8",
+    "storage_bucket": "kind-clock-e28b8.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:139235085545:android:93b4caea7552e9e59af478",
+        "android_client_info": {
+          "package_name": "com.example.kind_clock"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAFCJFJ4Rm7VuU0y8ZaBZLkXXD2z0Tz5NU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

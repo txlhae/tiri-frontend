@@ -1,0 +1,259 @@
+import 'dart:developer';
+
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:intl/intl.dart';
+import 'package:kind_clock/controllers/auth_controller.dart';
+import 'package:kind_clock/controllers/home_controller.dart';
+import 'package:kind_clock/controllers/request_controller.dart';
+import 'package:kind_clock/infrastructure/routes.dart';
+import 'package:kind_clock/models/request_model.dart';
+import 'package:kind_clock/models/user_model.dart';
+import 'package:kind_clock/screens/widgets/custom_widgets/custom_back_button.dart';
+import 'package:kind_clock/screens/widgets/dialog_widgets/cancel_dialog.dart';
+
+class MyHelps extends StatefulWidget {
+  const MyHelps({super.key});
+
+  @override
+  State<MyHelps> createState() => _MyHelpsState();
+}
+
+class _MyHelpsState extends State<MyHelps> {
+  final authController = Get.find<AuthController>();
+  final requestController = Get.find<RequestController>();
+  final homeController = Get.find<HomeController>();
+  void loadUserData(RequestModel request) {
+    if (!requestController.userCache.containsKey(request.userId)) {
+      requestController.userCache[request.userId] = Rx<UserModel?>(null);
+      requestController.getRequestUser(request).then((user) {
+        if (user != null && mounted) {
+          requestController.userCache[request.userId]?.value = user;
+        }
+      });
+    }
+  }
+
+  @override
+ Widget build(BuildContext context) {
+    return Scaffold(
+     body: Column(
+        children: [
+          //  Top Header
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 1, vertical: 10),
+            decoration: const BoxDecoration(
+              color: Color.fromRGBO(0, 140, 170, 1),
+             borderRadius:
+                      BorderRadius.vertical(bottom: Radius.circular(20)),
+            ),
+             height: 200,
+            child: Column(
+                children: [
+               Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                 CustomBackButton(controller: requestController),
+                ],
+                 ),
+                const SizedBox(height: 30),
+               const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                     Text(
+                      'My Helps',
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 15),
+               TabBar(
+                controller: homeController.tabController,
+                indicator: const BoxDecoration(),  
+                labelColor: Colors.white,
+                unselectedLabelColor: Colors.white70,
+                labelStyle: const TextStyle(
+                  fontWeight: FontWeight.w900, 
+                ),
+                unselectedLabelStyle: const TextStyle(
+                  fontWeight: FontWeight.normal,  
+                ),
+                tabs: const [
+                  Tab(text: "Accepted"),
+                  Tab(text: "Completed"),
+                ],
+              ),
+
+              ],
+            ),
+          ),
+
+          //  Tab Content
+          Expanded(
+            child: Obx(() {
+              if (requestController.isLoading.value) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              return TabBarView(
+                controller: homeController.tabController,
+                children: [
+                  _buildHelpsList([RequestStatus.accepted, RequestStatus.inprogress,RequestStatus.incomplete]),
+                  _buildHelpsList([RequestStatus.complete]),
+                ],
+              );
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+
+  ///  Builds Help List UI by status filter
+  Widget _buildHelpsList(List<RequestStatus> statusFilter) {
+    final myHelpRequests = requestController.requestList
+        .where((request) =>
+            request.userId != authController.currentUserStore.value!.userId &&
+            statusFilter.contains(request.status) &&
+            request.acceptedUser!.any(
+                (user) => user.userId == authController.currentUserStore.value!.userId))
+        .toList();
+
+    if (myHelpRequests.isEmpty) {
+      return const  Expanded(child:Center
+      (child: Text("No requests available.", 
+      style: TextStyle(color: Colors.black))) ) ;
+    }
+
+    return Expanded(
+      child: ListView.builder(
+        itemCount: myHelpRequests.length,
+        itemBuilder: (context, index) {
+          final request = myHelpRequests[index];
+          loadUserData(request);
+          final user = requestController.userCache[request.userId]?.value;
+      
+          return GestureDetector(
+            onTap: () => Get.toNamed(Routes.requestDetailsPage, arguments: {'request': request}),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  color: const Color.fromRGBO(246, 248, 249, 1),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 5,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(10.0),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      CircleAvatar(
+                        backgroundImage: user?.imageUrl != null ? NetworkImage(user!.imageUrl!) : null,
+                        radius: 25,
+                        child: user?.imageUrl == null ? const Icon(Icons.person) : null,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: SizedBox(
+                          height: 90,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: [
+                              Text(request.title,
+                                  style: const TextStyle(fontWeight: FontWeight.bold,
+                                   color: Colors.black)
+                                   ),
+                              const SizedBox(height: 5),
+                              Row(
+                                children: [
+                                  const Text("Required date: ", 
+                                  style: TextStyle(fontSize: 12,
+                                  color:Colors.black ),
+                                  ),
+                                  Text(DateFormat('dd MMM yyyy','en_US')
+                                  .format(request.requestedTime),
+                                      style: const TextStyle(
+                                          color: Color.fromRGBO(22, 178, 217, 1), 
+                                          fontWeight: FontWeight.bold)),
+                                ],
+                              ),
+                              const SizedBox(height: 5),
+                             Row(
+                              children: [
+                              const Text("Time: ",
+                               style: TextStyle(fontSize: 12,
+                               color: Colors.black)),
+                              Text(
+                               requestController.formatDateTime(request.requestedTime).split(", ").last,
+                                style: const TextStyle(
+                               color: Color.fromRGBO(22, 178, 217, 1),
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13),
+                               ),
+                              ],
+                            ),
+                            Row(
+                                children: [
+                                  const Text("Location: ", 
+                                  style: TextStyle(fontSize: 12,
+                                  color: Colors.black)),
+                                  Text(request.location,
+                                      style: const TextStyle(fontWeight: FontWeight.bold, 
+                                      color: Colors.black)),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                        ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                    backgroundColor: request.status != RequestStatus.complete &&
+                                            request.status != RequestStatus.expired &&
+                                             request.requestedTime.isAfter(DateTime.now())
+                                        ? const Color.fromRGBO(3, 80, 135, 1)
+                                        : Colors.grey,
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8.0, vertical: 8.0),
+                                    minimumSize: const Size(30, 35),
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(5))),
+                                onPressed: () {
+                                  log("Cancel it");
+                                  if (request.status !=RequestStatus.complete &&
+                                      request.status !=RequestStatus.expired && 
+                                      request.requestedTime.isAfter(DateTime.now())) {
+                                    Get.dialog(
+                                      CancelDialog(
+                                        questionText:
+                                            "Are you sure you want to cancel?",
+                                        submitText: "Proceed to cancel",
+                                        request: request,
+                                      ),
+                                    );
+                                  }
+                                },
+                                child: const Text(
+                                  "Cancel",
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                               ),
+                    ],
+                ),
+              ),
+            ),
+          ));
+        },
+      ),
+    );
+  }
+}
