@@ -1,4 +1,4 @@
-// lib/services/auth_service.dart
+﻿// lib/services/auth_service.dart
 
 import 'dart:convert';
 import 'dart:developer';
@@ -592,5 +592,39 @@ class AuthResult {
   @override
   String toString() {
     return 'AuthResult(isSuccess: $isSuccess, message: $message, user: ${user?.email})';
+  }
+
+  /// Verify referral code with Django backend
+  /// 
+  /// Parameters:
+  /// - [referralCode]: The referral code to verify
+  /// 
+  /// Returns: Map with validation result and referrer info
+/// Verify referral code with Django backend
+  /// 
+  /// Parameters:
+  /// - [referralCode]: The referral code to verify
+  /// 
+  /// Returns: Map with validation result and referrer info
+  Future<Map<String, dynamic>?> verifyReferralCode(String referralCode) async {
+    try {
+      // Use the singleton instance of ApiService
+      final response = await ApiService.instance.post(
+        '/auth/verify-referral/',
+        data: {
+          'referral_code': referralCode,
+        },
+      );
+
+      if (response.statusCode == 200 && response.data != null) {
+        log('Referral code verified successfully', name: 'AUTH');
+        return response.data as Map<String, dynamic>;
+      }
+      
+      return null;
+    } catch (e) {
+      log('Error verifying referral code: $e', name: 'AUTH');
+      return null;
+    }
   }
 }

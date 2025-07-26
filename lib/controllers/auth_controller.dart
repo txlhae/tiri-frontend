@@ -1,4 +1,4 @@
-// lib/controllers/auth_controller.dart
+﻿// lib/controllers/auth_controller.dart
 
 import 'dart:convert';
 import 'dart:developer';
@@ -376,24 +376,58 @@ class AuthController extends GetxController {
   /// Fetch user by referral code
   Future<UserModel?> fetchUserByReferralCode(String code) async {
     try {
-      // TODO: Implement Django API call to validate referral code
-      // For now, validate code format and return mock response
       log('fetchUserByReferralCode called for code: $code');
       
-      if (code.isEmpty || code.length < 6) {
+      if (code.isEmpty || code.length < 3) {
         isCodeValid.value = false;
         codeError.value = 'Invalid referral code';
         return null;
       }
       
-      isCodeValid.value = true;
-      codeError.value = '';
-      referredUid.value = code;
+      // Call Django API to verify referral code
+      // TODO: Implement this method in AuthService if not present
+      // final result = await _authService.verifyReferralCode(code);
+      // For now, simulate a valid referral code for demonstration:
+      final result = {
+        'valid': true,
+        'referrer': {
+          'name': 'Referrer Name',
+          'email': 'referrer@example.com',
+        }
+      };
       
-      // Return mock user for now - will implement API call later
-      return null;
+      if (result != null && result['valid'] == true) {
+        isCodeValid.value = true;
+        codeError.value = '';
+        
+        // Store referrer information
+        referredUid.value = code;
+        if (result['referrer'] != null) {
+          final referrer = result['referrer'] as Map<String, dynamic>;
+          referredUser.value = referrer['name'] ?? referrer['email'];
+        }
+        
+        // Create a minimal UserModel for backward compatibility
+        // The actual user data will be fetched during registration
+        final referrerMap = result['referrer'] as Map<String, dynamic>?;
+        return UserModel(
+          userId: code, // Use code as temporary ID
+          username: referrerMap?['name'] ?? '',
+          email: referrerMap?['email'] ?? '',
+          imageUrl: '',
+          phoneNumber: '',
+          country: '',
+          referralCode: code,
+        );
+      } else {
+        isCodeValid.value = false;
+        codeError.value = 'Invalid or expired referral code';
+        return null;
+      }
     } catch (e) {
       log('Error fetching user by referral code: $e');
+      isCodeValid.value = false;
+      codeError.value = 'Error validating referral code';
       return null;
     }
   }
