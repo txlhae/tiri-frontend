@@ -22,8 +22,9 @@ class ApiConfig {
   );
 
   /// Base URLs for different environments
+  /// 🔧 UPDATED: Using your computer's IP address for physical device testing
   static const Map<String, String> _baseUrls = {
-    'development': 'http://127.0.0.1:8000',  // Your local Django server
+    'development': 'http://192.168.0.229:8000',  // Your computer's IP address
     'staging': 'https://staging-api.tiri.com',
     'production': 'https://api.tiri.com',
   };

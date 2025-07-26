@@ -9,6 +9,7 @@ import 'package:kind_clock/controllers/request_details_controller.dart';
 import 'package:kind_clock/controllers/splash_controller.dart';
 import 'package:kind_clock/services/api_service.dart';
 import 'package:kind_clock/services/auth_service.dart';
+import 'package:kind_clock/services/firebase_storage.dart'; // TEMPORARY - Will be removed in migration
 
 class AppBinding extends Bindings {
   @override
@@ -16,6 +17,10 @@ class AppBinding extends Bindings {
     // NEW: Django Enterprise Services
     Get.put<ApiService>(ApiService());
     Get.put<AuthService>(AuthService());
+    
+    // TEMPORARY: Keep Firebase service until migration complete
+    // TODO: Remove this when RequestController is migrated to Django
+    Get.put<FirebaseStorageService>(FirebaseStorageService());
     
     // EXISTING: Keep all controllers
     Get.put<AuthController>(AuthController());
