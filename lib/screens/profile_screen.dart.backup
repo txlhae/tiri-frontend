@@ -164,7 +164,7 @@ class AuthController extends GetxController {
   // =============================================================================
   
   /// Login user with email and password
-  Future<void> login([String? email, String? password, String? routeName]) async {
+  Future<void> login() async {
     if (!validateLoginForm()) return;
 
     isLoading.value = true;
@@ -240,7 +240,7 @@ class AuthController extends GetxController {
   }
 
   /// Register new user
-  Future<void> register([String? name, String? phoneNumber, String? country, String? email, String? referralUid, String? password, String? routeName, String? imageURL]) async {
+  Future<void> register() async {
     if (!validateRegisterForm()) return;
 
     isLoading.value = true;
@@ -443,7 +443,7 @@ class AuthController extends GetxController {
   }
 
   /// Delete user account
-  Future<void> deleteUserAccount({required String email, required String password}) async {
+  Future<void> deleteUserAccount(String email, String password) async {
     try {
       isLoading.value = true;
       

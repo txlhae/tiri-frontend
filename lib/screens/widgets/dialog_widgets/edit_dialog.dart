@@ -183,7 +183,7 @@ class _EditDialogState extends State<EditDialog> {
                                 } else {
                                   await authController
                                       .editUser(
-                                          widget.user, widget.user.imageUrl)
+                                          widget.user, widget.user.imageUrl ?? "")
                                       .then(
                                     (value) {
                                       Get.back();

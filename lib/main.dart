@@ -1,16 +1,11 @@
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:kind_clock/domain/core/di/app_binding.dart';
-import 'package:kind_clock/firebase_options.dart';
 import 'package:kind_clock/infrastructure/navigation.dart';
 import 'package:kind_clock/infrastructure/routes.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
   runApp(const MyApp());
 }
 

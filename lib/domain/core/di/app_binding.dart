@@ -7,14 +7,17 @@ import 'package:kind_clock/controllers/notification_controller.dart';
 import 'package:kind_clock/controllers/request_controller.dart';
 import 'package:kind_clock/controllers/request_details_controller.dart';
 import 'package:kind_clock/controllers/splash_controller.dart';
-import 'package:kind_clock/services/firebase_auth_services.dart';
-import 'package:kind_clock/services/firebase_storage.dart';
+import 'package:kind_clock/services/api_service.dart';
+import 'package:kind_clock/services/auth_service.dart';
 
 class AppBinding extends Bindings {
   @override
   void dependencies() {
-    Get.put<FirebaseAuthService>(FirebaseAuthService());
-    Get.put<FirebaseStorageService>(FirebaseStorageService());
+    // NEW: Django Enterprise Services
+    Get.put<ApiService>(ApiService());
+    Get.put<AuthService>(AuthService());
+    
+    // EXISTING: Keep all controllers
     Get.put<AuthController>(AuthController());
     Get.put<SplashController>(SplashController());
     Get.put<EmailSentController>(EmailSentController());

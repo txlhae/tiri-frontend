@@ -43,16 +43,20 @@ dependencies:
   firebase_auth: ^5.4.1
   firebase_storage: ^12.4.1
   cloud_firestore: ^5.6.2
-  freezed_annotation: ^2.4.4
+  freezed_annotation: ^3.1.0
   json_annotation: ^4.9.0
   shimmer: ^3.0.0
   flutter_svg: ^2.0.17
   defer_pointer: ^0.0.2
   flutter_launcher_icons: ^0.14.3
-  dotted_border: ^2.1.0
+  dotted_border: ^3.1.0
   uuid: ^4.5.1
   google_maps_flutter: ^2.12.3
   country_picker: ^2.0.20
+  dio: ^5.8.0+1
+  flutter_secure_storage: ^9.2.4
+  connectivity_plus: ^6.1.4
+  retry: ^3.1.2
 
 
 dev_dependencies:
@@ -64,8 +68,8 @@ dev_dependencies:
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^4.0.0
-  freezed: ^2.5.7
+  flutter_lints: ^6.0.0
+  freezed: ^3.2.0
   build_runner: ^2.4.13
   json_serializable: ^6.9.0
 

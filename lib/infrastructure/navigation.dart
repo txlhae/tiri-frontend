@@ -69,7 +69,7 @@ class Navigation {
     ),
     GetPage(
       name: Routes.profilePage,
-      page: () => const ProfileScreen(),
+      page: () => ProfileScreen(),
     ),
     GetPage(
       name: Routes.myHelpsPage,

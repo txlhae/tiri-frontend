@@ -60,7 +60,7 @@ class _RequestDetailsState extends State<RequestDetails> {
 
   @override
   Widget build(BuildContext context) {
-    final request = detailsController.requestModel.value ?? widget.request;
+    // final request = detailsController.requestModel.value ?? widget.request;
     return Scaffold(
       backgroundColor: Colors.white,
       body: DeferredPointerHandler(
@@ -151,7 +151,7 @@ class _RequestDetailsState extends State<RequestDetails> {
 
   Widget _buildLoadedContent() {
     final request = detailsController.requestModel.value ?? widget.request;
-    final currentUserId = authController.currentUserStore.value!.userId; 
+    final currentUserId = authController.currentUserStore.value?.userId; 
 
     return Column(
       children: [
@@ -173,7 +173,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                     ),
                   ),
                   if (request.userId ==
-                          authController.currentUserStore.value!.userId &&
+                          authController.currentUserStore.value?.userId &&
                       request.status != RequestStatus.complete &&
                       request.status != RequestStatus.expired &&
                       request.requestedTime.isAfter(DateTime.now()))
@@ -195,7 +195,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                                  tooltip: "Chat with Poster",
                                  onPressed: () async {
                                    final roomId = requestController.getChatRoomId(
-                                   currentUserId,
+                                   currentUserId ?? '',
                                    detailsController.posterUserId.value,
                                    );
                                    Get.toNamed(
@@ -274,19 +274,19 @@ class _RequestDetailsState extends State<RequestDetails> {
                 DetailsRow(
                   icon: Icons.timer,
                   label: "Hours Needed",
-                  value: (request.hoursNeeded ?? 1).toString(),
+                  value: request.hoursNeeded.toString(),
                 ),
               const SizedBox(height: 12),
               DetailsRow(
                 icon: Icons.group,
                 label: "No. of People wanted ",
-                value: request.numberOfPeople?.toString() ?? '0',
+                value: request.numberOfPeople.toString(),
               ),
               const SizedBox(height: 12),
               DetailsRow(
                 icon: Icons.people_outline,
                 label: "Accepted Users",
-                value: (request.acceptedUser?.length ?? 0).toString(),
+                value: request.acceptedUser.length.toString(),
               ),
             ],
           ),
@@ -319,8 +319,8 @@ class _RequestDetailsState extends State<RequestDetails> {
             ),
           ),
                if (((request.status == RequestStatus.accepted &&
-                request.acceptedUser != null && 
-                request.acceptedUser!.isNotEmpty  ) ||
+                request.acceptedUser.isNotEmpty && 
+                request.acceptedUser.isNotEmpty  ) ||
             request.status == RequestStatus.incomplete ||
             request.status == RequestStatus.inprogress || 
             request.status == RequestStatus.complete) &&
@@ -340,7 +340,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                              ...request.acceptedUser!.map((user) => Column(
+                              ...request.acceptedUser.map((user) => Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Row(
@@ -369,7 +369,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                                               tooltip: "Chat",
                                               onPressed: () async {
                                                 final roomId = requestController.getChatRoomId(
-                                                  currentUserId,
+                                                  currentUserId ?? '',
                                                   user.userId,
                                                 );
                                                 Get.toNamed(
@@ -401,7 +401,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                     const SizedBox(height: 15),
                     //completed and feedback button
                     if ((request.status == RequestStatus.accepted || request.status == RequestStatus.incomplete ) &&
-                        authController.currentUserStore.value!.userId ==
+                        authController.currentUserStore.value?.userId ==
                             request.userId &&
                         request.requestedTime.isBefore(DateTime.now()))
                       DeferPointer(
@@ -438,7 +438,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                     if ((request.status == RequestStatus.accepted || request.status == RequestStatus.incomplete) &&
                         request.acceptedUser.any((user) =>
                             user.userId ==
-                                authController.currentUserStore.value!.userId &&
+                                authController.currentUserStore.value?.userId &&
                             request.requestedTime.isBefore(DateTime.now())))
                       DeferPointer(
                         child: GestureDetector(
@@ -448,7 +448,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                                   .millisecondsSinceEpoch
                                   .toString(),
                               status: "",
-                              body: 'Please provide feedback for "${request.title}" accepted by ${authController.currentUserStore.value!.username}',
+                              body: 'Please provide feedback for "${request.title}" accepted by ${authController.currentUserStore.value?.username}',
                               isUserWaiting: false,
                               userId: request.userId,
                               timestamp: DateTime.now(),
@@ -456,9 +456,9 @@ class _RequestDetailsState extends State<RequestDetails> {
                             try {
                               notificationController
                                   .sendReminderNotification(newNotification);
-                              //  print("Reminder notification sent");
+                              //  debugPrint("Reminder notification sent");
                             } catch (e) {
-                              print("Error: $e");
+                              debugPrint("Error: $e");
                             }
 
                             Get.snackbar(
@@ -491,9 +491,9 @@ class _RequestDetailsState extends State<RequestDetails> {
             ],
           ),
         //intereseted button
-        if (request.userId != authController.currentUserStore.value!.userId &&
+        if (request.userId != authController.currentUserStore.value?.userId &&
             !request.acceptedUser.any((user) =>
-                user.userId == authController.currentUserStore.value!.userId) &&
+                user.userId == authController.currentUserStore.value?.userId) &&
             request.acceptedUser.length < request.numberOfPeople)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 50.0),

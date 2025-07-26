@@ -14,6 +14,9 @@ import 'package:kind_clock/services/firebase_storage.dart';
 enum FilterOption { recentPosts, urgentRequired, location }
 
 class RequestController extends GetxController {
+  
+  // Profile feedback list for user profiles
+  final RxList<Map<String, dynamic>> profileFeedbackList = <Map<String, dynamic>>[].obs;
   final FirebaseStorageService store = Get.find<FirebaseStorageService>();
   final AuthController authController = Get.find<AuthController>();
   // final HomeController homeController = Get.find<HomeController>();
@@ -842,4 +845,17 @@ Future<bool> handleFeedbackSubmission({
   return ids.join("_");
 }
 
+
+  
+  // Method to fetch profile feedback (placeholder for Django API)
+  Future<void> fetchProfileFeedbackFromApi(String userId) async {
+    try {
+      // TODO: Replace with actual API call to fetch user feedback
+      profileFeedbackList.clear();
+      // For now, add empty list - will be implemented with Django API
+      profileFeedbackList.addAll([]);
+    } catch (e) {
+      print("Error fetching profile feedback: $e");
+    }
+  }
 }
