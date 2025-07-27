@@ -115,14 +115,16 @@ class AuthService {
       final response = await _apiService.post(
         ApiConfig.authRegister,
         data: {
-          'name': name.trim(),
-          'email': email.trim().toLowerCase(),
-          'phone_number': phoneNumber.trim(),
-          'country': country.trim(),
-          'password': password,
-          'referral_code': referralCode.trim(),
-          if (imageUrl != null) 'image_url': imageUrl,
-        },
+                  'first_name': name.trim(),                    // ✅ FIXED: Django expects first_name
+                  'last_name': '',                              // ✅ ADDED: Django expects last_name  
+                  'email': email.trim().toLowerCase(),
+                  'phone_number': phoneNumber.trim(),
+                  'country': country.trim(),
+                  'password': password,
+                  'password_confirm': password,                 // ✅ ADDED: Django requires this
+                  'referral_code': referralCode.trim(),
+                  if (imageUrl != null) 'image_url': imageUrl,
+                },
       );
 
       if (response.statusCode == 201) {
@@ -234,6 +236,34 @@ class AuthService {
       return AuthResult.failure(
         message: _extractErrorMessage(e),
       );
+    }
+  }
+
+  Future<Map<String, dynamic>?> verifyReferralCode(String referralCode) async {
+    try {
+      log('Calling Django API to verify referral code: $referralCode', name: 'AUTH');
+      
+      // Use the ApiService instance to call Django backend
+      final response = await _apiService.post(
+        '/auth/verify-referral/',
+        data: {
+          'referral_code': referralCode,
+        },
+      );
+
+      log('Django API response status: ${response.statusCode}', name: 'AUTH');
+      log('Django API response data: ${response.data}', name: 'AUTH');
+
+      if (response.statusCode == 200 && response.data != null) {
+        log('Referral code verified successfully', name: 'AUTH');
+        return response.data as Map<String, dynamic>;
+      }
+      
+      log('Referral code verification failed - status: ${response.statusCode}', name: 'AUTH');
+      return null;
+    } catch (e) {
+      log('Error verifying referral code: $e', name: 'AUTH');
+      return null;
     }
   }
 
