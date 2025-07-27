@@ -9,8 +9,7 @@ import 'package:kind_clock/models/feedback_model.dart';
 import 'package:kind_clock/models/notification_model.dart';
 import 'package:kind_clock/models/request_model.dart';
 import 'package:kind_clock/models/user_model.dart';
-import 'package:kind_clock/services/request_service.dart';
-import 'package:kind_clock/services/api_service.dart';
+import 'package:kind_clock/services/firebase_storage.dart';
 
 enum FilterOption { recentPosts, urgentRequired, location }
 
@@ -18,8 +17,7 @@ class RequestController extends GetxController {
   
   // Profile feedback list for user profiles
   final RxList<Map<String, dynamic>> profileFeedbackList = <Map<String, dynamic>>[].obs;
-  final RequestService requestService = Get.find<RequestService>();
-  final ApiService apiService = Get.find<ApiService>();
+  final FirebaseStorageService store = Get.find<FirebaseStorageService>();
   final AuthController authController = Get.find<AuthController>();
   // final HomeController homeController = Get.find<HomeController>();
   final isHelper = false.obs;
@@ -51,6 +49,8 @@ class RequestController extends GetxController {
   final hoursNeededWarning = ''.obs;
   final isFeedbackReady = false.obs;
 
+
+
   // New fields for feedback
   var reviewControllers = <TextEditingController>[].obs;
   var hourControllers = <TextEditingController>[].obs;
@@ -76,60 +76,61 @@ class RequestController extends GetxController {
   String formatDateTime(DateTime dateTime) {
     return DateFormat('dd MMMM yyyy, hh:mm a').format(dateTime);
   }
+Future<void> selectDate(BuildContext context) async {
+  try {
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime(2026),
+    );
 
-  Future<void> selectDate(BuildContext context) async {
-    try {
-      final pickedDate = await showDatePicker(
-        context: context,
-        initialDate: DateTime.now(),
-        firstDate: DateTime.now(),
-        lastDate: DateTime(2026),
-      );
+    if (pickedDate != null) {
+      selectedDate.value = pickedDate;
+      selectedDateController.value.text =
+          DateFormat('dd MMM yyyy').format(pickedDate);
 
-      if (pickedDate != null) {
-        selectedDate.value = pickedDate;
-        selectedDateController.value.text =
-            DateFormat('dd MMM yyyy').format(pickedDate);
-
-        _updateCombinedDateTime();
-      }
-    } catch (e) {
-      log("Error selecting date: $e");
+      _updateCombinedDateTime();
     }
+  } catch (e) {
+    log("Error selecting date: $e");
   }
+}
 
-  Future<void> selectTime(BuildContext context) async {
-    try {
-      final pickedTime = await showTimePicker(
-        context: context,
-        initialTime: TimeOfDay.now(),
-      );
+Future<void> selectTime(BuildContext context) async {
+  try {
+    final pickedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
 
-      if (pickedTime != null) {
-        selectedTime.value = pickedTime;
-        selectedTimeController.value.text = pickedTime.format(context);
+    if (pickedTime != null) {
+      selectedTime.value = pickedTime;
+      selectedTimeController.value.text = pickedTime.format(context);
 
-        _updateCombinedDateTime();
-      }
-    } catch (e) {
-      log("Error selecting time: $e");
+      _updateCombinedDateTime();
     }
+  } catch (e) {
+    log("Error selecting time: $e");
   }
+}
 
-  void _updateCombinedDateTime() {
-    if (selectedDate.value != null && selectedTime.value != null) {
-      selectedDateTime.value = DateTime(
-        selectedDate.value!.year,
-        selectedDate.value!.month,
-        selectedDate.value!.day,
-        selectedTime.value!.hour,
-        selectedTime.value!.minute,
-      ); 
-      log("Combined selected DateTime: ${formatDateTime(selectedDateTime.value!)}");
+void _updateCombinedDateTime() {
+  if (selectedDate.value != null && selectedTime.value != null) {
+    selectedDateTime.value = DateTime(
+      selectedDate.value!.year,
+      selectedDate.value!.month,
+      selectedDate.value!.day,
+      selectedTime.value!.hour,
+      selectedTime.value!.minute,
+    ); 
+    log("Combined selected DateTime: ${formatDateTime(selectedDateTime.value!)}");
 
-      dateTimeError.value = null;
-    }
+    dateTimeError.value = null;
   }
+}
+
+
 
   bool validateFields() {
     titleError.value =
@@ -142,6 +143,7 @@ class RequestController extends GetxController {
     dateTimeError.value =
         selectedDateTime.value == null ? "Please select a date and time" : null;
    
+
     return titleError.value == null &&
         descriptionError.value == null &&
         locationError.value == null &&
@@ -151,42 +153,30 @@ class RequestController extends GetxController {
   Future<void> loadRequests() async {
     isLoading.value = true;
     try {
-      log("Loading requests from Django API", name: 'REQUEST_CONTROLLER');
-      
-      // Fetch community requests from Django
-      final communityRequests = await requestService.fetchRequests();
-      
-      // Fetch user's own requests from Django  
-      final userRequests = await requestService.fetchMyRequests();
-      
-      // Update request statuses (keep existing logic)
-      await updateRequestStatuses(communityRequests);
-      await updateRequestStatuses(userRequests);
-      
-      // Assign to reactive lists
-      myRequestList.assignAll(userRequests);
-      
-      // Filter community requests based on selected filter
-      final filteredRequests = getFilteredRequests(communityRequests);
-      requestList.assignAll(filteredRequests);
-      
-      log("Django API: Fetched ${communityRequests.length} community requests");
-      log("Django API: Fetched ${userRequests.length} user requests");
-      log("Filtered requests: ${filteredRequests.length}");
-      
+      await store.fetchRequests().then(
+        (requests) {
+          updateRequestStatuses(requests).then(
+            (value) {
+              myRequestList.assignAll(requests);
+            },
+          );
+
+          // Filter the requests based on the selected filter
+          final filteredRequests = getFilteredRequests(requests);
+          requestList.assignAll(filteredRequests);
+          log("Requests fetched successfully");
+          log("Requests after filtering: ${filteredRequests.length}");
+        },
+      );
     } catch (e) {
-      log("Error loading requests from Django: $e", name: 'REQUEST_CONTROLLER');
-      
-      // Fallback to empty lists on error
-      requestList.clear();
-      myRequestList.clear();
+      log("Error fetching requests: $e");
     } finally {
       isLoading.value = false;
     }
   }
 
-  // Function to update request statuses using Django API
-  Future<void> updateRequestStatuses(List<RequestModel> requests) async {
+  // Function to update Firestore based on request status
+ Future<void> updateRequestStatuses(List<RequestModel> requests) async {
     for (var request in requests) {
       log("Checking request: ${request.requestId} with status: ${request.status} and time: ${request.requestedTime}");
 
@@ -201,26 +191,32 @@ class RequestController extends GetxController {
         try {
           if (acceptedCount == 0) {
             log("No accepted users and time up, updating to expired: ${request.requestId}");
-            await requestService.updateRequest(
+            await store.updateRequest(
                 request.requestId, {"status": "expired"}).then((_) async {
-              // Create notification via Django API
-              await _createNotification(
+              NotificationModel notification = NotificationModel(
                 body: request.title,
+                timestamp: DateTime.now(),
+                isUserWaiting: false,
                 userId: request.userId,
                 status: RequestStatus.expired.toString().split(".").last,
+                notificationId: DateTime.now().millisecondsSinceEpoch.toString(),
               );
+              await store.updateNotification(notification);
             });
             log("Updated request ${request.requestId} to expired");
           } else if (acceptedCount >= 1 && acceptedCount < requiredCount) {
             log("Accepted users less than required and time up, updating to incomplete: ${request.requestId}");
-            await requestService.updateRequest(
+            await store.updateRequest(
                 request.requestId, {"status": "incomplete"}).then((_) async {
-              // Create notification via Django API
-              await _createNotification(
+              NotificationModel notification = NotificationModel(
                 body: request.title,
+                timestamp: DateTime.now(),
+                isUserWaiting: false,
                 userId: request.userId,
                 status: RequestStatus.incomplete.toString().split(".").last,
+                notificationId: DateTime.now().millisecondsSinceEpoch.toString(),
               );
+              await store.updateNotification(notification);
             });
             log("Updated request ${request.requestId} to incomplete");
           } else {
@@ -235,37 +231,21 @@ class RequestController extends GetxController {
     }
   }
 
-  // Helper method to create notifications via Django API
-  Future<void> _createNotification({
-    required String body,
-    required String userId,
-    required String status,
-  }) async {
-    try {
-      await apiService.post('/notifications/', data: {
-        'body': body,
-        'user_id': userId,
-        'status': status,
-        'timestamp': DateTime.now().toIso8601String(),
-      });
-    } catch (e) {
-      log("Error creating notification: $e");
-    }
-  }
 
-  //feedback and status complete
+//feedback and statuscomplete
   Future<void> markRequestAsComplete(RequestModel request) async {
     try {
-      await requestService.updateRequest(
+      await store.updateRequest(
           request.requestId, {"status": RequestStatus.complete.name});
-      
-      // Create notification via Django API
-      await _createNotification(
+      NotificationModel notification = NotificationModel(
         body: request.title,
+        timestamp: DateTime.now(),
+        isUserWaiting: false,
         userId: request.userId,
         status: RequestStatus.complete.name,
+        notificationId: DateTime.now().millisecondsSinceEpoch.toString(),
       );
-      
+      await store.updateNotification(notification);
       log("Manually updated request ${request.requestId} to 'complete'");
     } catch (e) {
       log("Error marking request as complete: $e");
@@ -283,20 +263,20 @@ class RequestController extends GetxController {
 
     isLoading.value = true;
     
-    final number = validateIntField(
-      controller: numberOfPeopleController,
-      warning: numberOfPeopleWarning,
-      label: 'Number of People',
+     final number = validateIntField(
+    controller: numberOfPeopleController,
+    warning: numberOfPeopleWarning,
+    label: 'Number of People',
     );
     if (number == null) return;
-
-    //helping hour
+ //helping hour
     final hours = validateIntField(
       controller: hoursNeededController,
       warning: hoursNeededWarning,
       label: 'Hours Needed',
     );
     if (hours == null) return;
+
 
     try {
       final user = authController.currentUserStore.value!;
@@ -315,16 +295,17 @@ class RequestController extends GetxController {
       );
       log("Saving new request with requestedTime: ${selectedDateTime.value}");
 
-      // Create request via Django API
-      await requestService.createRequest(request);
-
-      // Create notification via Django API
-      await _createNotification(
-        body: request.title,
-        userId: user.userId,
+      final notify = NotificationModel(
+        notificationId: DateTime.now().millisecondsSinceEpoch.toString(),
         status: RequestStatus.pending.toString().split(".").last,
+        body: request.title,
+        isUserWaiting: false,
+        userId: user.userId,
+        timestamp: DateTime.now(),
       );
 
+      await store.saveRequestToStorage(request);
+      await store.saveNotification(notify);
       await loadRequests();
 
       clearFields();
@@ -338,171 +319,179 @@ class RequestController extends GetxController {
   }
 
   void validateIntegerInput({
-    required String value,
-    required RxString warningText,
-    int min = 1,
-    int max = 999,
-    String fieldName = 'Value',
-  }) {
-    final number = int.tryParse(value);
-    if (number == null) {
-      warningText.value = 'Only numbers are allowed';
-      return;
-    }
-
-    if (value.length > 1 && value.startsWith('0')) {
-      warningText.value = 'Leading zero is not allowed';
-      return;
-    }
-
-    if (number < min || number > max) {
-      warningText.value = 'Enter a number between $min and $max';
-      return;
-    }
-
-    warningText.value = '';
+  required String value,
+  required RxString warningText,
+  int min = 1,
+  int max = 999,
+  String fieldName = 'Value',
+}) {
+  final number = int.tryParse(value);
+  if (number == null) {
+    warningText.value = 'Only numbers are allowed';
+    return;
   }
 
-  //validation in edit request before save
-  int? validateIntField({
-    required Rx<TextEditingController> controller,
-    required RxString warning,
-    required String label,
-    int min = 1,
-    int max = 100,
-  }) {
-    final value = controller.value.text.trim();
-    final number = int.tryParse(value);
+  if (value.length > 1 && value.startsWith('0')) {
+    warningText.value = 'Leading zero is not allowed';
+    return;
+  }
 
-    if (value.isEmpty) {
-      controller.value.text = '1'; 
-      warning.value = '';
-      return 1;
-    }
-    if (number == null) {
-      warning.value = '$label must be a number';
-      return null;
-    }
+  if (number < min || number > max) {
+    warningText.value = 'Enter a number between $min and $max';
+    return;
+  }
 
-    if (value.length > 1 && value.startsWith('0')) {
-      warning.value = 'Leading zero is not allowed';
-      return null;
-    }
+  warningText.value = '';
+}
 
-    if (number < min || number > max) {
-      warning.value = '$label must be between $min and $max';
-      return null;
-    }
+//validation in edit request before save
+int? validateIntField({
+  required Rx<TextEditingController> controller,
+  required RxString warning,
+  required String label,
+  int min = 1,
+  int max = 100,
+}) {
+  final value = controller.value.text.trim();
+  final number = int.tryParse(value);
 
+ if (value.isEmpty) {
+    controller.value.text = '1'; 
     warning.value = '';
-    return number;
+    return 1;
   }
+  if (number == null) {
+    warning.value = '$label must be a number';
+    return null;
+  }
+
+  if (value.length > 1 && value.startsWith('0')) {
+    warning.value = 'Leading zero is not allowed';
+    return null;
+  }
+
+  if (number < min || number > max) {
+    warning.value = '$label must be between $min and $max';
+    return null;
+  }
+
+  warning.value = '';
+  return number;
+}
 
   // Feedback methods
-  void initializeFeedbackControllers(RequestModel request) {
-    final count = request.acceptedUser?.length ?? 0;
-    reviewControllers.clear();
-    hourControllers.clear();
-    selectedRatings.clear();
-    reviewErrors.clear();
-    hourErrors.clear();
+ void initializeFeedbackControllers(RequestModel request) {
+  final count = request.acceptedUser?.length ?? 0;
+  reviewControllers.clear();
+  hourControllers.clear();
+  selectedRatings.clear();
+  reviewErrors.clear();
+  hourErrors.clear();
 
-    if (count == 0) {
-      isFeedbackReady.value = true; 
-      return;
+ if (count == 0) {
+    isFeedbackReady.value = true; 
+    return;
+  }
+  for (int i = 0; i < count; i++) {
+    reviewControllers.add(TextEditingController());
+
+    // Pre-fill hours with request.hoursNeeded
+    hourControllers.add(TextEditingController(
+      text: request.hoursNeeded.toString(),
+    ));
+
+    selectedRatings.add(1.0.obs);
+    reviewErrors.add(RxnString());
+    hourErrors.add(RxnString());
+  }
+  isFeedbackReady.value = true;
+
+}
+
+bool validateFeedbackFields() {
+  bool isValid = true;
+
+  for (int i = 0; i < reviewControllers.length; i++) {
+    final review = reviewControllers[i].text.trim();
+    final hour = hourControllers[i].text.trim();
+
+    reviewErrors[i].value = review.isEmpty ? "Review is required" : null;
+    hourErrors[i].value = hour.isEmpty ? "Hours helped is required" : null;
+
+    if (review.isEmpty || hour.isEmpty) {
+      isValid = false;
     }
-    for (int i = 0; i < count; i++) {
-      reviewControllers.add(TextEditingController());
+  }
 
-      // Pre-fill hours with request.hoursNeeded
-      hourControllers.add(TextEditingController(
-        text: request.hoursNeeded.toString(),
+  return isValid;
+}
+void updateRating(int index, double rating) {
+  if (index >= 0 && index < selectedRatings.length) {
+    selectedRatings[index].value = rating;
+  }
+}
+
+Future<bool> handleFeedbackSubmission({
+  required RequestModel request,
+  required BuildContext context,
+}) async {
+  if (!validateFeedbackFields()) {
+    return false;
+  }
+
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => const Center(child: CircularProgressIndicator()),
+  );
+
+  try {
+    List<Future> feedbackFutures = [];
+
+    for (int i = 0; i < request.acceptedUser!.length; i++) {
+      final review = reviewControllers[i].text;
+      final hours = int.tryParse(hourControllers[i].text) ?? 0;
+      final rating = selectedRatings[i].value;
+
+      feedbackFutures.add(submitSingleFeedback(
+        userId: request.acceptedUser![i].userId,
+        review: review,
+        hours: hours,
+        rating: rating.toDouble(),
+        request: request,
       ));
-
-      selectedRatings.add(1.0.obs);
-      reviewErrors.add(RxnString());
-      hourErrors.add(RxnString());
     }
-    isFeedbackReady.value = true;
+
+    await Future.wait(feedbackFutures);
+
+    await markRequestAsComplete(request);
+
+    List<Future> notificationFutures = [];
+
+    for (var user in request.acceptedUser ?? []) {
+      final notification = NotificationModel(
+        body: "The work '${request.title}' is completed and feedback has been added.",
+        timestamp: DateTime.now(),
+        isUserWaiting: false,
+        userId: user.userId,
+        status: RequestStatus.complete.toString().split(".").last,
+        notificationId: DateTime.now().millisecondsSinceEpoch.toString(),
+      );
+      notificationFutures.add(store.saveNotification(notification));
+    }
+
+    await Future.wait(notificationFutures);
+
+    Navigator.of(context).pop(); 
+    return true;
+  } catch (e) {
+    Navigator.of(context).pop();
+    print('Feedback submission error: $e');
+    Get.snackbar('Error', 'Error submitting feedback: ${e.toString()}');
+    return false;
   }
+}
 
-  bool validateFeedbackFields() {
-    bool isValid = true;
-
-    for (int i = 0; i < reviewControllers.length; i++) {
-      final review = reviewControllers[i].text.trim();
-      final hour = hourControllers[i].text.trim();
-
-      reviewErrors[i].value = review.isEmpty ? "Review is required" : null;
-      hourErrors[i].value = hour.isEmpty ? "Hours helped is required" : null;
-
-      if (review.isEmpty || hour.isEmpty) {
-        isValid = false;
-      }
-    }
-
-    return isValid;
-  }
-
-  void updateRating(int index, double rating) {
-    if (index >= 0 && index < selectedRatings.length) {
-      selectedRatings[index].value = rating;
-    }
-  }
-
-  Future<bool> handleFeedbackSubmission({
-    required RequestModel request,
-    required BuildContext context,
-  }) async {
-    if (!validateFeedbackFields()) {
-      return false;
-    }
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const Center(child: CircularProgressIndicator()),
-    );
-
-    try {
-      List<Future> feedbackFutures = [];
-
-      for (int i = 0; i < request.acceptedUser!.length; i++) {
-        final review = reviewControllers[i].text;
-        final hours = int.tryParse(hourControllers[i].text) ?? 0;
-        final rating = selectedRatings[i].value;
-
-        feedbackFutures.add(submitSingleFeedback(
-          userId: request.acceptedUser![i].userId,
-          review: review,
-          hours: hours,
-          rating: rating.toDouble(),
-          request: request,
-        ));
-      }
-
-      await Future.wait(feedbackFutures);
-
-      await markRequestAsComplete(request);
-
-      // Create notifications for accepted users via Django API
-      for (var user in request.acceptedUser ?? []) {
-        await _createNotification(
-          body: "The work '${request.title}' is completed and feedback has been added.",
-          userId: user.userId,
-          status: RequestStatus.complete.toString().split(".").last,
-        );
-      }
-
-      Navigator.of(context).pop(); 
-      return true;
-    } catch (e) {
-      Navigator.of(context).pop();
-      print('Feedback submission error: $e');
-      Get.snackbar('Error', 'Error submitting feedback: ${e.toString()}');
-      return false;
-    }
-  }
 
   Future<void> submitSingleFeedback({
     required String userId,
@@ -512,18 +501,46 @@ class RequestController extends GetxController {
     required RequestModel request,
   }) async {
     try {
-      // Submit feedback via Django API
-      await apiService.post('/feedback/', data: {
-        'to_user_id': userId,
-        'request_id': request.requestId,
-        'review': review,
-        'rating': rating,
-        'hours': hours,
-      });
+      // Get the latest version of the request from Firebase
+      final latestRequest = await store.getRequest(request.requestId);
 
-      log("Successfully submitted feedback for user $userId");
+      final feedback = FeedbackModel(
+        feedbackId: userId,
+        userId: request.userId,
+        requestId: request.requestId,
+        review: review,
+        rating: rating,
+        hours: hours,
+        timestamp: DateTime.now(),
+      );
+
+      //   Add the feedback to the latest list
+      final List<FeedbackModel> updatedFeedbackList = [
+        ...(latestRequest?.feedbackList ?? []),
+        feedback
+      ];
+
+      final updatedRequest =
+          latestRequest!.copyWith(feedbackList: updatedFeedbackList);
+      await controllerUpdateRequest(request.requestId, updatedRequest);
+
+      final userData = await store.getUser(userId);
+      if (userData != null) {
+        int previousHours = userData.hours ?? 0;
+        int totalHours = previousHours + hours;
+
+        double previousRating = userData.rating ?? 0;
+        double newRating = (previousRating + rating) / 2;
+        newRating = newRating.clamp(0, 5);
+        newRating =
+            double.parse(newRating.toStringAsFixed(1)); // round to 1 decimal
+
+        await store.updateUser({
+          'rating': newRating,
+          'hours': totalHours,
+        }, userId);
+      }
     } catch (e) {
-      log('Error submitting feedback for user $userId: $e');
       Get.snackbar('Error', 'Failed to submit feedback for user $userId: $e');
     }
   }
@@ -535,31 +552,42 @@ class RequestController extends GetxController {
     try {
       isFeedbackLoading.value = true;
 
-      // Fetch feedback via Django API
-      final response = await apiService.get('/feedback/user/$userId/');
-      
-      if (response.statusCode == 200) {
-        final List<dynamic> feedbackData = response.data;
-        
-        final List<Map<String, dynamic>> tempList = [];
+      final feedbacks = await store.getFeedbackForUser(userId);
+      final currentUserId = authController.currentUserStore.value?.userId;
+      final filteredFeedbacks =
+          currentUserId == userId ? feedbacks : feedbacks.take(4).toList();
 
-        for (var feedback in feedbackData) {
-          tempList.add({
-            'feedback': FeedbackModel.fromJson(feedback),
-            'username': feedback['from_user']['username'] ?? 'Unknown User',
-            'imageUrl': feedback['from_user']['image_url'],
-            'title': feedback['request']['title'] ?? 'Untitled Request',
-          });
-        }
+      final List<Map<String, dynamic>> tempList = [];
 
-        fullFeedbackList.value = tempList;
+      for (var feedback in filteredFeedbacks) {
+        final displayData = await getFeedbackDisplayData(feedback);
+        tempList.add({
+          'feedback': feedback,
+          'username': displayData['username'],
+          'imageUrl': displayData['imageUrl'],
+          'title': displayData['title'],
+        });
       }
+
+      fullFeedbackList.value = tempList;
     } catch (e) {
-      log('Error fetching profile feedback: $e');
       Get.snackbar('Error', 'Failed to load feedback');
     } finally {
       isFeedbackLoading.value = false;
     }
+  }
+
+  Future<Map<String, dynamic>> getFeedbackDisplayData(
+      FeedbackModel feedback) async {
+    final user = await store.getUser(feedback.userId);
+
+    final request = await store.getRequest(feedback.requestId);
+
+    return {
+      "username": user?.username ?? "Unknown User",
+      "imageUrl": user?.imageUrl,
+      "title": request?.title ?? "Untitled Request",
+    };
   }
 
   void clearFields() {
@@ -589,83 +617,97 @@ class RequestController extends GetxController {
     titleController.value.dispose();
     descriptionController.value.dispose();
     locationController.value.dispose();
-    for (var c in reviewControllers) {
-      c.dispose();
+     for (var c in reviewControllers) {
+    c.dispose();
     }
     for (var c in hourControllers) {
       c.dispose();
     }
-    selectedDateTime.update((val) {
-      selectedDateTime.value = null;
-    });
+    selectedDateTime.update(
+      (val) {
+        selectedDateTime.value = null;
+      },
+    );
     clearFields();
     update();
     super.onClose();
   }
+  
 
-  Future<void> controllerUpdateRequest(
+    Future<void> controllerUpdateRequest(
     String requestId,
     RequestModel updatedFields,
   ) async {
-    try {
-      isLoading.value = true;
+  try {
+    isLoading.value = true;
 
-      // Get old request via Django API
-      final oldRequest = await requestService.getRequest(requestId);
+    final oldRequest = await store.getRequest(requestId);
 
-      // Notify requester if request status changed to "accepted"
-      if (oldRequest?.status != RequestStatus.accepted &&
-          updatedFields.status == RequestStatus.accepted) {
-        await _createNotification(
-          body: "${updatedFields.title} is accepted",
-          userId: updatedFields.userId,
-          status: RequestStatus.accepted.toString().split('.').last,
-        );
-      }
+    // Notify requester if request status changed to "accepted"
+    if (oldRequest?.status != RequestStatus.accepted &&
+        updatedFields.status == RequestStatus.accepted) {
+      var notifyToRequester = NotificationModel(
+        notificationId: "${DateTime.now().millisecondsSinceEpoch}_${math.Random().nextInt(100000)}",
+        status: RequestStatus.accepted.toString().split('.').last,
+        body: "${updatedFields.title} is accepted",
+        isUserWaiting: false,
+        userId: updatedFields.userId,
+        timestamp: DateTime.now(),
+      );
 
-      // Check if actual request details were edited
-      bool isEdited = (oldRequest?.title != updatedFields.title) ||
-          (oldRequest?.description != updatedFields.description) ||
-          (oldRequest?.location != updatedFields.location) ||
-          (oldRequest?.requestedTime != updatedFields.requestedTime) ||
-          (oldRequest?.numberOfPeople != updatedFields.numberOfPeople);
-
-      // Only if edited, notify accepted users
-      if (isEdited &&
-          updatedFields.acceptedUser != null &&
-          updatedFields.acceptedUser!.isNotEmpty) {
-        for (var acceptedUser in updatedFields.acceptedUser!) {
-          if (acceptedUser.userId != updatedFields.userId) {
-            await _createNotification(
-              body: "${updatedFields.title} is edited",
-              userId: acceptedUser.userId,
-              status: "Edited",
-            );
-          }
-        }
-        await Get.find<NotificationController>().loadNotification();
-      }
-
-      // Update the request via Django API
-      await requestService.updateRequest(requestId, updatedFields.toJson());
-
-      await loadRequests();
-      isLoading.value = false;
-    } catch (e) {
-      isLoading.value = false;
-      log('Error updating request: $e');
+      await store.saveNotification(notifyToRequester);
+      // await Get.find<NotificationController>().loadNotification();
     }
+  //  Check if actual request details were edited
+    bool isEdited = (oldRequest?.title != updatedFields.title) ||
+        (oldRequest?.description != updatedFields.description) ||
+        (oldRequest?.location != updatedFields.location) ||
+        (oldRequest?.requestedTime != updatedFields.requestedTime) ||
+        (oldRequest?.numberOfPeople != updatedFields.numberOfPeople);
+
+    //  Only if edited, notify accepted users
+    if (isEdited &&
+        updatedFields.acceptedUser != null &&
+        updatedFields.acceptedUser!.isNotEmpty) {
+      for (var acceptedUser in updatedFields.acceptedUser!) {
+        if (acceptedUser.userId != updatedFields.userId) {
+          var notifyToAcceptedUser = NotificationModel(
+            notificationId: "${DateTime.now().millisecondsSinceEpoch}_${math.Random().nextInt(100000)}",
+            status: "Edited",
+            body: "${updatedFields.title} is edited",
+            isUserWaiting: false,
+            userId: acceptedUser.userId,
+            timestamp: DateTime.now(),
+          );
+          await store.saveNotification(notifyToAcceptedUser);
+           await Get.find<NotificationController>().loadNotification();
+        }
+      }
+    }
+   //  Update the request
+    await store.updateRequest(requestId, updatedFields.toJson());
+
+    await loadRequests();
+    isLoading.value = false;
+  } catch (e) {
+    isLoading.value = false;
+    log('Error updating request: $e');
   }
+}
+
 
   // Update filter
+  // Mapping of enums to display text
   final Map<FilterOption, String> filterLabels = {
     FilterOption.recentPosts: "Recent Posts",
     FilterOption.urgentRequired: "Urgent Required",
     FilterOption.location: "Location",
   };
 
+  // Observable for selected filter
   Rx<FilterOption> selectedFilter = FilterOption.recentPosts.obs;
 
+  // Update filter function
   void updateFilter(FilterOption? filter) {
     if (filter != null) {
       selectedFilter.value = filter;
@@ -689,11 +731,15 @@ class RequestController extends GetxController {
         case FilterOption.urgentRequired:
           return request.requestedTime
               .isBefore(DateTime.now().add(const Duration(days: 15)));
+        // case FilterOption.location:
+        //   return request.location.toLowerCase() ==
+        //       authController.currentUserStore.value!.location?.toLowerCase();
         default:
           return true;
       }
     }).toList();
 
+    // Sort only if "urgentRequired" filter is selected
     if (selectedFilter.value == FilterOption.urgentRequired) {
       filteredList.sort((a, b) => a.requestedTime.compareTo(b.requestedTime));
     }
@@ -701,6 +747,7 @@ class RequestController extends GetxController {
     return filteredList;
   }
 
+  // filter dialogue
   void showFilterDialog(BuildContext context) {
     Get.dialog(
       AlertDialog(
@@ -732,17 +779,8 @@ class RequestController extends GetxController {
   }
 
   Future<UserModel?> getRequestUser(RequestModel request) async {
-    try {
-      // Get user via Django API
-      final response = await apiService.get('/profile/user/${request.userId}/');
-      if (response.statusCode == 200) {
-        return UserModel.fromJson(response.data);
-      }
-      return null;
-    } catch (e) {
-      log("Error fetching user: $e");
-      return null;
-    }
+    var userMod = await store.getUser(request.userId);
+    return userMod!;
   }
 
   String getRelativeTime(DateTime date) {
@@ -758,6 +796,7 @@ class RequestController extends GetxController {
     }
   }
 
+//status control for community post
   RequestStatus determineRequestStatus(
       RequestModel request, List<UserModel> acceptedUsers) {
     int required = request.numberOfPeople;
@@ -779,11 +818,11 @@ class RequestController extends GetxController {
     }
   }
 
-  // Search method using Django API
+//search method
   Future<void> fetchRequestsByLocation(String location) async {
     try {
       hasSearchedCommunity.value = true;
-      final results = await requestService.searchRequests(location: location);
+      final results = await store.searchRequestsByLocation(location);
       communityRequests.value = results;
     } catch (e) {
       Get.snackbar('Error', 'Could not fetch location-based requests');
@@ -793,57 +832,28 @@ class RequestController extends GetxController {
   Future<void> fetchMyRequestsByLocation(String location) async {
     try {
       hasSearchedMyPosts.value = true;
-      final results = await requestService.searchRequests(location: location);
+      final results = await store.searchRequestsByLocation(location);
       myPostRequests.value = results;
     } catch (e) {
       Get.snackbar('Error', 'Failed to load your requests');
     }
   }
-
+  //chat room 
   String getChatRoomId(String uid1, String uid2) {
-    final ids = [uid1, uid2]..sort();
-    return ids.join("_");
-  }
+  // Sort to ensure same ID for both combinations
+  final ids = [uid1, uid2]..sort();
+  return ids.join("_");
+}
 
-  Future<bool> testDjangoConnection() async {
-    try {
-      log("Testing Django API connection", name: 'REQUEST_CONTROLLER');
-      
-      final isHealthy = await requestService.healthCheck();
-      
-      log("Django API health: ${isHealthy ? 'HEALTHY' : 'UNHEALTHY'}", name: 'REQUEST_CONTROLLER');
-      
-      return isHealthy;
-      
-    } catch (e) {
-      log("Django connection test failed: $e", name: 'REQUEST_CONTROLLER');
-      return false;
-    }
-  }
 
-  Future<Map<String, dynamic>?> loadDashboardStats() async {
-    try {
-      log("Loading dashboard stats from Django API", name: 'REQUEST_CONTROLLER');
-      
-      final stats = await requestService.fetchDashboardStats();
-      
-      if (stats != null) {
-        log("Dashboard stats loaded: ${stats.keys.join(', ')}", name: 'REQUEST_CONTROLLER');
-      }
-      
-      return stats;
-      
-    } catch (e) {
-      log("Error loading dashboard stats: $e", name: 'REQUEST_CONTROLLER');
-      return null;
-    }
-  }
   
-  // Method to fetch profile feedback using Django API
+  // Method to fetch profile feedback (placeholder for Django API)
   Future<void> fetchProfileFeedbackFromApi(String userId) async {
     try {
+      // TODO: Replace with actual API call to fetch user feedback
       profileFeedbackList.clear();
-      await fetchProfileFeedback(userId);
+      // For now, add empty list - will be implemented with Django API
+      profileFeedbackList.addAll([]);
     } catch (e) {
       print("Error fetching profile feedback: $e");
     }

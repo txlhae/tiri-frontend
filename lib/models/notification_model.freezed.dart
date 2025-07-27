@@ -1,5 +1,5 @@
-// GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
@@ -9,284 +9,266 @@ part of 'notification_model.dart';
 // FreezedGenerator
 // **************************************************************************
 
-// dart format off
 T _$identity<T>(T value) => value;
+
+final _privateConstructorUsedError = UnsupportedError(
+    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
+
+NotificationModel _$NotificationModelFromJson(Map<String, dynamic> json) {
+  return _NotificationModel.fromJson(json);
+}
 
 /// @nodoc
 mixin _$NotificationModel {
-
- String get notificationId; String get status; String get body; bool get isUserWaiting; String get userId; DateTime get timestamp;
-/// Create a copy of NotificationModel
-/// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-$NotificationModelCopyWith<NotificationModel> get copyWith => _$NotificationModelCopyWithImpl<NotificationModel>(this as NotificationModel, _$identity);
+  String get notificationId => throw _privateConstructorUsedError;
+  String get status => throw _privateConstructorUsedError;
+  String get body => throw _privateConstructorUsedError;
+  bool get isUserWaiting => throw _privateConstructorUsedError;
+  String get userId => throw _privateConstructorUsedError;
+  DateTime get timestamp => throw _privateConstructorUsedError;
 
   /// Serializes this NotificationModel to a JSON map.
-  Map<String, dynamic> toJson();
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
 
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NotificationModel&&(identical(other.notificationId, notificationId) || other.notificationId == notificationId)&&(identical(other.status, status) || other.status == status)&&(identical(other.body, body) || other.body == body)&&(identical(other.isUserWaiting, isUserWaiting) || other.isUserWaiting == isUserWaiting)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.timestamp, timestamp) || other.timestamp == timestamp));
-}
-
-@JsonKey(includeFromJson: false, includeToJson: false)
-@override
-int get hashCode => Object.hash(runtimeType,notificationId,status,body,isUserWaiting,userId,timestamp);
-
-@override
-String toString() {
-  return 'NotificationModel(notificationId: $notificationId, status: $status, body: $body, isUserWaiting: $isUserWaiting, userId: $userId, timestamp: $timestamp)';
-}
-
-
+  /// Create a copy of NotificationModel
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $NotificationModelCopyWith<NotificationModel> get copyWith =>
+      throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract mixin class $NotificationModelCopyWith<$Res>  {
-  factory $NotificationModelCopyWith(NotificationModel value, $Res Function(NotificationModel) _then) = _$NotificationModelCopyWithImpl;
-@useResult
-$Res call({
- String notificationId, String status, String body, bool isUserWaiting, String userId, DateTime timestamp
-});
-
-
-
-
+abstract class $NotificationModelCopyWith<$Res> {
+  factory $NotificationModelCopyWith(
+          NotificationModel value, $Res Function(NotificationModel) then) =
+      _$NotificationModelCopyWithImpl<$Res, NotificationModel>;
+  @useResult
+  $Res call(
+      {String notificationId,
+      String status,
+      String body,
+      bool isUserWaiting,
+      String userId,
+      DateTime timestamp});
 }
+
 /// @nodoc
-class _$NotificationModelCopyWithImpl<$Res>
+class _$NotificationModelCopyWithImpl<$Res, $Val extends NotificationModel>
     implements $NotificationModelCopyWith<$Res> {
-  _$NotificationModelCopyWithImpl(this._self, this._then);
+  _$NotificationModelCopyWithImpl(this._value, this._then);
 
-  final NotificationModel _self;
-  final $Res Function(NotificationModel) _then;
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
 
-/// Create a copy of NotificationModel
-/// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? notificationId = null,Object? status = null,Object? body = null,Object? isUserWaiting = null,Object? userId = null,Object? timestamp = null,}) {
-  return _then(_self.copyWith(
-notificationId: null == notificationId ? _self.notificationId : notificationId // ignore: cast_nullable_to_non_nullable
-as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
-as String,body: null == body ? _self.body : body // ignore: cast_nullable_to_non_nullable
-as String,isUserWaiting: null == isUserWaiting ? _self.isUserWaiting : isUserWaiting // ignore: cast_nullable_to_non_nullable
-as bool,userId: null == userId ? _self.userId : userId // ignore: cast_nullable_to_non_nullable
-as String,timestamp: null == timestamp ? _self.timestamp : timestamp // ignore: cast_nullable_to_non_nullable
-as DateTime,
-  ));
+  /// Create a copy of NotificationModel
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? notificationId = null,
+    Object? status = null,
+    Object? body = null,
+    Object? isUserWaiting = null,
+    Object? userId = null,
+    Object? timestamp = null,
+  }) {
+    return _then(_value.copyWith(
+      notificationId: null == notificationId
+          ? _value.notificationId
+          : notificationId // ignore: cast_nullable_to_non_nullable
+              as String,
+      status: null == status
+          ? _value.status
+          : status // ignore: cast_nullable_to_non_nullable
+              as String,
+      body: null == body
+          ? _value.body
+          : body // ignore: cast_nullable_to_non_nullable
+              as String,
+      isUserWaiting: null == isUserWaiting
+          ? _value.isUserWaiting
+          : isUserWaiting // ignore: cast_nullable_to_non_nullable
+              as bool,
+      userId: null == userId
+          ? _value.userId
+          : userId // ignore: cast_nullable_to_non_nullable
+              as String,
+      timestamp: null == timestamp
+          ? _value.timestamp
+          : timestamp // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+    ) as $Val);
+  }
 }
 
+/// @nodoc
+abstract class _$$NotificationModelImplCopyWith<$Res>
+    implements $NotificationModelCopyWith<$Res> {
+  factory _$$NotificationModelImplCopyWith(_$NotificationModelImpl value,
+          $Res Function(_$NotificationModelImpl) then) =
+      __$$NotificationModelImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {String notificationId,
+      String status,
+      String body,
+      bool isUserWaiting,
+      String userId,
+      DateTime timestamp});
 }
 
+/// @nodoc
+class __$$NotificationModelImplCopyWithImpl<$Res>
+    extends _$NotificationModelCopyWithImpl<$Res, _$NotificationModelImpl>
+    implements _$$NotificationModelImplCopyWith<$Res> {
+  __$$NotificationModelImplCopyWithImpl(_$NotificationModelImpl _value,
+      $Res Function(_$NotificationModelImpl) _then)
+      : super(_value, _then);
 
-/// Adds pattern-matching-related methods to [NotificationModel].
-extension NotificationModelPatterns on NotificationModel {
-/// A variant of `map` that fallback to returning `orElse`.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case _:
-///     return orElse();
-/// }
-/// ```
-
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _NotificationModel value)?  $default,{required TResult orElse(),}){
-final _that = this;
-switch (_that) {
-case _NotificationModel() when $default != null:
-return $default(_that);case _:
-  return orElse();
-
-}
-}
-/// A `switch`-like method, using callbacks.
-///
-/// Callbacks receives the raw object, upcasted.
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case final Subclass2 value:
-///     return ...;
-/// }
-/// ```
-
-@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _NotificationModel value)  $default,){
-final _that = this;
-switch (_that) {
-case _NotificationModel():
-return $default(_that);case _:
-  throw StateError('Unexpected subclass');
-
-}
-}
-/// A variant of `map` that fallback to returning `null`.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case final Subclass value:
-///     return ...;
-///   case _:
-///     return null;
-/// }
-/// ```
-
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _NotificationModel value)?  $default,){
-final _that = this;
-switch (_that) {
-case _NotificationModel() when $default != null:
-return $default(_that);case _:
-  return null;
-
-}
-}
-/// A variant of `when` that fallback to an `orElse` callback.
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case _:
-///     return orElse();
-/// }
-/// ```
-
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String notificationId,  String status,  String body,  bool isUserWaiting,  String userId,  DateTime timestamp)?  $default,{required TResult orElse(),}) {final _that = this;
-switch (_that) {
-case _NotificationModel() when $default != null:
-return $default(_that.notificationId,_that.status,_that.body,_that.isUserWaiting,_that.userId,_that.timestamp);case _:
-  return orElse();
-
-}
-}
-/// A `switch`-like method, using callbacks.
-///
-/// As opposed to `map`, this offers destructuring.
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case Subclass2(:final field2):
-///     return ...;
-/// }
-/// ```
-
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String notificationId,  String status,  String body,  bool isUserWaiting,  String userId,  DateTime timestamp)  $default,) {final _that = this;
-switch (_that) {
-case _NotificationModel():
-return $default(_that.notificationId,_that.status,_that.body,_that.isUserWaiting,_that.userId,_that.timestamp);case _:
-  throw StateError('Unexpected subclass');
-
-}
-}
-/// A variant of `when` that fallback to returning `null`
-///
-/// It is equivalent to doing:
-/// ```dart
-/// switch (sealedClass) {
-///   case Subclass(:final field):
-///     return ...;
-///   case _:
-///     return null;
-/// }
-/// ```
-
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String notificationId,  String status,  String body,  bool isUserWaiting,  String userId,  DateTime timestamp)?  $default,) {final _that = this;
-switch (_that) {
-case _NotificationModel() when $default != null:
-return $default(_that.notificationId,_that.status,_that.body,_that.isUserWaiting,_that.userId,_that.timestamp);case _:
-  return null;
-
-}
-}
-
+  /// Create a copy of NotificationModel
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? notificationId = null,
+    Object? status = null,
+    Object? body = null,
+    Object? isUserWaiting = null,
+    Object? userId = null,
+    Object? timestamp = null,
+  }) {
+    return _then(_$NotificationModelImpl(
+      notificationId: null == notificationId
+          ? _value.notificationId
+          : notificationId // ignore: cast_nullable_to_non_nullable
+              as String,
+      status: null == status
+          ? _value.status
+          : status // ignore: cast_nullable_to_non_nullable
+              as String,
+      body: null == body
+          ? _value.body
+          : body // ignore: cast_nullable_to_non_nullable
+              as String,
+      isUserWaiting: null == isUserWaiting
+          ? _value.isUserWaiting
+          : isUserWaiting // ignore: cast_nullable_to_non_nullable
+              as bool,
+      userId: null == userId
+          ? _value.userId
+          : userId // ignore: cast_nullable_to_non_nullable
+              as String,
+      timestamp: null == timestamp
+          ? _value.timestamp
+          : timestamp // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+    ));
+  }
 }
 
 /// @nodoc
 
 @JsonSerializable(explicitToJson: true)
-class _NotificationModel implements NotificationModel {
-  const _NotificationModel({required this.notificationId, required this.status, required this.body, required this.isUserWaiting, required this.userId, required this.timestamp});
-  factory _NotificationModel.fromJson(Map<String, dynamic> json) => _$NotificationModelFromJson(json);
+class _$NotificationModelImpl implements _NotificationModel {
+  const _$NotificationModelImpl(
+      {required this.notificationId,
+      required this.status,
+      required this.body,
+      required this.isUserWaiting,
+      required this.userId,
+      required this.timestamp});
 
-@override final  String notificationId;
-@override final  String status;
-@override final  String body;
-@override final  bool isUserWaiting;
-@override final  String userId;
-@override final  DateTime timestamp;
+  factory _$NotificationModelImpl.fromJson(Map<String, dynamic> json) =>
+      _$$NotificationModelImplFromJson(json);
 
-/// Create a copy of NotificationModel
-/// with the given fields replaced by the non-null parameter values.
-@override @JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-_$NotificationModelCopyWith<_NotificationModel> get copyWith => __$NotificationModelCopyWithImpl<_NotificationModel>(this, _$identity);
+  @override
+  final String notificationId;
+  @override
+  final String status;
+  @override
+  final String body;
+  @override
+  final bool isUserWaiting;
+  @override
+  final String userId;
+  @override
+  final DateTime timestamp;
 
-@override
-Map<String, dynamic> toJson() {
-  return _$NotificationModelToJson(this, );
+  @override
+  String toString() {
+    return 'NotificationModel(notificationId: $notificationId, status: $status, body: $body, isUserWaiting: $isUserWaiting, userId: $userId, timestamp: $timestamp)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$NotificationModelImpl &&
+            (identical(other.notificationId, notificationId) ||
+                other.notificationId == notificationId) &&
+            (identical(other.status, status) || other.status == status) &&
+            (identical(other.body, body) || other.body == body) &&
+            (identical(other.isUserWaiting, isUserWaiting) ||
+                other.isUserWaiting == isUserWaiting) &&
+            (identical(other.userId, userId) || other.userId == userId) &&
+            (identical(other.timestamp, timestamp) ||
+                other.timestamp == timestamp));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode => Object.hash(runtimeType, notificationId, status, body,
+      isUserWaiting, userId, timestamp);
+
+  /// Create a copy of NotificationModel
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$NotificationModelImplCopyWith<_$NotificationModelImpl> get copyWith =>
+      __$$NotificationModelImplCopyWithImpl<_$NotificationModelImpl>(
+          this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$NotificationModelImplToJson(
+      this,
+    );
+  }
 }
 
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NotificationModel&&(identical(other.notificationId, notificationId) || other.notificationId == notificationId)&&(identical(other.status, status) || other.status == status)&&(identical(other.body, body) || other.body == body)&&(identical(other.isUserWaiting, isUserWaiting) || other.isUserWaiting == isUserWaiting)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.timestamp, timestamp) || other.timestamp == timestamp));
+abstract class _NotificationModel implements NotificationModel {
+  const factory _NotificationModel(
+      {required final String notificationId,
+      required final String status,
+      required final String body,
+      required final bool isUserWaiting,
+      required final String userId,
+      required final DateTime timestamp}) = _$NotificationModelImpl;
+
+  factory _NotificationModel.fromJson(Map<String, dynamic> json) =
+      _$NotificationModelImpl.fromJson;
+
+  @override
+  String get notificationId;
+  @override
+  String get status;
+  @override
+  String get body;
+  @override
+  bool get isUserWaiting;
+  @override
+  String get userId;
+  @override
+  DateTime get timestamp;
+
+  /// Create a copy of NotificationModel
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$NotificationModelImplCopyWith<_$NotificationModelImpl> get copyWith =>
+      throw _privateConstructorUsedError;
 }
-
-@JsonKey(includeFromJson: false, includeToJson: false)
-@override
-int get hashCode => Object.hash(runtimeType,notificationId,status,body,isUserWaiting,userId,timestamp);
-
-@override
-String toString() {
-  return 'NotificationModel(notificationId: $notificationId, status: $status, body: $body, isUserWaiting: $isUserWaiting, userId: $userId, timestamp: $timestamp)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class _$NotificationModelCopyWith<$Res> implements $NotificationModelCopyWith<$Res> {
-  factory _$NotificationModelCopyWith(_NotificationModel value, $Res Function(_NotificationModel) _then) = __$NotificationModelCopyWithImpl;
-@override @useResult
-$Res call({
- String notificationId, String status, String body, bool isUserWaiting, String userId, DateTime timestamp
-});
-
-
-
-
-}
-/// @nodoc
-class __$NotificationModelCopyWithImpl<$Res>
-    implements _$NotificationModelCopyWith<$Res> {
-  __$NotificationModelCopyWithImpl(this._self, this._then);
-
-  final _NotificationModel _self;
-  final $Res Function(_NotificationModel) _then;
-
-/// Create a copy of NotificationModel
-/// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? notificationId = null,Object? status = null,Object? body = null,Object? isUserWaiting = null,Object? userId = null,Object? timestamp = null,}) {
-  return _then(_NotificationModel(
-notificationId: null == notificationId ? _self.notificationId : notificationId // ignore: cast_nullable_to_non_nullable
-as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
-as String,body: null == body ? _self.body : body // ignore: cast_nullable_to_non_nullable
-as String,isUserWaiting: null == isUserWaiting ? _self.isUserWaiting : isUserWaiting // ignore: cast_nullable_to_non_nullable
-as bool,userId: null == userId ? _self.userId : userId // ignore: cast_nullable_to_non_nullable
-as String,timestamp: null == timestamp ? _self.timestamp : timestamp // ignore: cast_nullable_to_non_nullable
-as DateTime,
-  ));
-}
-
-
-}
-
-// dart format on

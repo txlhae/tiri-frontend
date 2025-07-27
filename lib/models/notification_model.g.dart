@@ -6,8 +6,9 @@ part of 'notification_model.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_NotificationModel _$NotificationModelFromJson(Map<String, dynamic> json) =>
-    _NotificationModel(
+_$NotificationModelImpl _$$NotificationModelImplFromJson(
+        Map<String, dynamic> json) =>
+    _$NotificationModelImpl(
       notificationId: json['notificationId'] as String,
       status: json['status'] as String,
       body: json['body'] as String,
@@ -16,7 +17,8 @@ _NotificationModel _$NotificationModelFromJson(Map<String, dynamic> json) =>
       timestamp: DateTime.parse(json['timestamp'] as String),
     );
 
-Map<String, dynamic> _$NotificationModelToJson(_NotificationModel instance) =>
+Map<String, dynamic> _$$NotificationModelImplToJson(
+        _$NotificationModelImpl instance) =>
     <String, dynamic>{
       'notificationId': instance.notificationId,
       'status': instance.status,

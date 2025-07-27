@@ -6,8 +6,8 @@ part of 'request_model.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_RequestModel _$RequestModelFromJson(Map<String, dynamic> json) =>
-    _RequestModel(
+_$RequestModelImpl _$$RequestModelImplFromJson(Map<String, dynamic> json) =>
+    _$RequestModelImpl(
       requestId: json['requestId'] as String,
       userId: json['userId'] as String,
       title: json['title'] as String,
@@ -16,8 +16,7 @@ _RequestModel _$RequestModelFromJson(Map<String, dynamic> json) =>
       timestamp: DateTime.parse(json['timestamp'] as String),
       requestedTime: DateTime.parse(json['requestedTime'] as String),
       status: $enumDecode(_$RequestStatusEnumMap, json['status']),
-      acceptedUser:
-          (json['acceptedUser'] as List<dynamic>?)
+      acceptedUser: (json['acceptedUser'] as List<dynamic>?)
               ?.map((e) => UserModel.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const [],
@@ -28,7 +27,7 @@ _RequestModel _$RequestModelFromJson(Map<String, dynamic> json) =>
       hoursNeeded: (json['hoursNeeded'] as num?)?.toInt() ?? 1,
     );
 
-Map<String, dynamic> _$RequestModelToJson(_RequestModel instance) =>
+Map<String, dynamic> _$$RequestModelImplToJson(_$RequestModelImpl instance) =>
     <String, dynamic>{
       'requestId': instance.requestId,
       'userId': instance.userId,
