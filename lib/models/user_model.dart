@@ -18,7 +18,7 @@ class UserModel with _$UserModel {
     double? rating,
     int? hours,
     @Default(null) DateTime? createdAt,
-    @Default(false) bool isVerified,
+    @JsonKey(name: 'is_verified') @Default(false) bool isVerified,
   }) = _UserModel;
 
   factory UserModel.fromJson(Map<String, dynamic> json) =>
