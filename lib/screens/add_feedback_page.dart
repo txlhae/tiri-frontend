@@ -207,7 +207,6 @@ class _AddFeedbackPageState extends State<AddFeedbackPage> {
                 onButtonPressed: () async {
                   final success = await controller.handleFeedbackSubmission(
                     request: widget.request,
-                    context: context,
                   );
                   if (success) {
                     Get.back(); 

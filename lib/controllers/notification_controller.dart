@@ -1,4 +1,6 @@
+import 'dart:developer';
 import 'package:get/get.dart';
+import 'package:kind_clock/controllers/auth_controller.dart';
 import 'package:kind_clock/models/notification_model.dart';
 import 'package:kind_clock/screens/auth_screens/register_screen.dart';
 import 'package:kind_clock/services/firebase_storage.dart';
@@ -26,52 +28,88 @@ class NotificationController extends GetxController {
           await _store.fetchNotifications();
 
       _notifications.assignAll(notifications);
-      isLoading.value = false;
       await _calculateUnreadCount(notifications);
-      
     } catch (e) {
-      isLoading.value = false;
+      log('Error fetching notifications: $e');
       Get.snackbar('Error', 'Error fetching notifications: $e');
+    } finally {
+      isLoading.value = false;
     }
-    isLoading.value = false;
   }
 
   Future<void> updateNotify(NotificationModel notify) async {
-    // log("Inside noti controll: ${notify.toJson().toString()}");
-    await _store.updateNotification(notify);
+    try {
+      await _store.updateNotification(notify);
+      log("Notification updated successfully");
+    } catch (e) {
+      log("Error updating notification: $e");
+    }
   }
 
   Future<void> loadNotification() async {
-    final List<NotificationModel> notificationList =
-      await _store.fetchNotifications(); 
-      notifications.assignAll(notificationList);
+    try {
+      final List<NotificationModel> notificationList =
+          await _store.fetchNotifications();
+      _notifications.assignAll(notificationList);
       await _calculateUnreadCount(notificationList);
+    } catch (e) {
+      log("Error loading notifications: $e");
+    }
   }
 
   Future<void> sendReminderNotification(NotificationModel notification) async {
     try {
       await _store.saveNotification(notification);
-      print("Notification saved successfully");
+      log("Reminder notification saved successfully");
     } catch (e) {
-      print("Error while saving notification: $e");
+      log("Error while saving reminder notification: $e");
       Get.snackbar("Error", "Failed to send notification");
-      rethrow; // to allow the caller to also handle it
+      rethrow;
     }
   }
-  
-Future<void> _calculateUnreadCount(List<NotificationModel> notifications) async {
-    final prefs = await SharedPreferences.getInstance();
-    final readIds = prefs.getStringList('read_notifications') ?? [];
-    final currentUserId = authController.currentUserStore!.value?.userId ?? '';
-    final unread = notifications.where((n) => !readIds.contains(n.notificationId) && n.userId == currentUserId).length;
-    unreadCount.value = unread;
+
+  /// Add notification to the list
+  /// Temporary method for Phase 3 compatibility
+  void addNotification(NotificationModel notification) {
+    log("NotificationController: addNotification called - ${notification.body}");
+    // TODO: Implement proper notification handling in Phase 4
+    // For now, just log the notification
+  }
+
+  Future<void> _calculateUnreadCount(List<NotificationModel> notifications) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final readIds = prefs.getStringList('read_notifications') ?? [];
+      
+      // Get current user ID safely
+      final authController = Get.find<AuthController>();
+      final currentUserId = authController.currentUserStore.value?.userId ?? '';
+      
+      if (currentUserId.isNotEmpty) {
+        final unread = notifications
+            .where((n) => 
+                !readIds.contains(n.notificationId) && 
+                n.userId == currentUserId)
+            .length;
+        unreadCount.value = unread;
+      } else {
+        unreadCount.value = 0;
+      }
+    } catch (e) {
+      log("Error calculating unread count: $e");
+      unreadCount.value = 0;
+    }
   }
 
   Future<void> markAllAsRead() async {
-    final prefs = await SharedPreferences.getInstance();
-    final allIds = _notifications.map((n) => n.notificationId).toList();
-    await prefs.setStringList('read_notifications', allIds);
-    unreadCount.value = 0;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final allIds = _notifications.map((n) => n.notificationId).toList();
+      await prefs.setStringList('read_notifications', allIds);
+      unreadCount.value = 0;
+      log("All notifications marked as read");
+    } catch (e) {
+      log("Error marking notifications as read: $e");
+    }
   }
-
 }
