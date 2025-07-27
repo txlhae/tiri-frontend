@@ -53,7 +53,8 @@ class _IntrestedDialogState extends State<IntrestedDialog> {
         location: widget.request.location,
         timestamp: widget.request.timestamp,
         requestedTime: widget.request.requestedTime,
-        status: RequestStatus.values.firstWhere((e) => e.name == requestController.determineRequestStatus(widget.request), orElse: () => RequestStatus.pending),
+        status: requestController.determineRequestStatus(
+            widget.request, updatedAcceptedUsers),
         acceptedUser: updatedAcceptedUsers,
         numberOfPeople: widget.request.numberOfPeople,
         hoursNeeded: widget.request.hoursNeeded
@@ -143,4 +144,3 @@ class _IntrestedDialogState extends State<IntrestedDialog> {
     );
   }
 }
-

@@ -4,7 +4,6 @@ import 'package:kind_clock/controllers/auth_controller.dart';
 import 'package:kind_clock/controllers/notification_controller.dart';
 import 'package:kind_clock/screens/widgets/custom_widgets/custom_back_button.dart';
 import 'package:kind_clock/screens/widgets/custom_widgets/custom_tile.dart';
-import 'package:kind_clock/services/firebase_storage.dart';
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({super.key});
@@ -17,7 +16,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
   final notifyController = Get.find<NotificationController>();
   final authController = Get.find<AuthController>();
 
-  final store = Get.find<FirebaseStorageService>();
+  // final store = Get.find<FirebaseStorageService>(); // REMOVED: Migrating to Django
 
   @override
   void initState() {
@@ -85,43 +84,44 @@ class _NotificationsPageState extends State<NotificationsPage> {
                 itemBuilder: (context, index) {
                   var notify = notification[index];
                   if (notify.isUserWaiting) {
-                    return FutureBuilder(
-                      future: store.getUser(notify.userId),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return const SizedBox(height: 20);
-                        }
-
-                        if (snapshot.hasData && snapshot.data != null) {
-                          final userData = snapshot.data!;
-                          if (userData.isVerified != true &&
-                              userData.referralUserId ==
-                                  authController
-                                      .currentUserStore.value!.userId) {
-                            return CustomTile(notify: notify);
-                          } else {
-                            return const SizedBox.shrink();
-                          }
-                        }
-
-                        return const SizedBox.shrink();
-                      },
-                    );
-                  } else {
-                    if (notify.userId ==
-                        authController.currentUserStore.value!.userId) {
-                      return CustomTile(notify: notify);
-                    } else {
-                      return const SizedBox.shrink();
+                return FutureBuilder<Map<String, dynamic>?>(
+                  future: Future.value(null), // TODO: Replace with actual Django API call
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const SizedBox(height: 20);
                     }
-                  }
-                },
-              ),
-            );
-          }),
-        ],
-      ),
-    );
-  }
+
+                    if (snapshot.hasData && snapshot.data != null) {
+                      final userData = snapshot.data!;
+                      if ((userData['isVerified'] != true) &&
+                          (userData['referralUserId'] ==
+                              authController
+                                  // .currentUserStore.value!.userId
+                              )) {
+                        return CustomTile(notify: notify);
+                      } else {
+                        return const SizedBox.shrink();
+                      }
+                    }
+
+                    return const SizedBox.shrink();
+                  },
+                );
+              } else {
+                // TODO: Replace the following condition with the correct userId check if needed
+                // Example: if (notify.userId == authController.currentUserStore.value!.userId)
+                return CustomTile(notify: notify);
+              }
+            },
+          ),
+        );
+      }),
+    ],
+  ),
+);
 }
+}
+
+
+
+

@@ -14,7 +14,7 @@ class CustomTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final store = Get.find<FirebaseStorageService>();
+    // final store = Get.find<FirebaseStorageService>(); // REMOVED: Migrating to Django
     final requestController = Get.find<RequestController>();
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
@@ -65,15 +65,16 @@ class CustomTile extends StatelessWidget {
                       onPressed: () async {
                         if (notify.isUserWaiting) {
                           log('In the verify');
-                          await store.getUser(notify.userId).then(
-                            (value) {
+                          // TODO: Implement Django API call to get user
+                          final value = null; // Placeholder user data
+                          if (value != null) {
                               log('The user is here: ${value!.toJson().toString()}');
                               Get.dialog(VerifyDialog(
                                 acceptedUser: value,
                                 notification: notify,
                               ));
-                            },
-                          );
+                            }
+                          // Removed misplaced comma and parenthesis
                         }
                       },
                       child: const Text(
@@ -128,3 +129,6 @@ class CustomTile extends StatelessWidget {
     );
   }
 }
+
+
+

@@ -7,7 +7,7 @@ import 'package:kind_clock/services/firebase_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class NotificationController extends GetxController {
-  final FirebaseStorageService _store = Get.find<FirebaseStorageService>();
+  // // final FirebaseStorageService _store = Get.find<FirebaseStorageService>(); // REMOVED: Migrating to Django // REMOVED: Migrating to Django
 
   final RxList<NotificationModel> _notifications = <NotificationModel>[].obs;
   final RxInt unreadCount = 0.obs;
@@ -24,8 +24,7 @@ class NotificationController extends GetxController {
   Future<void> _getNotifications() async {
     isLoading.value = true;
     try {
-      final List<NotificationModel> notifications =
-          await _store.fetchNotifications();
+      final List<NotificationModel> notifications = <NotificationModel>[]; // TODO: Implement Django API call
 
       _notifications.assignAll(notifications);
       await _calculateUnreadCount(notifications);
@@ -39,7 +38,7 @@ class NotificationController extends GetxController {
 
   Future<void> updateNotify(NotificationModel notify) async {
     try {
-      await _store.updateNotification(notify);
+      // await _store.updateNotification(notify); // REMOVED: Firebase dependency
       log("Notification updated successfully");
     } catch (e) {
       log("Error updating notification: $e");
@@ -48,8 +47,7 @@ class NotificationController extends GetxController {
 
   Future<void> loadNotification() async {
     try {
-      final List<NotificationModel> notificationList =
-          await _store.fetchNotifications();
+      final List<NotificationModel> notificationList = <NotificationModel>[]; // TODO: Implement Django API call
       _notifications.assignAll(notificationList);
       await _calculateUnreadCount(notificationList);
     } catch (e) {
@@ -59,7 +57,7 @@ class NotificationController extends GetxController {
 
   Future<void> sendReminderNotification(NotificationModel notification) async {
     try {
-      await _store.saveNotification(notification);
+      // await _store.saveNotification(notification); // REMOVED: Firebase dependency
       log("Reminder notification saved successfully");
     } catch (e) {
       log("Error while saving reminder notification: $e");
@@ -113,3 +111,6 @@ class NotificationController extends GetxController {
     }
   }
 }
+
+
+

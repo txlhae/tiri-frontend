@@ -33,7 +33,7 @@ class _RequestDetailsState extends State<RequestDetails> {
   final AuthController authController = Get.find<AuthController>();
   final NotificationController notificationController =
       Get.put(NotificationController());
-  final FirebaseStorageService store = Get.find<FirebaseStorageService>();
+  // final FirebaseStorageService store = Get.find<FirebaseStorageService>(); // REMOVED: Migrating to Django
   late final RequestDetailsController detailsController;
 
   @override
@@ -517,3 +517,4 @@ class _RequestDetailsState extends State<RequestDetails> {
     );
   }
 }
+

@@ -98,7 +98,7 @@ class _CancelDialogState extends State<CancelDialog> {
                               reasonError.value = null;
                             }
                     try {
-                      final currentUserId = authController.currentUserStore.value!.userId;
+                      final currentUserId =  authController.currentUserStore.value!.userId;
 
                       final isAcceptedUser =
                           widget.request.acceptedUser.isNotEmpty &&
@@ -127,7 +127,8 @@ class _CancelDialogState extends State<CancelDialog> {
                       // Update request status
                       final newStatus = isRequester
                           ? RequestStatus.cancelled
-                          : RequestStatus.values.firstWhere((e) => e.name == requestController.determineRequestStatus(widget.request), orElse: () => RequestStatus.pending);
+                          : requestController.determineRequestStatus(
+                              widget.request, updatedAcceptedUsers);
 
                       // Build updated request model
                       RequestModel requestUpdate = RequestModel(
@@ -165,8 +166,7 @@ class _CancelDialogState extends State<CancelDialog> {
                                 .millisecondsSinceEpoch
                                 .toString(),
                           );
-                          // await store.saveNotification(notification);
-                          // REMOVED: Firebase dependency
+                          await store.saveNotification(notification);
                         }
                       } else if (isAcceptedUser) {
                         final notification = NotificationModel(
@@ -182,8 +182,7 @@ class _CancelDialogState extends State<CancelDialog> {
                           notificationId:
                               DateTime.now().millisecondsSinceEpoch.toString(),
                         );
-                        // await store.saveNotification(notification);
-                        // REMOVED: Firebase dependency
+                        await store.saveNotification(notification);
                       }
 
                       Get.back();
@@ -212,7 +211,3 @@ class _CancelDialogState extends State<CancelDialog> {
     );
   }
 }
-
-
-
-

@@ -20,7 +20,7 @@ class RegisterScreen extends StatefulWidget {
 
 final AuthController authController = Get.find<AuthController>();
 final ImageController imageController = Get.find<ImageController>();
-final FirebaseStorageService store = Get.find<FirebaseStorageService>();
+// final FirebaseStorageService store = Get.find<FirebaseStorageService>(); // REMOVED: Migrating to Django
 
 class _RegisterScreenState extends State<RegisterScreen> {
   @override
@@ -247,3 +247,4 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 }
+

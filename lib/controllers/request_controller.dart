@@ -1,4 +1,4 @@
-﻿import 'dart:developer';
+import 'dart:developer';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -9,17 +9,17 @@ import 'package:kind_clock/models/feedback_model.dart';
 import 'package:kind_clock/models/notification_model.dart';
 import 'package:kind_clock/models/request_model.dart';
 import 'package:kind_clock/models/user_model.dart';
-import 'package:kind_clock/services/request_service.dart'; // 🔥 DJANGO SERVICE!
+import 'package:kind_clock/services/request_service.dart'; // ?? DJANGO SERVICE!
 
 enum FilterOption { recentPosts, urgentRequired, location }
 
 class RequestController extends GetxController {
   
   // =============================================================================
-  // 🔥 DJANGO ENTERPRISE INTEGRATION
+  // ?? DJANGO ENTERPRISE INTEGRATION
   // =============================================================================
   
-  /// 🔥 NEW: Django RequestService (replaces FirebaseStorageService)
+  /// ?? NEW: Django RequestService (replaces FirebaseStorageService)
   final RequestService requestService = Get.find<RequestService>();
   final AuthController authController = Get.find<AuthController>();
   
@@ -80,22 +80,22 @@ class RequestController extends GetxController {
 
   @override
   void onInit() async {
-    log("🔥 RequestController: Initializing with Django backend integration");
+    log("?? RequestController: Initializing with Django backend integration");
     await loadRequests();
-    log("✅ RequestController: Initialization complete - ${requestList.length} requests loaded");
+    log("? RequestController: Initialization complete - ${requestList.length} requests loaded");
     super.onInit();
   }
 
   // =============================================================================
-  // 🔥 DJANGO API INTEGRATION METHODS
+  // ?? DJANGO API INTEGRATION METHODS
   // =============================================================================
 
   /// Load all requests from Django backend
-  /// 🔥 UPDATED: Now uses Django APIs instead of Firebase
+  /// ?? UPDATED: Now uses Django APIs instead of Firebase
   Future<void> loadRequests() async {
     try {
       isLoading.value = true;
-      log("🔥 RequestController: Loading requests from Django backend");
+      log("?? RequestController: Loading requests from Django backend");
 
       // Fetch community requests from Django
       final communityRequestsFromApi = await requestService.fetchRequests();
@@ -118,12 +118,12 @@ class RequestController extends GetxController {
       communityRequests.assignAll(communityRequestsFromApi);
       myPostRequests.assignAll(userRequestsFromApi);
       
-      log("✅ RequestController: Loaded ${communityRequestsFromApi.length} community requests");
-      log("✅ RequestController: Loaded ${userRequestsFromApi.length} user requests");
-      log("✅ RequestController: Applied filters - ${filteredRequests.length} requests visible");
+      log("? RequestController: Loaded ${communityRequestsFromApi.length} community requests");
+      log("? RequestController: Loaded ${userRequestsFromApi.length} user requests");
+      log("? RequestController: Applied filters - ${filteredRequests.length} requests visible");
       
     } catch (e) {
-      log("❌ RequestController: Error loading requests from Django - $e");
+      log("? RequestController: Error loading requests from Django - $e");
       
       // Fallback: Set empty lists to prevent UI crashes
       requestList.clear();
@@ -136,10 +136,10 @@ class RequestController extends GetxController {
   }
 
   /// Search requests from Django backend
-  /// 🔥 NEW: Enhanced search with Django APIs
+  /// ?? NEW: Enhanced search with Django APIs
   Future<void> searchRequests(String query, {String? location, bool isCommunityTab = true}) async {
     try {
-      log("🔥 RequestController: Searching requests for '$query' in Django backend");
+      log("?? RequestController: Searching requests for '$query' in Django backend");
       
       if (query.trim().isEmpty) {
         // Reset to original lists if query is empty
@@ -159,7 +159,7 @@ class RequestController extends GetxController {
       if (isCommunityTab) {
         requestList.assignAll(searchResults);
         hasSearchedCommunity.value = true;
-        log("✅ RequestController: Community search complete - ${searchResults.length} results");
+        log("? RequestController: Community search complete - ${searchResults.length} results");
       } else {
         // Filter user's requests locally for "My Posts" tab
         final userSearchResults = myPostRequests.where((request) => 
@@ -170,25 +170,25 @@ class RequestController extends GetxController {
         
         myRequestList.assignAll(userSearchResults);
         hasSearchedMyPosts.value = true;
-        log("✅ RequestController: My Posts search complete - ${userSearchResults.length} results");
+        log("? RequestController: My Posts search complete - ${userSearchResults.length} results");
       }
       
     } catch (e) {
-      log("❌ RequestController: Search error - $e");
+      log("? RequestController: Search error - $e");
     }
   }
 
   /// Create new request via Django API
-  /// 🔥 UPDATED: Now uses Django backend
+  /// ?? UPDATED: Now uses Django backend
   Future<bool> createRequest() async {
     try {
       if (!validateFields()) {
-        log("❌ RequestController: Validation failed for new request");
+        log("? RequestController: Validation failed for new request");
         return false;
       }
 
       isLoading.value = true;
-      log("🔥 RequestController: Creating request via Django API");
+      log("?? RequestController: Creating request via Django API");
 
       // Prepare request data for Django API
       final requestData = {
@@ -206,7 +206,7 @@ class RequestController extends GetxController {
       final success = await requestService.createRequest(requestData);
 
       if (success) {
-        log("✅ RequestController: Request created successfully");
+        log("? RequestController: Request created successfully");
         
         // Clear form
         clearForm();
@@ -216,12 +216,12 @@ class RequestController extends GetxController {
         
         return true;
       } else {
-        log("❌ RequestController: Failed to create request");
+        log("? RequestController: Failed to create request");
         return false;
       }
       
     } catch (e) {
-      log("❌ RequestController: Error creating request - $e");
+      log("? RequestController: Error creating request - $e");
       return false;
     } finally {
       isLoading.value = false;
@@ -229,42 +229,42 @@ class RequestController extends GetxController {
   }
 
   /// Update request status via Django API
-  /// 🔥 UPDATED: Now uses Django backend
+  /// ?? UPDATED: Now uses Django backend
   Future<bool> updateRequestStatus(String requestId, String newStatus) async {
     try {
-      log("🔥 RequestController: Updating request $requestId status to $newStatus via Django");
+      log("?? RequestController: Updating request $requestId status to $newStatus via Django");
       
       final updateData = {'status': newStatus};
       final success = await requestService.updateRequest(requestId, updateData);
       
       if (success) {
-        log("✅ RequestController: Request $requestId status updated to $newStatus");
+        log("? RequestController: Request $requestId status updated to $newStatus");
         
         // Refresh requests to show updated status
         await loadRequests();
         return true;
       } else {
-        log("❌ RequestController: Failed to update request $requestId status");
+        log("? RequestController: Failed to update request $requestId status");
         return false;
       }
       
     } catch (e) {
-      log("❌ RequestController: Error updating request status - $e");
+      log("? RequestController: Error updating request status - $e");
       return false;
     }
   }
 
   /// Get user details via Django API
-  /// 🔥 UPDATED: Now uses Django backend with caching
+  /// ?? UPDATED: Now uses Django backend with caching
   Future<UserModel?> getUserDetails(String userId) async {
     try {
       // Check cache first
       if (userCache.containsKey(userId) && userCache[userId]!.value != null) {
-        log("✅ RequestController: User $userId found in cache");
+        log("? RequestController: User $userId found in cache");
         return userCache[userId]!.value;
       }
 
-      log("🔥 RequestController: Fetching user $userId from Django API");
+      log("?? RequestController: Fetching user $userId from Django API");
       
       // Fetch from Django API
       final user = await requestService.getUser(userId);
@@ -272,15 +272,15 @@ class RequestController extends GetxController {
       if (user != null) {
         // Cache the user
         userCache[userId] = Rx<UserModel?>(user);
-        log("✅ RequestController: User $userId fetched and cached");
+        log("? RequestController: User $userId fetched and cached");
         return user;
       } else {
-        log("❌ RequestController: User $userId not found");
+        log("? RequestController: User $userId not found");
         return null;
       }
       
     } catch (e) {
-      log("❌ RequestController: Error fetching user $userId - $e");
+      log("? RequestController: Error fetching user $userId - $e");
       return null;
     }
   }
@@ -290,7 +290,7 @@ class RequestController extends GetxController {
   // =============================================================================
 
   /// Update request statuses based on business logic
-  /// ✅ KEPT: Existing logic maintained for backward compatibility
+  /// ? KEPT: Existing logic maintained for backward compatibility
   Future<void> updateRequestStatuses(List<RequestModel> requests) async {
     for (var request in requests) {
       log("Checking request: ${request.requestId} with status: ${request.status} and time: ${request.requestedTime}");
@@ -315,7 +315,7 @@ class RequestController extends GetxController {
               isUserWaiting: false,
               userId: request.userId,
               status: RequestStatus.expired.toString().split(".")[1],
-              notificationId: DateTime.now().millisecondsSinceEpoch.toString(),  // ✅ CORRECT
+              notificationId: DateTime.now().millisecondsSinceEpoch.toString(),  // ? CORRECT
             );
             
             Get.find<NotificationController>().addNotification(notification);
@@ -335,14 +335,14 @@ class RequestController extends GetxController {
   }
 
   /// Get filtered requests based on current filter option
-  /// ✅ KEPT: Existing filtering logic maintained
+  /// ? KEPT: Existing filtering logic maintained
   List<RequestModel> getFilteredRequests(List<RequestModel> allRequests) {
     // Apply any filters here (existing logic)
     return allRequests;
   }
 
   /// Validate form fields
-  /// ✅ KEPT: Existing validation logic
+  /// ? KEPT: Existing validation logic
   bool validateFields() {
     titleError.value =
         titleController.value.text.isEmpty ? "Title is required" : null;
@@ -361,7 +361,7 @@ class RequestController extends GetxController {
   }
 
   /// Clear form fields
-  /// ✅ KEPT: Existing form clearing logic
+  /// ? KEPT: Existing form clearing logic
   void clearForm() {
     titleController.value.clear();
     descriptionController.value.clear();
@@ -382,7 +382,7 @@ class RequestController extends GetxController {
   }
 
   /// Set date and time
-  /// ✅ KEPT: Existing date/time logic
+  /// ? KEPT: Existing date/time logic
   void setDateTime(DateTime date, TimeOfDay time) {
     selectedDate.value = date;
     selectedTime.value = time;
@@ -419,11 +419,11 @@ class RequestController extends GetxController {
   }
   
   void filterByLocation(String location) {
-    log("🔧 RequestController: filterByLocation - placeholder method");
+    log("?? RequestController: filterByLocation - placeholder method");
   }
   
   void sortRequests(String sortOption) {
-    log("🔧 RequestController: sortRequests - placeholder method");
+    log("?? RequestController: sortRequests - placeholder method");
   }
 
   @override
@@ -752,4 +752,5 @@ class RequestController extends GetxController {
     }
   }
 }
+
 

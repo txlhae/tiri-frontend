@@ -157,6 +157,7 @@ class AddRequestPage extends StatelessWidget {
                           inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'\d'))],
                           onChanged: (value) => controller.validateIntegerInput(
                             value: value,
+                            warningText: controller.hoursNeededWarning,
                             fieldName: 'Hours Needed',
                           ),
                         ),
@@ -182,6 +183,7 @@ class AddRequestPage extends StatelessWidget {
                                 // add this:
                                 onChanged: (value) => controller.validateIntegerInput(
                                   value: value,
+                                  warningText: controller.numberOfPeopleWarning,
                                   fieldName: 'Number of People',
                                 ),
                               ),
@@ -219,4 +221,3 @@ class AddRequestPage extends StatelessWidget {
       
   }
 }
-

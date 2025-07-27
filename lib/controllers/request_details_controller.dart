@@ -4,8 +4,7 @@ import 'package:kind_clock/models/request_model.dart';
 import 'package:kind_clock/services/firebase_storage.dart';
 
 class RequestDetailsController extends GetxController {
-  final FirebaseStorageService storageService =
-      Get.find<FirebaseStorageService>();
+  // final FirebaseStorageService storageService = Get.find<FirebaseStorageService>(); // REMOVED: Migrating to Django
 
   // Observable variables
   final isLoading = true.obs;
@@ -35,10 +34,10 @@ class RequestDetailsController extends GetxController {
   // Load request data
   Future<void> _loadRequest(String requestId) async {
     try {
-      final result = await storageService.getRequest(requestId);
-      if (result != null) {
-        requestModel.value = result;
-      }
+      final result = null; // TODO: Implement Django API call
+      // if (result != null) {
+      //   requestModel.value = result;
+      // }
     } catch (e) {
       log('Error fetching request: $e');
     }
@@ -47,21 +46,19 @@ class RequestDetailsController extends GetxController {
   // Load user information
   Future<void> _loadUserInfo(String userId) async {
     try {
-      final userModel = await storageService.getUser(userId);
-      if (userModel != null) {
-        posterUsername.value = userModel.username;
-        posterUserId.value = userModel.userId;
-
-        // Load referrer information if available
-        if (userModel.referralUserId != null &&
-            userModel.referralUserId!.isNotEmpty) {
-          final referrerModel =
-              await storageService.getUser(userModel.referralUserId!);
-          if (referrerModel != null) {
-            referrerUsername.value = referrerModel.username;
-          }
-        }
-      }
+      final userModel = null; // TODO: Implement Django API call
+      // if (userModel != null) {
+      //   posterUsername.value = userModel.username;
+      //   posterUserId.value = userModel.userId;
+      //   
+      //   // Load referrer information if available
+      //   if (userModel.referralUserId != null && userModel.referralUserId!.isNotEmpty) {
+      //     final referrerModel = null; // TODO: Implement Django API call  
+      //     if (referrerModel != null) {
+      //       referrerUsername.value = referrerModel.username;
+      //     }
+      //   }
+      // }
     } catch (e) {
       log('Error fetching user info: $e');
     }
@@ -85,3 +82,6 @@ class RequestDetailsController extends GetxController {
     super.onClose();
   }
 }
+
+
+

@@ -74,15 +74,26 @@ void didChangeDependencies() {
       );
       return;
     }
-    final number = requestController.validateIntField(controller: requestController.numberOfPeopleController.value);
+    final number = requestController.validateIntField(
+  controller: requestController.numberOfPeopleController,
+  warning: requestController.numberOfPeopleWarning,
+  label: 'Number of People',
+);
 if (number == null) return;
 
-final hours = requestController.validateIntField(controller: requestController.hoursNeededController.value);
+final hours = requestController.validateIntField(
+  controller: requestController.hoursNeededController,
+  warning: requestController.hoursNeededWarning,
+  label: 'Hours Needed',
+);
 if (hours == null) return;
 
 
     // Recalculate status using the already validated `number`
-    final updatedStatus = requestController.determineRequestStatus(widget.request.copyWith(numberOfPeople: number));
+    final updatedStatus = requestController.determineRequestStatus(
+      widget.request.copyWith(numberOfPeople: number),
+      widget.request.acceptedUser ?? [],
+    );
 
     final request = RequestModel(
       requestId: widget.request.requestId,
@@ -93,7 +104,7 @@ if (hours == null) return;
       timestamp: DateTime.now(),
       requestedTime: requestController.selectedDateTime.value ??
           widget.request.requestedTime,
-      status: RequestStatus.values.firstWhere((e) => e.name == updatedStatus, orElse: () => RequestStatus.pending),
+      status: updatedStatus,
       acceptedUser: widget.request.acceptedUser ?? [],
       numberOfPeople: number,
       hoursNeeded: hours,
@@ -282,6 +293,7 @@ if (hours == null) return;
                           inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'\d'))],
                           onChanged: (value) => requestController.validateIntegerInput(
                             value: value,
+                            warningText: requestController.hoursNeededWarning,
                             fieldName: 'Hours Needed',
                           ),
                         ),
@@ -308,6 +320,7 @@ if (hours == null) return;
                                 // add this:
                                 onChanged: (value) => requestController.validateIntegerInput(
                                   value: value,
+                                  warningText: requestController.numberOfPeopleWarning,
                                   fieldName: 'Number of People',
                                 ),
 
@@ -377,7 +390,3 @@ if (hours == null) return;
     );
   }
 }
-
-
-
-
