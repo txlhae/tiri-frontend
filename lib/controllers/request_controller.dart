@@ -87,18 +87,14 @@ class RequestController extends GetxController {
   // 🚨 DEBUG: Enhanced initialization with detailed logging
   // =============================================================================
 
-  @override
-  void onInit() async {
-    debugLog("🚀 RequestController: Starting initialization with ENHANCED DEBUG MODE");
-    debugStatus.value = "Initializing RequestController...";
-    
+  Future<void> _loadRequestsOnInit() async {
     try {
-      debugLog("📋 RequestController: Checking dependencies...");
-      debugLog("   - RequestService: ${requestService != null ? '✅ Available' : '❌ Missing'}");
-      debugLog("   - AuthController: ${authController != null ? '✅ Available' : '❌ Missing'}");
-      debugLog("   - Current User: ${authController.currentUserStore.value?.userId ?? '❌ Not logged in'}");
-      
+      debugLog("🔄 RequestController: Starting async request loading...");
       debugStatus.value = "Loading requests from Django...";
+      
+      // Small delay to ensure UI has time to show loading state
+      await Future.delayed(const Duration(milliseconds: 100));
+      
       await loadRequests();
       
       debugLog("🎯 RequestController: Initialization complete");
@@ -107,12 +103,109 @@ class RequestController extends GetxController {
       debugLog("   - Total from API: Community(${totalRequestsFromApi.value}) + My(${totalMyRequestsFromApi.value})");
       
       debugStatus.value = "Initialization complete ✅";
+      
+    } catch (e, stackTrace) {
+      debugLog("❌ RequestController: Async initialization failed - $e");
+      debugLog("Stack trace: $stackTrace");
+      debugStatus.value = "Initialization failed: $e";
+      isLoading.value = false; // Ensure loading is false on error
+    }
+  }
+
+  /// 🚨 CRITICAL FIX: Wait for AuthController to load tokens before fetching data
+  Future<void> _waitForAuthThenLoadRequests() async {
+    try {
+      debugLog("⏳ RequestController: Waiting for AuthController to load tokens...");
+      debugStatus.value = "Waiting for authentication...";
+      
+      // 🚨 SOLUTION: Wait for AuthController to finish loading tokens
+      int attempts = 0;
+      const maxAttempts = 50; // 5 seconds max wait (50 * 100ms)
+      
+      while (attempts < maxAttempts) {
+        // Check if AuthController has finished initialization
+        if (authController.isLoggedIn.value && authController.currentUserStore.value != null) {
+          debugLog("✅ AuthController ready: User ${authController.currentUserStore.value?.email} logged in");
+          break;
+        }
+        
+        // If not logged in but also not loading, break (user needs to login)
+        if (!authController.isLoggedIn.value && !authController.isLoading.value) {
+          debugLog("ℹ️ No user session found - user needs to login first");
+          isLoading.value = false;
+          debugStatus.value = "No user session - login required";
+          return;
+        }
+        
+        // Wait a bit more for AuthController to finish
+        await Future.delayed(const Duration(milliseconds: 100));
+        attempts++;
+        
+        if (attempts % 10 == 0) { // Log every second
+          debugLog("⏳ Still waiting for AuthController... (${attempts/10}s)");
+        }
+      }
+      
+      if (attempts >= maxAttempts) {
+        debugLog("⚠️ Timeout waiting for AuthController - proceeding anyway");
+        debugStatus.value = "Authentication timeout - proceeding...";
+      }
+      
+      // 🚨 Now check if we have a user before proceeding
+      if (authController.currentUserStore.value != null) {
+        debugLog("👤 User ready: ${authController.currentUserStore.value?.userId}");
+        debugStatus.value = "Loading requests from Django...";
+        
+        // Small additional delay to ensure tokens are fully ready
+        await Future.delayed(const Duration(milliseconds: 200));
+        
+        await loadRequests();
+        
+        debugLog("🎯 RequestController: Initialization complete");
+        debugLog("   - Community Requests: ${requestList.length}");
+        debugLog("   - My Requests: ${myRequestList.length}");
+        debugLog("   - Total from API: Community(${totalRequestsFromApi.value}) + My(${totalMyRequestsFromApi.value})");
+        
+        debugStatus.value = "Initialization complete ✅";
+        
+      } else {
+        debugLog("❌ No user available after waiting - cannot load requests");
+        debugStatus.value = "No user - cannot load requests";
+        isLoading.value = false;
+      }
+      
+    } catch (e, stackTrace) {
+      debugLog("❌ RequestController: Error waiting for auth - $e");
+      debugLog("Stack trace: $stackTrace");
+      debugStatus.value = "Authentication wait failed: $e";
+      isLoading.value = false;
+    }
+  }
+
+
+  @override
+  void onInit() {
+    super.onInit(); // ✅ Call super.onInit() FIRST
+    
+    debugLog("🚀 RequestController: Starting initialization with ENHANCED DEBUG MODE");
+    debugStatus.value = "Initializing RequestController...";
+    
+    // 🚨 KEY FIX: Set loading to true IMMEDIATELY
+    isLoading.value = true;
+    
+    try {
+      debugLog("📋 RequestController: Checking dependencies...");
+      debugLog("   - RequestService: ${requestService != null ? '✅ Available' : '❌ Missing'}");
+      debugLog("   - AuthController: ${authController != null ? '✅ Available' : '❌ Missing'}");
+      
+      // 🚨 CRITICAL FIX: Wait for AuthController to finish loading tokens
+      _waitForAuthThenLoadRequests();
+      
     } catch (e) {
       debugLog("❌ RequestController: Initialization failed - $e");
       debugStatus.value = "Initialization failed: $e";
+      isLoading.value = false;
     }
-    
-    super.onInit();
   }
 
   // =============================================================================

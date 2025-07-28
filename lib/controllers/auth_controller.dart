@@ -1,4 +1,6 @@
 ﻿// lib/controllers/auth_controller.dart
+// 🚨 COMPLETE REWRITE: Your existing AuthController + Token Loading Fix
+// Prompt 31.7 - All existing functionality preserved + 401 error fix
 
 import 'dart:convert';
 import 'dart:developer';
@@ -123,14 +125,14 @@ class AuthController extends GetxController {
   Rx<GlobalKey<FormState>> get forgotPassworformKey => forgotPasswordFormKey;
 
   // =============================================================================
-  // INITIALIZATION
+  // 🚨 FIXED INITIALIZATION WITH TOKEN LOADING
   // =============================================================================
   
   @override
   void onInit() {
     super.onInit();
     _initializeServices();
-    _loadUserFromStorage();
+    _loadUserFromStorageWithTokens(); // 🚨 FIXED: Loads tokens + user data
   }
 
   /// Initialize enterprise services
@@ -138,24 +140,55 @@ class AuthController extends GetxController {
     try {
       _authService = Get.find<AuthService>();
       _apiService = Get.find<ApiService>();
+      log('✅ AuthController: Services initialized successfully');
     } catch (e) {
-      log('Error initializing services: $e');
+      log('❌ AuthController: Error initializing services: $e');
     }
   }
 
-  /// Load user data from storage on app start
-  Future<void> _loadUserFromStorage() async {
+  /// 🚨 FIXED: Load user data from storage on app start + JWT tokens
+  /// This is the FIX for the 401 Unauthorized errors on app restart
+  Future<void> _loadUserFromStorageWithTokens() async {
     try {
+      log('🔄 AuthController: Loading tokens and user data on app startup...');
+      
+      // 🚨 STEP 1: Load JWT tokens from secure storage FIRST
+      log('📱 Step 1: Loading JWT tokens from secure storage...');
+      await _apiService.loadTokensFromStorage();
+      log('   - Tokens loaded successfully');
+      
+      // 🚨 STEP 2: Load user data from shared preferences
+      log('👤 Step 2: Loading user data from shared preferences...');
       final prefs = await SharedPreferences.getInstance();
       final userStr = prefs.getString('user');
+      
       if (userStr != null) {
         final userJson = jsonDecode(userStr);
         currentUserStore.value = UserModel.fromJson(userJson);
         isLoggedIn.value = true;
-        log('User loaded from storage: ${currentUserStore.value?.email}');
+        log('✅ User loaded from storage: ${currentUserStore.value?.email}');
+        log('   - User ID: ${currentUserStore.value?.userId}');
+        log('   - Verified: ${currentUserStore.value?.isVerified}');
+      } else {
+        log('ℹ️ No stored user data found');
       }
+      
+      log('🎯 AuthController: Token and user loading complete');
+      
     } catch (e) {
-      log('Error loading user from storage: $e');
+      log('❌ Error loading user/tokens from storage: $e');
+      
+      // Fallback: Clear potentially corrupted data
+      try {
+        await _apiService.clearTokens();
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('user');
+        isLoggedIn.value = false;
+        currentUserStore.value = null;
+        log('🧹 Cleared corrupted session data');
+      } catch (clearError) {
+        log('❌ Failed to clear corrupted data: $clearError');
+      }
     }
   }
 
@@ -170,12 +203,16 @@ class AuthController extends GetxController {
     isLoading.value = true;
     
     try {
+      log('🔐 AuthController: Starting login process...');
+      
       final result = await _authService.login(
         email: emailController.value.text.trim(),
         password: passwordController.value.text,
       );
 
       if (result.isSuccess && result.user != null) {
+        log('✅ Login successful via AuthService');
+        
         // Update reactive state
         currentUserStore.value = result.user;
         isLoggedIn.value = true;
@@ -194,13 +231,15 @@ class AuthController extends GetxController {
         );
         
         // 🚨 TEMPORARY FIX: Always go to home page
-        log('✅ Login successful - navigating directly to home page');
+        log('🏠 Navigating to home page...');
         Get.offAllNamed(Routes.homePage);
         
         // Clear form
         _clearLoginForm();
         
       } else {
+        log('❌ Login failed: ${result.message}');
+        
         // Show error message
         Get.snackbar(
           'Login Failed',
@@ -212,7 +251,7 @@ class AuthController extends GetxController {
         );
       }
     } catch (e) {
-      log('Login error: $e');
+      log('💥 Login error: $e');
       Get.snackbar(
         'Login Error',
         'An unexpected error occurred. Please try again.',
@@ -239,6 +278,8 @@ class AuthController extends GetxController {
     isLoading.value = true;
     
     try {
+      log('📝 AuthController: Starting registration process...');
+      
       // Build phone number with country code
       updatePhoneWithCode();
       
@@ -252,6 +293,8 @@ class AuthController extends GetxController {
       );
 
       if (result.isSuccess) {
+        log('✅ Registration successful');
+        
         Get.snackbar(
           'Registration Successful',
           'Please verify your email before proceeding',
@@ -268,6 +311,8 @@ class AuthController extends GetxController {
         _clearRegisterForm();
         
       } else {
+        log('❌ Registration failed: ${result.message}');
+        
         Get.snackbar(
           'Registration Failed',
           result.message,
@@ -278,7 +323,7 @@ class AuthController extends GetxController {
         );
       }
     } catch (e) {
-      log('Registration error: $e');
+      log('💥 Registration error: $e');
       Get.snackbar(
         'Registration Error',
         'An unexpected error occurred. Please try again.',
@@ -313,8 +358,10 @@ class AuthController extends GetxController {
   }
 
   /// Logout current user
+  /// 🚨 ENHANCED: Proper token cleanup
   Future<void> logout() async {
     try {
+      log('🚪 AuthController: Starting logout process...');
       isLoading.value = true;
       
       final result = await _authService.logout();
@@ -325,6 +372,9 @@ class AuthController extends GetxController {
       
       // Clear storage
       await _clearUserData();
+      
+      // 🚨 FIXED: Clear tokens
+      await _apiService.clearTokens();
       
       Get.snackbar(
         'Logged Out',
@@ -337,8 +387,10 @@ class AuthController extends GetxController {
       // Navigate to login
       Get.offAllNamed(Routes.loginPage);
       
+      log('✅ Logout completed successfully');
+      
     } catch (e) {
-      log('Logout error: $e');
+      log('❌ Logout error: $e');
     } finally {
       isLoading.value = false;
     }
@@ -480,6 +532,7 @@ class AuthController extends GetxController {
       currentUserStore.value = null;
       isLoggedIn.value = false;
       await _clearUserData();
+      await _apiService.clearTokens(); // 🚨 FIXED: Clear tokens
       
       Get.offAllNamed(Routes.loginPage);
       Get.snackbar(
@@ -782,6 +835,17 @@ class AuthController extends GetxController {
     return List.generate(6, (index) => chars[random.nextInt(chars.length)]).join();
   }
 
+  /// 🚨 NEW: Force reload tokens (useful for debugging)
+  Future<void> reloadTokens() async {
+    log('🔄 AuthController: Force reloading tokens...');
+    try {
+      await _apiService.loadTokensFromStorage();
+      log('✅ AuthController: Tokens reloaded successfully');
+    } catch (e) {
+      log('❌ AuthController: Failed to reload tokens: $e');
+    }
+  }
+
   // =============================================================================
   // PRIVATE HELPER METHODS
   // =============================================================================
@@ -791,8 +855,9 @@ class AuthController extends GetxController {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('user', jsonEncode(user.toJson()));
+      log('💾 User data saved to storage');
     } catch (e) {
-      log('Error saving user to storage: $e');
+      log('❌ Error saving user to storage: $e');
     }
   }
 
@@ -801,8 +866,9 @@ class AuthController extends GetxController {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('user');
+      log('🧹 User data cleared from storage');
     } catch (e) {
-      log('Error clearing user data: $e');
+      log('❌ Error clearing user data: $e');
     }
   }
 
@@ -862,6 +928,9 @@ class AuthController extends GetxController {
   
   /// Check if user is verified
   bool get isUserVerified => currentUserStore.value?.isVerified ?? false;
+
+  /// Check if user is currently authenticated
+  bool get isAuthenticated => isLoggedIn.value && currentUserStore.value != null;
 
   // =============================================================================
   // CLEANUP
