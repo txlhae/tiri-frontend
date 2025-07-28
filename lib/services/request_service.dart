@@ -1,6 +1,6 @@
 ﻿// lib/services/request_service.dart
 // 🚨 FIXED: Django field mapping adapter for correct JSON parsing
-// Prompt 31 - Solution for home screen data display issue
+// Prompt 33.1 - CRITICAL FIX: Changed PUT to PATCH for status updates
 
 import 'dart:developer';
 import 'dart:io';
@@ -317,15 +317,17 @@ class RequestService extends GetxController {
   }
   
   /// Update existing request
-  /// 🚨 FIXED: Using correct endpoint /api/requests/{id}/
+  /// 🚨 CRITICAL FIX: Changed PUT to PATCH for partial updates
   Future<bool> updateRequest(String requestId, Map<String, dynamic> requestData) async {
     try {
-      log('🔄 RequestService: Updating request $requestId via Django API');
+      log('🔄 RequestService: Updating request $requestId via Django API (PATCH)');
+      log('Update data: $requestData');
       
-      final response = await _apiService.put('/api/requests/$requestId/', data: requestData);
+      // 🚨 KEY FIX: Use PATCH instead of PUT for partial updates
+      final response = await _apiService.patch('/api/requests/$requestId/', data: requestData);
       
       if (response.statusCode == 200) {
-        log('✅ RequestService: Updated request $requestId successfully');
+        log('✅ RequestService: Updated request $requestId successfully via PATCH');
         return true;
       } else {
         log('❌ RequestService: Failed to update request $requestId - Status: ${response.statusCode}');

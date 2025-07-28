@@ -43,11 +43,11 @@ class ApiConfig {
   static String get apiBaseUrl => baseUrl;
 
   /// Authentication endpoints
-  static const String authRegister = '/auth/register/';
-  static const String authLogin = '/auth/login/';
-  static const String authLogout = '/auth/logout/';
-  static const String authTokenRefresh = '/auth/token/refresh/';
-  static const String authVerifyEmail = '/auth/verify-email/';
+  static const String authRegister = '/api/auth/register/';
+  static const String authLogin = '/api/auth/login/';
+  static const String authLogout = '/api/auth/logout/';
+  static const String authTokenRefresh = '/api/auth/token/refresh/';
+  static const String authVerifyEmail = '/api/auth/verify-email/';
   static const String authPasswordReset = '/auth/password-reset/';
 
   /// Profile endpoints

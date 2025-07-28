@@ -70,9 +70,28 @@ class _CommunityRequestsState extends State<CommunityRequests> {
                         Container(
                           height: MediaQuery.of(context).size.height - 300,
                           alignment: Alignment.center,
-                          child: const Text(
-                            "No requests available.",
-                            style: TextStyle(color: Colors.black),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Text(
+                                "No requests available.",
+                                style: TextStyle(color: Colors.black, fontSize: 16),
+                              ),
+                              const SizedBox(height: 10),
+                              if (allRequests.isNotEmpty)
+                                Text(
+                                  "Found ${allRequests.length} total requests but none match your filters",
+                                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                                  textAlign: TextAlign.center,
+                                ),
+                              const SizedBox(height: 15),
+                              ElevatedButton(
+                                onPressed: () async {
+                                  await requestController.loadRequests();
+                                },
+                                child: const Text("Refresh"),
+                              ),
+                            ],
                           ),
                         ),
                       ],

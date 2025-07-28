@@ -1,5 +1,24 @@
 ﻿// lib/controllers/request_controller.dart
 // 🚨 DEBUG VERSION - Enhanced logging for request loading issues
+// 
+// 🔧 INFINITE LOOP FIX APPLIED:
+// =============================
+// PROBLEM: updateRequestStatuses() → updateRequestStatus() → loadRequests() → updateRequestStatuses() → LOOP
+// SOLUTION: Added session-based flags and skipStatusUpdate parameter to break the cycle
+// 
+// KEY CHANGES:
+// - Added _hasUpdatedStatusesThisSession flag to prevent repeated status updates
+// - Added _isUpdatingStatuses flag to prevent nested status update calls
+// - Modified loadRequests() to accept skipStatusUpdate parameter
+// - Updated updateRequestStatus() to call loadRequests(skipStatusUpdate: true)
+// - Updated createRequest() to skip status updates when refreshing data
+// - Added forceStatusUpdate() and resetStatusUpdateFlag() for manual control
+// 
+// BEHAVIOR:
+// - Status updates happen ONCE per app session during initialization
+// - Manual refresh (refreshRequests) can force status updates if needed
+// - Creating new requests skips status updates to avoid unnecessary API calls
+// - Updating request statuses skips further status checks to prevent loops
 
 import 'dart:developer';
 import 'dart:math' as math;
@@ -8,7 +27,6 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:kind_clock/controllers/auth_controller.dart';
 import 'package:kind_clock/controllers/notification_controller.dart';
-import 'package:kind_clock/models/feedback_model.dart';
 import 'package:kind_clock/models/notification_model.dart';
 import 'package:kind_clock/models/request_model.dart';
 import 'package:kind_clock/models/user_model.dart';
@@ -27,6 +45,19 @@ class RequestController extends GetxController {
   final RxInt totalRequestsFromApi = 0.obs;
   final RxInt totalMyRequestsFromApi = 0.obs;
   final RxInt filteredRequestsCount = 0.obs;
+  
+  // =============================================================================
+  // 🚨 FIX: Infinite loop prevention
+  // =============================================================================
+  
+  /// Flag to prevent infinite loop between updateRequestStatuses and loadRequests
+  /// Set to true after the first status update in the app session
+  /// This ensures status updates only happen once per session unless explicitly reset
+  bool _hasUpdatedStatusesThisSession = false;
+  
+  /// Flag to indicate when we're currently updating statuses (prevent nested calls)
+  /// This prevents updateRequestStatuses from being called while it's already running
+  bool _isUpdatingStatuses = false;
   
   // =============================================================================
   // DJANGO ENTERPRISE INTEGRATION
@@ -87,31 +118,6 @@ class RequestController extends GetxController {
   // 🚨 DEBUG: Enhanced initialization with detailed logging
   // =============================================================================
 
-  Future<void> _loadRequestsOnInit() async {
-    try {
-      debugLog("🔄 RequestController: Starting async request loading...");
-      debugStatus.value = "Loading requests from Django...";
-      
-      // Small delay to ensure UI has time to show loading state
-      await Future.delayed(const Duration(milliseconds: 100));
-      
-      await loadRequests();
-      
-      debugLog("🎯 RequestController: Initialization complete");
-      debugLog("   - Community Requests: ${requestList.length}");
-      debugLog("   - My Requests: ${myRequestList.length}");
-      debugLog("   - Total from API: Community(${totalRequestsFromApi.value}) + My(${totalMyRequestsFromApi.value})");
-      
-      debugStatus.value = "Initialization complete ✅";
-      
-    } catch (e, stackTrace) {
-      debugLog("❌ RequestController: Async initialization failed - $e");
-      debugLog("Stack trace: $stackTrace");
-      debugStatus.value = "Initialization failed: $e";
-      isLoading.value = false; // Ensure loading is false on error
-    }
-  }
-
   /// 🚨 CRITICAL FIX: Wait for AuthController to load tokens before fetching data
   Future<void> _waitForAuthThenLoadRequests() async {
     try {
@@ -120,7 +126,7 @@ class RequestController extends GetxController {
       
       // 🚨 SOLUTION: Wait for AuthController to finish loading tokens
       int attempts = 0;
-      const maxAttempts = 50; // 5 seconds max wait (50 * 100ms)
+      const maxAttempts = 30; // 3 seconds max wait (30 * 100ms)
       
       while (attempts < maxAttempts) {
         // Check if AuthController has finished initialization
@@ -156,24 +162,16 @@ class RequestController extends GetxController {
         debugLog("👤 User ready: ${authController.currentUserStore.value?.userId}");
         debugStatus.value = "Loading requests from Django...";
         
-        // Small additional delay to ensure tokens are fully ready
-        await Future.delayed(const Duration(milliseconds: 200));
-        
+        // Load requests immediately
         await loadRequests();
         
         debugLog("🎯 RequestController: Initialization complete");
-        debugLog("   - Community Requests: ${requestList.length}");
-        debugLog("   - My Requests: ${myRequestList.length}");
-        debugLog("   - Total from API: Community(${totalRequestsFromApi.value}) + My(${totalMyRequestsFromApi.value})");
-        
-        debugStatus.value = "Initialization complete ✅";
-        
       } else {
-        debugLog("❌ No user available after waiting - cannot load requests");
-        debugStatus.value = "No user - cannot load requests";
+        debugLog("❌ No valid user session - cannot load requests");
         isLoading.value = false;
+        debugStatus.value = "Authentication required";
       }
-      
+        
     } catch (e, stackTrace) {
       debugLog("❌ RequestController: Error waiting for auth - $e");
       debugLog("Stack trace: $stackTrace");
@@ -195,11 +193,14 @@ class RequestController extends GetxController {
     
     try {
       debugLog("📋 RequestController: Checking dependencies...");
-      debugLog("   - RequestService: ${requestService != null ? '✅ Available' : '❌ Missing'}");
-      debugLog("   - AuthController: ${authController != null ? '✅ Available' : '❌ Missing'}");
+      debugLog("   - RequestService: ✅ Available");
+      debugLog("   - AuthController: ✅ Available");
       
-      // 🚨 CRITICAL FIX: Wait for AuthController to finish loading tokens
-      _waitForAuthThenLoadRequests();
+      // 🚨 CRITICAL FIX: Initialize data loading immediately
+      // Don't wait for perfect auth state - start loading process
+      Future.microtask(() async {
+        await _waitForAuthThenLoadRequests();
+      });
       
     } catch (e) {
       debugLog("❌ RequestController: Initialization failed - $e");
@@ -212,10 +213,10 @@ class RequestController extends GetxController {
   // 🚨 DEBUG: Enhanced request loading with comprehensive logging
   // =============================================================================
 
-  Future<void> loadRequests() async {
+  Future<void> loadRequests({bool skipStatusUpdate = false}) async {
     try {
       isLoading.value = true;
-      debugLog("🔄 RequestController: Starting loadRequests()");
+      debugLog("🔄 RequestController: Starting loadRequests(skipStatusUpdate: $skipStatusUpdate)");
       debugStatus.value = "Fetching requests from Django API...";
 
       // 🚨 Step 1: Fetch community requests
@@ -245,12 +246,29 @@ class RequestController extends GetxController {
         debugLog("   - ⚠️ NO USER REQUESTS RETURNED FROM API");
       }
 
-      // 🚨 Step 3: Update request statuses
-      debugLog("🔄 Step 3: Updating request statuses...");
-      debugStatus.value = "Updating request statuses...";
-      await updateRequestStatuses(communityRequestsFromApi);
-      await updateRequestStatuses(userRequestsFromApi);
-      debugLog("   - Status updates completed");
+      // 🚨 Step 3: Update request statuses (ONLY ONCE PER SESSION OR IF EXPLICITLY REQUESTED)
+      if (!skipStatusUpdate && !_hasUpdatedStatusesThisSession && !_isUpdatingStatuses) {
+        debugLog("🔄 Step 3: Updating request statuses (first time this session)...");
+        debugStatus.value = "Updating request statuses...";
+        
+        _isUpdatingStatuses = true; // Prevent nested calls
+        
+        await updateRequestStatuses(communityRequestsFromApi);
+        await updateRequestStatuses(userRequestsFromApi);
+        
+        _hasUpdatedStatusesThisSession = true; // Mark as completed for this session
+        _isUpdatingStatuses = false;
+        
+        debugLog("   - Status updates completed ✅");
+      } else {
+        if (skipStatusUpdate) {
+          debugLog("🔄 Step 3: Skipping status updates (skipStatusUpdate=true)");
+        } else if (_hasUpdatedStatusesThisSession) {
+          debugLog("🔄 Step 3: Skipping status updates (already done this session)");
+        } else if (_isUpdatingStatuses) {
+          debugLog("🔄 Step 3: Skipping status updates (currently updating)");
+        }
+      }
 
       // 🚨 Step 4: Apply filters (TEMPORARILY DISABLED FOR DEBUGGING)
       debugLog("🔍 Step 4: Applying filters...");
@@ -284,6 +302,7 @@ class RequestController extends GetxController {
       debugLog("   - Community API: ${communityRequestsFromApi.length} → UI: ${requestList.length}");
       debugLog("   - User API: ${userRequestsFromApi.length} → UI: ${myRequestList.length}");
       debugLog("   - Current user ID: ${authController.currentUserStore.value?.userId}");
+      debugLog("   - Status updates done this session: $_hasUpdatedStatusesThisSession");
       
       // 🚨 Detailed analysis if no requests showing
       if (requestList.isEmpty && communityRequestsFromApi.isNotEmpty) {
@@ -432,7 +451,8 @@ class RequestController extends GetxController {
       if (success) {
         debugLog("✅ createRequest: Request created successfully");
         clearForm();
-        await loadRequests();
+        // 🚨 FIX: Skip status updates when refreshing after creating a new request
+        await loadRequests(skipStatusUpdate: true);
         return true;
       } else {
         debugLog("❌ createRequest: Failed to create request");
@@ -456,7 +476,8 @@ class RequestController extends GetxController {
       
       if (success) {
         debugLog("✅ updateRequestStatus: Status updated successfully");
-        await loadRequests();
+        // 🚨 FIX: Use skipStatusUpdate=true to prevent infinite loop
+        await loadRequests(skipStatusUpdate: true);
         return true;
       } else {
         debugLog("❌ updateRequestStatus: Failed to update status");
@@ -494,6 +515,8 @@ class RequestController extends GetxController {
   }
 
   Future<void> updateRequestStatuses(List<RequestModel> requests) async {
+    debugLog("🔄 updateRequestStatuses called with ${requests.length} requests");
+    
     for (var request in requests) {
       int acceptedCount = request.acceptedUser.length;
       int requiredCount = request.numberOfPeople;
@@ -505,6 +528,7 @@ class RequestController extends GetxController {
           timeUp) {
         try {
           if (acceptedCount == 0) {
+            debugLog("🔄 Updating request ${request.requestId} to 'expired' (no accepted users)");
             await updateRequestStatus(request.requestId, "expired");
             
             NotificationModel notification = NotificationModel(
@@ -519,15 +543,18 @@ class RequestController extends GetxController {
             Get.find<NotificationController>().addNotification(notification);
             
           } else if (acceptedCount < requiredCount) {
+            debugLog("🔄 Updating request ${request.requestId} to 'incomplete' ($acceptedCount/$requiredCount)");
             await updateRequestStatus(request.requestId, "incomplete");
           } else if (acceptedCount >= requiredCount) {
+            debugLog("🔄 Updating request ${request.requestId} to 'inprogress' ($acceptedCount/$requiredCount)");
             await updateRequestStatus(request.requestId, "inprogress");
           }
         } catch (e) {
-          debugLog("❌ updateRequestStatuses error: $e");
+          debugLog("❌ updateRequestStatuses error for request ${request.requestId}: $e");
         }
       }
     }
+    debugLog("✅ updateRequestStatuses completed");
   }
 
   List<RequestModel> getFilteredRequests(List<RequestModel> allRequests) {
@@ -593,8 +620,29 @@ class RequestController extends GetxController {
     dateTimeError.value = null;
   }
 
-  Future<void> refreshRequests() async {
-    debugLog("🔄 refreshRequests called");
+  Future<void> refreshRequests({bool forceStatusUpdate = false}) async {
+    debugLog("🔄 refreshRequests called (forceStatusUpdate: $forceStatusUpdate)");
+    
+    if (forceStatusUpdate) {
+      // Reset the flag to allow status updates
+      _hasUpdatedStatusesThisSession = false;
+      debugLog("🔄 Force status update requested - resetting session flag");
+    }
+    
+    await loadRequests();
+  }
+  
+  /// 🚨 NEW: Method to manually reset status update flag if needed
+  void resetStatusUpdateFlag() {
+    _hasUpdatedStatusesThisSession = false;
+    debugLog("🔄 Status update flag manually reset");
+  }
+  
+  /// 🚨 NEW: Method to force status updates (useful for manual refresh or debugging)
+  Future<void> forceStatusUpdate() async {
+    debugLog("🔄 forceStatusUpdate called - resetting flags and updating statuses");
+    _hasUpdatedStatusesThisSession = false;
+    _isUpdatingStatuses = false;
     await loadRequests();
   }
   

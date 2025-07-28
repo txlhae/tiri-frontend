@@ -21,6 +21,19 @@ class HomeScreen extends StatelessWidget {
     final RequestController requestController = Get.find<RequestController>();
     final NotificationController notificationController = Get.find<NotificationController>();
 
+    // 🚨 SAFETY FIX: Ensure requests are loaded when HomeScreen is displayed
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Check if we have user but no requests and not currently loading
+      if (authController.isLoggedIn.value && 
+          authController.currentUserStore.value != null &&
+          requestController.requestList.isEmpty && 
+          requestController.myRequestList.isEmpty &&
+          !requestController.isLoading.value) {
+        log("🚨 HomeScreen: Detected empty requests - triggering reload");
+        requestController.loadRequests();
+      }
+    });
+
     return GestureDetector(
       onTap: () {
         FocusScope.of(context).requestFocus(FocusNode());

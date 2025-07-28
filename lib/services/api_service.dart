@@ -110,17 +110,36 @@ class ApiService {
   Interceptor _createAuthInterceptor() {
     return InterceptorsWrapper(
       onRequest: (RequestOptions options, RequestInterceptorHandler handler) async {
-        // Add access token to requests if available
+        // Don't add auth header to token refresh requests
+        if (options.path == ApiConfig.authTokenRefresh || 
+            options.path == ApiConfig.authLogin ||
+            options.path == ApiConfig.authRegister) {
+          log('🔓 Skipping auth header for: ${options.path}', name: 'API');
+          handler.next(options);
+          return;
+        }
+
+        // Add access token to other requests if available
         if (_accessToken != null) {
           options.headers['Authorization'] = 'Bearer $_accessToken';
+          log('🔐 Added auth header to: ${options.path}', name: 'API');
+        } else {
+          log('⚠️ No access token available for: ${options.path}', name: 'API');
         }
+        
         handler.next(options);
       },
       
       onError: (DioException error, ErrorInterceptorHandler handler) async {
+        log('🔍 API Error - Status: ${error.response?.statusCode}, Path: ${error.requestOptions.path}', name: 'API');
+        
         // Handle token expiration (401 Unauthorized)
         if (error.response?.statusCode == 401) {
+          log('🔄 401 Unauthorized - attempting token refresh', name: 'API');
+          
           if (await _refreshTokenIfNeeded()) {
+            log('✅ Token refreshed - retrying original request', name: 'API');
+            
             // Retry the original request with new token
             final options = error.requestOptions;
             options.headers['Authorization'] = 'Bearer $_accessToken';
@@ -129,12 +148,16 @@ class ApiService {
               final response = await _dio.fetch(options);
               handler.resolve(response);
               return;
-            } catch (e) {
+            } catch (retryError) {
+              log('❌ Retry failed after token refresh: $retryError', name: 'API');
               handler.next(error);
               return;
             }
+          } else {
+            log('❌ Token refresh failed - user needs to login', name: 'API');
           }
         }
+        
         handler.next(error);
       },
     );
@@ -268,30 +291,70 @@ class ApiService {
     _isRefreshing = true;
     
     try {
-      final response = await _dio.post(
-        ApiConfig.authTokenRefresh,
-        data: {'refresh': _refreshToken},
-        options: Options(
-          headers: ApiConfig.defaultHeaders, // Don't include auth header
-        ),
+      log('🔄 Attempting token refresh...', name: 'API');
+      
+      // 🚨 FIX 1: Create a separate Dio instance to avoid interceptor loops
+      final refreshDio = Dio(BaseOptions(
+        baseUrl: ApiConfig.apiBaseUrl,
+        connectTimeout: ApiConfig.connectTimeout,
+        receiveTimeout: ApiConfig.receiveTimeout,
+        sendTimeout: ApiConfig.sendTimeout,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          // 🚨 CRITICAL: Don't include Authorization header for refresh
+        },
+      ));
+
+      // 🚨 FIX 2: Correct Django JWT refresh format
+      final response = await refreshDio.post(
+        ApiConfig.authTokenRefresh, // '/auth/token/refresh/'
+        data: {
+          'refresh': _refreshToken, // Django SimpleJWT expects 'refresh' field
+        },
       );
 
-      if (response.statusCode == 200) {
-        final newAccessToken = response.data['access'];
-        _accessToken = newAccessToken;
+      log('🔄 Token refresh response: ${response.statusCode}', name: 'API');
+      log('🔄 Token refresh data: ${response.data}', name: 'API');
+
+      // 🚨 FIX 3: Handle Django JWT response format correctly
+      if (response.statusCode == 200 && response.data != null) {
+        final responseData = response.data as Map<String, dynamic>;
         
-        await _secureStorage.write(key: _accessTokenKey, value: newAccessToken);
+        // Django SimpleJWT returns: {"access": "new_token", "refresh": "new_refresh_token"}
+        final newAccessToken = responseData['access'];
+        final newRefreshToken = responseData['refresh']; // May be present if ROTATE_REFRESH_TOKENS is True
         
-        if (ApiConfig.enableLogging) {
-          log('Token refreshed successfully', name: 'API');
+        if (newAccessToken != null) {
+          _accessToken = newAccessToken;
+          
+          // Update refresh token if Django rotated it
+          if (newRefreshToken != null) {
+            _refreshToken = newRefreshToken;
+            await _secureStorage.write(key: _refreshTokenKey, value: newRefreshToken);
+            log('🔄 Refresh token rotated and saved', name: 'API');
+          }
+          
+          // Save new access token
+          await _secureStorage.write(key: _accessTokenKey, value: newAccessToken);
+          
+          log('✅ Token refreshed successfully', name: 'API');
+          return true;
+        } else {
+          log('❌ No access token in refresh response', name: 'API');
         }
-        
-        return true;
+      } else {
+        log('❌ Token refresh failed - Status: ${response.statusCode}', name: 'API');
       }
+      
     } catch (e) {
-      log('Token refresh failed: $e', name: 'API');
-      // Clear invalid tokens
-      await clearTokens();
+      log('❌ Token refresh error: $e', name: 'API');
+      
+      // 🚨 FIX 4: Check if refresh token is invalid (401/403)
+      if (e is DioException && (e.response?.statusCode == 401 || e.response?.statusCode == 403)) {
+        log('🚨 Refresh token invalid - clearing all tokens', name: 'API');
+        await clearTokens();
+      }
     } finally {
       _isRefreshing = false;
     }
