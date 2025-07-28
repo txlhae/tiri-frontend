@@ -113,7 +113,7 @@ class AuthService {
       }
 
       final response = await _apiService.post(
-        ApiConfig.authRegister,
+        '/api/auth/register/',
         data: {
                   'first_name': name.trim(),                    // ✅ FIXED: Django expects first_name
                   'last_name': '',                              // ✅ ADDED: Django expects last_name  
@@ -188,7 +188,7 @@ class AuthService {
       }
 
       final response = await _apiService.post(
-        ApiConfig.authLogin,
+        '/api/auth/login/',
         data: {
           'email': email.trim().toLowerCase(),
           'password': password,
@@ -245,7 +245,7 @@ class AuthService {
       
       // Use the ApiService instance to call Django backend
       final response = await _apiService.post(
-        '/auth/verify-referral/',
+        '/api/auth/verify-referral/',
         data: {
           'referral_code': referralCode,
         },
@@ -277,7 +277,7 @@ class AuthService {
       // Try to logout on server (optional - don't fail if it doesn't work)
       try {
         await _apiService.post(
-          ApiConfig.authLogout,
+          '/api/auth/logout/',
           data: {
             'refresh': _apiService.refreshToken,
           },

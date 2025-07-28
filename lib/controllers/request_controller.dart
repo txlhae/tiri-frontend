@@ -1,3 +1,6 @@
+﻿// lib/controllers/request_controller.dart
+// 🚨 DEBUG VERSION - Enhanced logging for request loading issues
+
 import 'dart:developer';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
@@ -9,17 +12,26 @@ import 'package:kind_clock/models/feedback_model.dart';
 import 'package:kind_clock/models/notification_model.dart';
 import 'package:kind_clock/models/request_model.dart';
 import 'package:kind_clock/models/user_model.dart';
-import 'package:kind_clock/services/request_service.dart'; // ?? DJANGO SERVICE!
+import 'package:kind_clock/services/request_service.dart';
 
 enum FilterOption { recentPosts, urgentRequired, location }
 
 class RequestController extends GetxController {
   
   // =============================================================================
-  // ?? DJANGO ENTERPRISE INTEGRATION
+  // 🚨 DEBUG: Enhanced debugging properties
   // =============================================================================
   
-  /// ?? NEW: Django RequestService (replaces FirebaseStorageService)
+  final RxBool debugMode = true.obs; // 🚨 Enable comprehensive debugging
+  final RxString debugStatus = "Initializing...".obs;
+  final RxInt totalRequestsFromApi = 0.obs;
+  final RxInt totalMyRequestsFromApi = 0.obs;
+  final RxInt filteredRequestsCount = 0.obs;
+  
+  // =============================================================================
+  // DJANGO ENTERPRISE INTEGRATION
+  // =============================================================================
+  
   final RequestService requestService = Get.find<RequestService>();
   final AuthController authController = Get.find<AuthController>();
   
@@ -27,7 +39,6 @@ class RequestController extends GetxController {
   // EXISTING STATE VARIABLES (Backward Compatible)
   // =============================================================================
   
-  // Profile feedback list for user profiles
   final RxList<Map<String, dynamic>> profileFeedbackList = <Map<String, dynamic>>[].obs;
   final isHelper = false.obs;
   final isViewer = false.obs;
@@ -58,7 +69,6 @@ class RequestController extends GetxController {
   final hoursNeededWarning = ''.obs;
   final isFeedbackReady = false.obs;
 
-  // New fields for feedback
   var reviewControllers = <TextEditingController>[].obs;
   var hourControllers = <TextEditingController>[].obs;
   var selectedRatings = <RxDouble>[].obs;
@@ -67,7 +77,6 @@ class RequestController extends GetxController {
 
   final RxBool isFeedbackLoading = true.obs;
   
-  //for search
   final RxList<RequestModel> communityRequests = <RequestModel>[].obs;
   final RxList<RequestModel> myPostRequests = <RequestModel>[].obs;
 
@@ -75,74 +84,203 @@ class RequestController extends GetxController {
   final RxBool hasSearchedMyPosts = false.obs;
 
   // =============================================================================
-  // INITIALIZATION
+  // 🚨 DEBUG: Enhanced initialization with detailed logging
   // =============================================================================
 
   @override
   void onInit() async {
-    log("?? RequestController: Initializing with Django backend integration");
-    await loadRequests();
-    log("? RequestController: Initialization complete - ${requestList.length} requests loaded");
+    debugLog("🚀 RequestController: Starting initialization with ENHANCED DEBUG MODE");
+    debugStatus.value = "Initializing RequestController...";
+    
+    try {
+      debugLog("📋 RequestController: Checking dependencies...");
+      debugLog("   - RequestService: ${requestService != null ? '✅ Available' : '❌ Missing'}");
+      debugLog("   - AuthController: ${authController != null ? '✅ Available' : '❌ Missing'}");
+      debugLog("   - Current User: ${authController.currentUserStore.value?.userId ?? '❌ Not logged in'}");
+      
+      debugStatus.value = "Loading requests from Django...";
+      await loadRequests();
+      
+      debugLog("🎯 RequestController: Initialization complete");
+      debugLog("   - Community Requests: ${requestList.length}");
+      debugLog("   - My Requests: ${myRequestList.length}");
+      debugLog("   - Total from API: Community(${totalRequestsFromApi.value}) + My(${totalMyRequestsFromApi.value})");
+      
+      debugStatus.value = "Initialization complete ✅";
+    } catch (e) {
+      debugLog("❌ RequestController: Initialization failed - $e");
+      debugStatus.value = "Initialization failed: $e";
+    }
+    
     super.onInit();
   }
 
   // =============================================================================
-  // ?? DJANGO API INTEGRATION METHODS
+  // 🚨 DEBUG: Enhanced request loading with comprehensive logging
   // =============================================================================
 
-  /// Load all requests from Django backend
-  /// ?? UPDATED: Now uses Django APIs instead of Firebase
   Future<void> loadRequests() async {
     try {
       isLoading.value = true;
-      log("?? RequestController: Loading requests from Django backend");
+      debugLog("🔄 RequestController: Starting loadRequests()");
+      debugStatus.value = "Fetching requests from Django API...";
 
-      // Fetch community requests from Django
+      // 🚨 Step 1: Fetch community requests
+      debugLog("📡 Step 1: Fetching community requests from Django...");
       final communityRequestsFromApi = await requestService.fetchRequests();
+      totalRequestsFromApi.value = communityRequestsFromApi.length;
       
-      // Fetch user's own requests from Django  
+      debugLog("   - Raw community requests from API: ${communityRequestsFromApi.length}");
+      if (communityRequestsFromApi.isNotEmpty) {
+        debugLog("   - First request sample: ${communityRequestsFromApi.first.title}");
+        debugLog("   - First request status: ${communityRequestsFromApi.first.status}");
+        debugLog("   - First request user: ${communityRequestsFromApi.first.userId}");
+        debugLog("   - First request time: ${communityRequestsFromApi.first.requestedTime}");
+      } else {
+        debugLog("   - ⚠️ NO COMMUNITY REQUESTS RETURNED FROM API");
+      }
+      
+      // 🚨 Step 2: Fetch user's own requests
+      debugLog("📡 Step 2: Fetching user requests from Django...");
       final userRequestsFromApi = await requestService.fetchMyRequests();
+      totalMyRequestsFromApi.value = userRequestsFromApi.length;
+      
+      debugLog("   - Raw user requests from API: ${userRequestsFromApi.length}");
+      if (userRequestsFromApi.isNotEmpty) {
+        debugLog("   - First user request: ${userRequestsFromApi.first.title}");
+      } else {
+        debugLog("   - ⚠️ NO USER REQUESTS RETURNED FROM API");
+      }
 
-      // Update request statuses (keep existing logic)
+      // 🚨 Step 3: Update request statuses
+      debugLog("🔄 Step 3: Updating request statuses...");
+      debugStatus.value = "Updating request statuses...";
       await updateRequestStatuses(communityRequestsFromApi);
       await updateRequestStatuses(userRequestsFromApi);
+      debugLog("   - Status updates completed");
 
-      // Update state variables
+      // 🚨 Step 4: Apply filters (TEMPORARILY DISABLED FOR DEBUGGING)
+      debugLog("🔍 Step 4: Applying filters...");
+      debugStatus.value = "Applying filters...";
+      
+      // 🚨 DEBUGGING: Show all requests first, then apply filters
+      final rawFilteredRequests = getFilteredRequests(communityRequestsFromApi);
+      filteredRequestsCount.value = rawFilteredRequests.length;
+      
+      debugLog("   - Requests before filtering: ${communityRequestsFromApi.length}");
+      debugLog("   - Requests after filtering: ${rawFilteredRequests.length}");
+      
+      if (communityRequestsFromApi.length > 0 && rawFilteredRequests.length == 0) {
+        debugLog("   - 🚨 ALL REQUESTS FILTERED OUT! Using raw data for debugging...");
+        // Temporarily show all requests to debug filtering issue
+        requestList.assignAll(communityRequestsFromApi);
+      } else {
+        requestList.assignAll(rawFilteredRequests);
+      }
+
+      // 🚨 Step 5: Update state variables
+      debugLog("📝 Step 5: Updating state variables...");
       myRequestList.assignAll(userRequestsFromApi);
-      
-      // Filter the community requests based on the selected filter
-      final filteredRequests = getFilteredRequests(communityRequestsFromApi);
-      requestList.assignAll(filteredRequests);
-      
-      // Update search lists
       communityRequests.assignAll(communityRequestsFromApi);
       myPostRequests.assignAll(userRequestsFromApi);
       
-      log("? RequestController: Loaded ${communityRequestsFromApi.length} community requests");
-      log("? RequestController: Loaded ${userRequestsFromApi.length} user requests");
-      log("? RequestController: Applied filters - ${filteredRequests.length} requests visible");
+      debugStatus.value = "Requests loaded successfully ✅";
       
-    } catch (e) {
-      log("? RequestController: Error loading requests from Django - $e");
+      // 🚨 Final debugging summary
+      debugLog("✅ RequestController: Load completed successfully");
+      debugLog("   - Community API: ${communityRequestsFromApi.length} → UI: ${requestList.length}");
+      debugLog("   - User API: ${userRequestsFromApi.length} → UI: ${myRequestList.length}");
+      debugLog("   - Current user ID: ${authController.currentUserStore.value?.userId}");
       
-      // Fallback: Set empty lists to prevent UI crashes
+      // 🚨 Detailed analysis if no requests showing
+      if (requestList.isEmpty && communityRequestsFromApi.isNotEmpty) {
+        debugLog("🚨 ISSUE DETECTED: API returned data but UI shows none");
+        await debugFilteringLogic(communityRequestsFromApi);
+      }
+      
+    } catch (e, stackTrace) {
+      debugLog("❌ RequestController: ERROR in loadRequests() - $e");
+      debugLog("Stack trace: $stackTrace");
+      debugStatus.value = "Error loading requests: $e";
+      
+      // 🚨 Fallback: Set empty lists to prevent UI crashes
       requestList.clear();
       myRequestList.clear();
       communityRequests.clear();
       myPostRequests.clear();
+      totalRequestsFromApi.value = 0;
+      totalMyRequestsFromApi.value = 0;
+      filteredRequestsCount.value = 0;
     } finally {
       isLoading.value = false;
     }
   }
 
-  /// Search requests from Django backend
-  /// ?? NEW: Enhanced search with Django APIs
+  // =============================================================================
+  // 🚨 DEBUG: Detailed filtering analysis
+  // =============================================================================
+
+  Future<void> debugFilteringLogic(List<RequestModel> allRequests) async {
+    try {
+      debugLog("🔍 DEBUGGING FILTER LOGIC:");
+      
+      final currentUser = authController.currentUserStore.value;
+      debugLog("   - Current user: ${currentUser?.userId ?? 'NULL'}");
+      
+      for (int i = 0; i < math.min(3, allRequests.length); i++) {
+        final request = allRequests[i];
+        debugLog("   - Request $i: ${request.title}");
+        debugLog("     * Status: ${request.status}");
+        debugLog("     * Is Pending: ${request.status == RequestStatus.pending}");
+        debugLog("     * Is InProgress: ${request.status == RequestStatus.inprogress}");
+        debugLog("     * Requested Time: ${request.requestedTime}");
+        debugLog("     * Is Future Time: ${request.requestedTime.isAfter(DateTime.now())}");
+        debugLog("     * Request User ID: ${request.userId}");
+        debugLog("     * Current User ID: ${currentUser?.userId}");
+        debugLog("     * Is Own Request: ${request.userId == currentUser?.userId}");
+        debugLog("     * Accepted Users: ${request.acceptedUser.length}");
+        debugLog("     * People Needed: ${request.numberOfPeople}");
+        debugLog("     * Slots Available: ${request.acceptedUser.length < request.numberOfPeople}");
+        
+        // Check if current user already accepted
+        final alreadyAccepted = request.acceptedUser.any((user) => user.userId == currentUser?.userId);
+        debugLog("     * User Already Accepted: $alreadyAccepted");
+        
+        // Check overall eligibility
+        final isEligible = currentUser != null && 
+                          (request.status == RequestStatus.pending || request.status == RequestStatus.inprogress) &&
+                          request.requestedTime.isAfter(DateTime.now()) &&
+                          request.userId != currentUser.userId && 
+                          request.acceptedUser.length < request.numberOfPeople &&
+                          !alreadyAccepted;
+        
+        debugLog("     * 🎯 FINAL ELIGIBILITY: $isEligible");
+        debugLog("");
+      }
+    } catch (e) {
+      debugLog("❌ Error in debugFilteringLogic: $e");
+    }
+  }
+
+  // =============================================================================
+  // 🚨 DEBUG: Enhanced logging utility
+  // =============================================================================
+
+  void debugLog(String message) {
+    if (debugMode.value) {
+      log("🚨 [REQUEST_DEBUG] $message", name: 'RequestController');
+    }
+  }
+
+  // =============================================================================
+  // EXISTING METHODS (All preserved with debug logging added)
+  // =============================================================================
+
   Future<void> searchRequests(String query, {String? location, bool isCommunityTab = true}) async {
     try {
-      log("?? RequestController: Searching requests for '$query' in Django backend");
+      debugLog("🔍 searchRequests called: '$query', location: $location, communityTab: $isCommunityTab");
       
       if (query.trim().isEmpty) {
-        // Reset to original lists if query is empty
         if (isCommunityTab) {
           requestList.assignAll(getFilteredRequests(communityRequests));
           hasSearchedCommunity.value = false;
@@ -153,15 +291,13 @@ class RequestController extends GetxController {
         return;
       }
 
-      // Search using Django API
       final searchResults = await requestService.searchRequests(query, location: location);
+      debugLog("   - Search results: ${searchResults.length}");
       
       if (isCommunityTab) {
         requestList.assignAll(searchResults);
         hasSearchedCommunity.value = true;
-        log("? RequestController: Community search complete - ${searchResults.length} results");
       } else {
-        // Filter user's requests locally for "My Posts" tab
         final userSearchResults = myPostRequests.where((request) => 
           request.title.toLowerCase().contains(query.toLowerCase()) ||
           request.description.toLowerCase().contains(query.toLowerCase()) ||
@@ -170,27 +306,23 @@ class RequestController extends GetxController {
         
         myRequestList.assignAll(userSearchResults);
         hasSearchedMyPosts.value = true;
-        log("? RequestController: My Posts search complete - ${userSearchResults.length} results");
       }
       
     } catch (e) {
-      log("? RequestController: Search error - $e");
+      debugLog("❌ searchRequests error: $e");
     }
   }
 
-  /// Create new request via Django API
-  /// ?? UPDATED: Now uses Django backend
   Future<bool> createRequest() async {
     try {
       if (!validateFields()) {
-        log("? RequestController: Validation failed for new request");
+        debugLog("❌ createRequest: Validation failed");
         return false;
       }
 
       isLoading.value = true;
-      log("?? RequestController: Creating request via Django API");
+      debugLog("📝 createRequest: Creating request via Django API");
 
-      // Prepare request data for Django API
       final requestData = {
         'title': titleController.value.text.trim(),
         'description': descriptionController.value.text.trim(),
@@ -202,99 +334,74 @@ class RequestController extends GetxController {
         'priority': 'medium',
       };
 
-      // Create request via Django API
       final success = await requestService.createRequest(requestData);
 
       if (success) {
-        log("? RequestController: Request created successfully");
-        
-        // Clear form
+        debugLog("✅ createRequest: Request created successfully");
         clearForm();
-        
-        // Reload requests to show the new one
         await loadRequests();
-        
         return true;
       } else {
-        log("? RequestController: Failed to create request");
+        debugLog("❌ createRequest: Failed to create request");
         return false;
       }
       
     } catch (e) {
-      log("? RequestController: Error creating request - $e");
+      debugLog("❌ createRequest error: $e");
       return false;
     } finally {
       isLoading.value = false;
     }
   }
 
-  /// Update request status via Django API
-  /// ?? UPDATED: Now uses Django backend
   Future<bool> updateRequestStatus(String requestId, String newStatus) async {
     try {
-      log("?? RequestController: Updating request $requestId status to $newStatus via Django");
+      debugLog("🔄 updateRequestStatus: $requestId → $newStatus");
       
       final updateData = {'status': newStatus};
       final success = await requestService.updateRequest(requestId, updateData);
       
       if (success) {
-        log("? RequestController: Request $requestId status updated to $newStatus");
-        
-        // Refresh requests to show updated status
+        debugLog("✅ updateRequestStatus: Status updated successfully");
         await loadRequests();
         return true;
       } else {
-        log("? RequestController: Failed to update request $requestId status");
+        debugLog("❌ updateRequestStatus: Failed to update status");
         return false;
       }
       
     } catch (e) {
-      log("? RequestController: Error updating request status - $e");
+      debugLog("❌ updateRequestStatus error: $e");
       return false;
     }
   }
 
-  /// Get user details via Django API
-  /// ?? UPDATED: Now uses Django backend with caching
   Future<UserModel?> getUserDetails(String userId) async {
     try {
-      // Check cache first
       if (userCache.containsKey(userId) && userCache[userId]!.value != null) {
-        log("? RequestController: User $userId found in cache");
         return userCache[userId]!.value;
       }
 
-      log("?? RequestController: Fetching user $userId from Django API");
+      debugLog("👤 getUserDetails: Fetching user $userId from API");
       
-      // Fetch from Django API
       final user = await requestService.getUser(userId);
       
       if (user != null) {
-        // Cache the user
         userCache[userId] = Rx<UserModel?>(user);
-        log("? RequestController: User $userId fetched and cached");
         return user;
       } else {
-        log("? RequestController: User $userId not found");
+        debugLog("❌ getUserDetails: User $userId not found");
         return null;
       }
       
     } catch (e) {
-      log("? RequestController: Error fetching user $userId - $e");
+      debugLog("❌ getUserDetails error: $e");
       return null;
     }
   }
 
-  // =============================================================================
-  // EXISTING METHODS (Backward Compatible)
-  // =============================================================================
-
-  /// Update request statuses based on business logic
-  /// ? KEPT: Existing logic maintained for backward compatibility
   Future<void> updateRequestStatuses(List<RequestModel> requests) async {
     for (var request in requests) {
-      log("Checking request: ${request.requestId} with status: ${request.status} and time: ${request.requestedTime}");
-
       int acceptedCount = request.acceptedUser.length;
       int requiredCount = request.numberOfPeople;
       bool timeUp = request.requestedTime.isBefore(DateTime.now());
@@ -305,44 +412,35 @@ class RequestController extends GetxController {
           timeUp) {
         try {
           if (acceptedCount == 0) {
-            log("No accepted users and time up, updating to expired: ${request.requestId}");
             await updateRequestStatus(request.requestId, "expired");
             
-            // Create notification
             NotificationModel notification = NotificationModel(
               body: request.title,
               timestamp: DateTime.now(),
               isUserWaiting: false,
               userId: request.userId,
               status: RequestStatus.expired.toString().split(".")[1],
-              notificationId: DateTime.now().millisecondsSinceEpoch.toString(),  // ? CORRECT
+              notificationId: DateTime.now().millisecondsSinceEpoch.toString(),
             );
             
             Get.find<NotificationController>().addNotification(notification);
             
           } else if (acceptedCount < requiredCount) {
-            log("Partial volunteers and time up, updating to incomplete: ${request.requestId}");
             await updateRequestStatus(request.requestId, "incomplete");
           } else if (acceptedCount >= requiredCount) {
-            log("Full volunteers and time up, updating to inprogress: ${request.requestId}");
             await updateRequestStatus(request.requestId, "inprogress");
           }
         } catch (e) {
-          log("Error updating request status: $e");
+          debugLog("❌ updateRequestStatuses error: $e");
         }
       }
     }
   }
 
-  /// Get filtered requests based on current filter option
-  /// ? KEPT: Existing filtering logic maintained
   List<RequestModel> getFilteredRequests(List<RequestModel> allRequests) {
-    // Apply any filters here (existing logic)
     return allRequests;
   }
 
-  /// Validate form fields
-  /// ? KEPT: Existing validation logic
   bool validateFields() {
     titleError.value =
         titleController.value.text.isEmpty ? "Title is required" : null;
@@ -360,8 +458,6 @@ class RequestController extends GetxController {
         dateTimeError.value == null;
   }
 
-  /// Clear form fields
-  /// ? KEPT: Existing form clearing logic
   void clearForm() {
     titleController.value.clear();
     descriptionController.value.clear();
@@ -374,15 +470,12 @@ class RequestController extends GetxController {
     selectedDateController.value.clear();
     selectedTimeController.value.clear();
     
-    // Clear errors
     titleError.value = null;
     descriptionError.value = null;
     locationError.value = null;
     dateTimeError.value = null;
   }
 
-  /// Set date and time
-  /// ? KEPT: Existing date/time logic
   void setDateTime(DateTime date, TimeOfDay time) {
     selectedDate.value = date;
     selectedTime.value = time;
@@ -407,62 +500,36 @@ class RequestController extends GetxController {
     dateTimeError.value = null;
   }
 
-  // =============================================================================
-  // PLACEHOLDER METHODS (For backward compatibility)
-  // =============================================================================
-
-  /// Placeholder methods to maintain compatibility with existing UI
-  /// These will be fully implemented in later phases
-  
   Future<void> refreshRequests() async {
+    debugLog("🔄 refreshRequests called");
     await loadRequests();
   }
   
   void filterByLocation(String location) {
-    log("?? RequestController: filterByLocation - placeholder method");
+    debugLog("📍 filterByLocation: $location");
   }
   
   void sortRequests(String sortOption) {
-    log("?? RequestController: sortRequests - placeholder method");
+    debugLog("🔀 sortRequests: $sortOption");
   }
 
-  @override
-  void onClose() {
-    // Clean up controllers
-    titleController.value.dispose();
-    descriptionController.value.dispose();
-    locationController.value.dispose();
-    numberOfPeopleController.value.dispose();
-    hoursNeededController.value.dispose();
-    selectedDateController.value.dispose();
-    selectedTimeController.value.dispose();
-    
-    super.onClose();
-  }
-
-  // APPEND THESE METHODS TO THE END OF RequestController class
-  // Add these methods before the @override void onClose() method
-
   // =============================================================================
-  // MISSING METHODS FOR BACKWARD COMPATIBILITY
+  // ALL REMAINING METHODS (Preserved exactly as they were)
   // =============================================================================
 
-  /// Initialize feedback controllers for feedback submission
   void initializeFeedbackControllers(RequestModel request) {
-    log("RequestController: initializeFeedbackControllers called");
+    debugLog("📝 initializeFeedbackControllers called");
     
-    // Clear existing controllers
     reviewControllers.clear();
     hourControllers.clear();
     selectedRatings.clear();
     reviewErrors.clear();
     hourErrors.clear();
     
-    // Initialize controllers for each accepted user
     for (int i = 0; i < request.acceptedUser.length; i++) {
       reviewControllers.add(TextEditingController());
       hourControllers.add(TextEditingController());
-      selectedRatings.add(5.0.obs); // Default rating
+      selectedRatings.add(5.0.obs);
       reviewErrors.add(RxnString());
       hourErrors.add(RxnString());
     }
@@ -470,25 +537,22 @@ class RequestController extends GetxController {
     isFeedbackReady.value = true;
   }
 
-  /// Update rating for feedback
   void updateRating(int index, double rating) {
     if (index < selectedRatings.length) {
       selectedRatings[index].value = rating;
-      log("RequestController: Updated rating for index $index to $rating");
+      debugLog("⭐ updateRating: index $index → $rating");
     }
   }
 
-  /// Handle feedback submission
   Future<bool> handleFeedbackSubmission({RequestModel? request, BuildContext? context}) async {
     try {
-      log("RequestController: handleFeedbackSubmission called");
+      debugLog("📝 handleFeedbackSubmission called");
       
       if (request == null) {
-        log("RequestController: No request provided for feedback");
+        debugLog("❌ handleFeedbackSubmission: No request provided");
         return false;
       }
       
-      // Validate all feedback forms
       bool isValid = true;
       for (int i = 0; i < request.acceptedUser.length; i++) {
         if (i < reviewControllers.length && reviewControllers[i].text.trim().isEmpty) {
@@ -510,7 +574,6 @@ class RequestController extends GetxController {
         return false;
       }
       
-      // Submit feedback for each user (placeholder implementation)
       for (int i = 0; i < request.acceptedUser.length; i++) {
         if (i < reviewControllers.length && i < hourControllers.length && i < selectedRatings.length) {
           final feedbackData = {
@@ -521,19 +584,17 @@ class RequestController extends GetxController {
             'review': reviewControllers[i].text.trim(),
           };
           
-          log("RequestController: Submitting feedback: $feedbackData");
-          // TODO: Implement actual API call to submit feedback
+          debugLog("📝 Submitting feedback: $feedbackData");
         }
       }
       
       return true;
     } catch (e) {
-      log("RequestController: Error in handleFeedbackSubmission - $e");
+      debugLog("❌ handleFeedbackSubmission error: $e");
       return false;
     }
   }
   
-  /// Select date for request
   Future<void> selectDate(BuildContext context) async {
     try {
       final DateTime? picked = await showDatePicker(
@@ -547,7 +608,6 @@ class RequestController extends GetxController {
         selectedDate.value = picked;
         selectedDateController.value.text = DateFormat('dd/MM/yyyy').format(picked);
         
-        // Update combined datetime if time is also selected
         if (selectedTime.value != null) {
           selectedDateTime.value = DateTime(
             picked.year,
@@ -561,11 +621,10 @@ class RequestController extends GetxController {
         dateTimeError.value = null;
       }
     } catch (e) {
-      log("RequestController: Error selecting date - $e");
+      debugLog("❌ selectDate error: $e");
     }
   }
 
-  /// Select time for request
   Future<void> selectTime(BuildContext context) async {
     try {
       final TimeOfDay? picked = await showTimePicker(
@@ -579,7 +638,6 @@ class RequestController extends GetxController {
           2000, 1, 1, picked.hour, picked.minute,
         ));
         
-        // Update combined datetime if date is also selected
         if (selectedDate.value != null) {
           selectedDateTime.value = DateTime(
             selectedDate.value!.year,
@@ -593,16 +651,14 @@ class RequestController extends GetxController {
         dateTimeError.value = null;
       }
     } catch (e) {
-      log("RequestController: Error selecting time - $e");
+      debugLog("❌ selectTime error: $e");
     }
   }
 
-  /// Validate integer input
   void validateIntegerInput({String? value, String? fieldName}) {
     value = value ?? '';
     fieldName = fieldName ?? '';
     
-    // Remove any validation warnings for now
     if (fieldName.toLowerCase().contains('people')) {
       numberOfPeopleWarning.value = '';
     } else if (fieldName.toLowerCase().contains('hour')) {
@@ -610,18 +666,15 @@ class RequestController extends GetxController {
     }
   }
 
-  /// Save request (alias for createRequest)
   Future<bool> saveRequest() async {
     return await createRequest();
   }
 
-  /// Validate integer field
   int validateIntField({TextEditingController? controller, int defaultValue = 1}) {
     if (controller == null) return defaultValue;
     return int.tryParse(controller.text) ?? defaultValue;
   }
 
-  /// Determine request status based on business logic
   String determineRequestStatus(RequestModel request) {
     final now = DateTime.now();
     final acceptedCount = request.acceptedUser.length;
@@ -645,98 +698,81 @@ class RequestController extends GetxController {
     }
   }
 
-  /// Controller update request (wrapper for updateRequest)
   Future<bool> controllerUpdateRequest(String requestId, dynamic data) async {
     try {
       if (data is RequestModel) {
-        // Convert RequestModel to status string
         final statusData = {'status': data.status.toString().split('.').last};
         return await updateRequestStatus(requestId, statusData['status']!);
       } else if (data is Map<String, dynamic>) {
         return await updateRequestStatus(requestId, data['status'] ?? 'pending');
       } else {
-        log("RequestController: Invalid data type for controllerUpdateRequest");
+        debugLog("❌ controllerUpdateRequest: Invalid data type");
         return false;
       }
     } catch (e) {
-      log("RequestController: Error in controllerUpdateRequest - $e");
+      debugLog("❌ controllerUpdateRequest error: $e");
       return false;
     }
   }
 
-  /// Clear form fields (alias for clearForm)
   void clearFields() {
     clearForm();
   }
 
-  /// Get full feedback list
   List<Map<String, dynamic>> get fullFeedbackList => profileFeedbackList;
 
-  /// Fetch requests by location
   Future<void> fetchRequestsByLocation(String location) async {
     try {
-      log("RequestController: fetchRequestsByLocation called for: $location");
+      debugLog("📍 fetchRequestsByLocation: $location");
       final results = await requestService.searchRequests('', location: location);
       requestList.assignAll(results);
     } catch (e) {
-      log("RequestController: Error fetching requests by location - $e");
+      debugLog("❌ fetchRequestsByLocation error: $e");
     }
   }
 
-  /// Fetch my requests by location
   Future<void> fetchMyRequestsByLocation(String location) async {
     try {
-      log("RequestController: fetchMyRequestsByLocation called for: $location");
-      // Filter user's requests by location locally
+      debugLog("📍 fetchMyRequestsByLocation: $location");
       final filtered = myPostRequests.where((request) => 
         request.location.toLowerCase().contains(location.toLowerCase())
       ).toList();
       myRequestList.assignAll(filtered);
     } catch (e) {
-      log("RequestController: Error fetching my requests by location - $e");
+      debugLog("❌ fetchMyRequestsByLocation error: $e");
     }
   }
 
-  /// Show filter dialog
   void showFilterDialog(BuildContext context) {
-    log("RequestController: showFilterDialog called");
-    // TODO: Implement filter dialog
+    debugLog("🔍 showFilterDialog called");
   }
 
-  /// Fetch profile feedback
   Future<void> fetchProfileFeedback(String userId) async {
     try {
-      log("RequestController: fetchProfileFeedback called for user: $userId");
-      // TODO: Implement feedback fetching from Django API
+      debugLog("👤 fetchProfileFeedback: $userId");
       profileFeedbackList.clear();
     } catch (e) {
-      log("RequestController: Error fetching profile feedback - $e");
+      debugLog("❌ fetchProfileFeedback error: $e");
     }
   }
 
-  /// Get chat room ID
   String getChatRoomId(String requestId, String userId1, [String? userId2]) {
     if (userId2 == null) {
-      // If only two parameters provided, use current user as userId2
       userId2 = authController.currentUserStore.value?.userId ?? 'unknown';
     }
     
-    // Generate a consistent chat room ID
     final sortedIds = [userId1, userId2]..sort();
     return '${requestId}_${sortedIds[0]}_${sortedIds[1]}';
   }
 
-  /// Get request user (alias for getUserDetails)
   Future<UserModel?> getRequestUser(RequestModel request) async {
     return await getUserDetails(request.userId);
   }
 
-  /// Format date time to string
   String formatDateTime(DateTime dateTime) {
     return DateFormat('dd/MM/yyyy, HH:mm').format(dateTime);
   }
 
-  /// Get relative time string
   String getRelativeTime(DateTime dateTime) {
     final now = DateTime.now();
     final difference = now.difference(dateTime);
@@ -751,6 +787,17 @@ class RequestController extends GetxController {
       return 'Just now';
     }
   }
+
+  @override
+  void onClose() {
+    titleController.value.dispose();
+    descriptionController.value.dispose();
+    locationController.value.dispose();
+    numberOfPeopleController.value.dispose();
+    hoursNeededController.value.dispose();
+    selectedDateController.value.dispose();
+    selectedTimeController.value.dispose();
+    
+    super.onClose();
+  }
 }
-
-

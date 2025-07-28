@@ -40,7 +40,7 @@ class ApiConfig {
   static const String apiVersion = 'v1';
   
   /// Complete API base URL with version
-  static String get apiBaseUrl => baseUrl;
+  static String get apiBaseUrl => '$baseUrl/api';
 
   /// Authentication endpoints
   static const String authRegister = '/auth/register/';

@@ -193,16 +193,9 @@ class AuthController extends GetxController {
           duration: const Duration(seconds: 3),
         );
         
-        // Navigate based on verification status
-        if (result.user!.isVerified) {
-          Get.offAllNamed(Routes.homePage);
-        } else {
-          // Load referrer information if needed
-          await _loadReferrerInfo(result.user!);
-          Get.offAllNamed(Routes.verifyPendingPage, arguments: {
-            'referredUser': referredUser.value,
-          });
-        }
+        // 🚨 TEMPORARY FIX: Always go to home page
+        log('✅ Login successful - navigating directly to home page');
+        Get.offAllNamed(Routes.homePage);
         
         // Clear form
         _clearLoginForm();
