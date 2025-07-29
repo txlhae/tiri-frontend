@@ -67,6 +67,9 @@ class RequestService extends GetxController {
         // User arrays (accepted volunteers)
         'acceptedUser': _mapAcceptedUsers(djangoJson),
         'feedbackList': [], // Will be populated later if needed
+        
+        // Include requester data for extension to parse
+        'requester': djangoJson['requester'],
       };
       
       log('✅ MAPPED to Flutter: ${flutterJson.keys.toList()}');
@@ -215,7 +218,7 @@ class RequestService extends GetxController {
         final List<RequestModel> requests = requestsJson
             .map((djangoJson) {
               final flutterJson = _mapDjangoToFlutter(djangoJson as Map<String, dynamic>);
-              return RequestModel.fromJson(flutterJson);
+              return RequestModelExtension.fromJsonWithRequester(flutterJson);
             })
             .toList();
         
@@ -253,7 +256,7 @@ class RequestService extends GetxController {
         final List<RequestModel> requests = requestsJson
             .map((djangoJson) {
               final flutterJson = _mapDjangoToFlutter(djangoJson as Map<String, dynamic>);
-              return RequestModel.fromJson(flutterJson);
+              return RequestModelExtension.fromJsonWithRequester(flutterJson);
             })
             .toList();
         
@@ -280,7 +283,7 @@ class RequestService extends GetxController {
       if (response.statusCode == 200 && response.data != null) {
         // 🎯 APPLY FIELD MAPPING
         final flutterJson = _mapDjangoToFlutter(response.data as Map<String, dynamic>);
-        final RequestModel request = RequestModel.fromJson(flutterJson);
+        final RequestModel request = RequestModelExtension.fromJsonWithRequester(flutterJson);
         
         log('✅ RequestService: Mapped request $requestId successfully');
         return request;
@@ -417,7 +420,7 @@ class RequestService extends GetxController {
         final List<RequestModel> requests = requestsJson
             .map((djangoJson) {
               final flutterJson = _mapDjangoToFlutter(djangoJson as Map<String, dynamic>);
-              return RequestModel.fromJson(flutterJson);
+              return RequestModelExtension.fromJsonWithRequester(flutterJson);
             })
             .toList();
         

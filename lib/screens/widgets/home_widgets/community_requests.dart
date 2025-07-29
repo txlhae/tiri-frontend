@@ -5,7 +5,6 @@ import 'package:kind_clock/controllers/auth_controller.dart';
 import 'package:kind_clock/controllers/request_controller.dart';
 import 'package:kind_clock/infrastructure/routes.dart';
 import 'package:kind_clock/models/request_model.dart';
-import 'package:kind_clock/models/user_model.dart';
 
 class CommunityRequests extends StatefulWidget {
   const CommunityRequests({super.key});
@@ -15,19 +14,6 @@ class CommunityRequests extends StatefulWidget {
 }
 
 class _CommunityRequestsState extends State<CommunityRequests> {
-  final Map<String, Rx<UserModel?>> userCache = {};
-
-  void loadUserData(RequestModel request) {
-    if (!userCache.containsKey(request.userId)) {
-      userCache[request.userId] = Rx<UserModel?>(null);
-
-      Get.find<RequestController>().getRequestUser(request).then((user) {
-        if (user != null && mounted) {
-          userCache[request.userId]?.value = user;
-        }
-      });
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -102,7 +88,6 @@ class _CommunityRequestsState extends State<CommunityRequests> {
                       itemCount: filteredRequests.length,
                       itemBuilder: (context, index) {
                         var request = filteredRequests[index];
-                        loadUserData(request);
 
                         return GestureDetector(
                           onTap: () {
@@ -132,20 +117,16 @@ class _CommunityRequestsState extends State<CommunityRequests> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     ListTile(
-                                      leading: Obx(() {
-                                        final user =
-                                            userCache[request.userId]?.value;
-                                        return CircleAvatar(
-                                          backgroundImage: user?.imageUrl !=
-                                                  null
-                                              ? NetworkImage(user!.imageUrl!)
-                                              : null,
-                                          radius: 30,
-                                          child: user?.imageUrl == null
-                                              ? const Icon(Icons.person)
-                                              : null,
-                                        );
-                                      }),
+                                      leading: CircleAvatar(
+                                        backgroundImage: request.requester?.imageUrl !=
+                                                null
+                                            ? NetworkImage(request.requester!.imageUrl!)
+                                            : null,
+                                        radius: 30,
+                                        child: request.requester?.imageUrl == null
+                                            ? const Icon(Icons.person)
+                                            : null,
+                                      ),
                                       title: Text(
                                         request.title,
                                         style: const TextStyle(
