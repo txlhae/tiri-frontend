@@ -5,7 +5,6 @@ part 'user_model.g.dart';
 
 @freezed
 class UserModel with _$UserModel {
-  @JsonSerializable(explicitToJson: true)
   const factory UserModel({
     required String userId,
     required String email,
@@ -39,7 +38,7 @@ class UserModel with _$UserModel {
       isVerified: json['is_verified'] ?? false,
       // Map the additional fields to existing fields where possible
       country: json['location_display'], // Use country field for location_display
-      referralCode: json['full_name'], // Use referralCode field for full_name (temp solution)
+      referralCode: json['full_name'], // Use referralCode field for full_name
     );
   }
 }

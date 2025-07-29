@@ -36,10 +36,8 @@ class _CommunityRequestsState extends State<CommunityRequests> {
 
             final filteredRequests = allRequests
                 .where((request) =>
-                    currentUser != null && (request.status == RequestStatus.pending ||request.status == RequestStatus.inprogress   ) &&
-                    request.requestedTime.isAfter(DateTime.now()) &&
+                    currentUser != null &&
                     request.userId != currentUser.userId && 
-                    request.acceptedUser.length < request.numberOfPeople &&
                     !request.acceptedUser
                         .any((user) => user.userId == currentUser.userId))
                 .toList();
@@ -93,7 +91,7 @@ class _CommunityRequestsState extends State<CommunityRequests> {
                           onTap: () {
                             Get.toNamed(
                               Routes.requestDetailsPage,
-                              arguments: {'request': request},
+                              arguments: {'requestId': request.requestId},
                             );
                           },
                           child: Padding(

@@ -99,6 +99,13 @@ class RequestController extends GetxController {
   final RxBool hasSearchedMyPosts = false.obs;
 
   // =============================================================================
+  // REQUEST DETAILS ON-DEMAND LOADING
+  // =============================================================================
+  
+  final Rx<RequestModel?> currentRequestDetails = Rx<RequestModel?>(null);
+  final RxBool isLoadingRequestDetails = false.obs;
+
+  // =============================================================================
   // 🚨 DEBUG: Enhanced initialization with detailed logging
   // =============================================================================
 
@@ -472,6 +479,37 @@ class RequestController extends GetxController {
     } catch (e) {
       debugLog("❌ getUserDetails error: $e");
       return null;
+    }
+  }
+
+  // =============================================================================
+  // LOAD REQUEST DETAILS ON-DEMAND
+  // =============================================================================
+  
+  /// Load complete request details by ID from the API
+  /// This ensures fresh data on every request details view
+  Future<void> loadRequestDetails(String requestId) async {
+    try {
+      debugLog("🔄 LoadRequestDetails: Fetching request $requestId");
+      isLoadingRequestDetails.value = true;
+      currentRequestDetails.value = null;
+      
+      // Fetch the request from the API
+      final RequestModel? request = await requestService.getRequest(requestId);
+      
+      if (request != null) {
+        currentRequestDetails.value = request;
+        debugLog("✅ LoadRequestDetails: Successfully loaded request $requestId");
+      } else {
+        debugLog("❌ LoadRequestDetails: Request $requestId not found");
+        // Keep currentRequestDetails as null to show error state
+      }
+      
+    } catch (e) {
+      debugLog("💥 LoadRequestDetails error: $e");
+      currentRequestDetails.value = null;
+    } finally {
+      isLoadingRequestDetails.value = false;
     }
   }
 

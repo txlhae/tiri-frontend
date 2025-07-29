@@ -61,7 +61,7 @@ class Navigation {
     ),
     GetPage(
       name: Routes.requestDetailsPage,
-      page: () => RequestDetails(request: Get.arguments['request']),
+      page: () => const RequestDetails(),
     ),
     GetPage(
       name: Routes.editAddRequestPage,

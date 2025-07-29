@@ -134,7 +134,7 @@ class _MyHelpsState extends State<MyHelps> {
           final user = requestController.userCache[request.userId]?.value;
       
           return GestureDetector(
-            onTap: () => Get.toNamed(Routes.requestDetailsPage, arguments: {'request': request}),
+            onTap: () => Get.toNamed(Routes.requestDetailsPage, arguments: {'requestId': request.requestId}),
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
               child: Container(

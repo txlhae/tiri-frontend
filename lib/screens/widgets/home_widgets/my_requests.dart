@@ -52,7 +52,7 @@ class MyRequests extends StatelessWidget {
           return GestureDetector(
             onTap: () => Get.toNamed(
               Routes.requestDetailsPage,
-              arguments: {'request': request},
+              arguments: {'requestId': request.requestId},
             ),
             child: Padding(
               padding:

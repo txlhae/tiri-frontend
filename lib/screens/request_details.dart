@@ -16,13 +16,10 @@ import 'package:kind_clock/screens/widgets/dialog_widgets/intrested_dialog.dart'
 import 'package:kind_clock/screens/widgets/request_widgets/details_card.dart';
 import 'package:kind_clock/screens/widgets/request_widgets/details_row.dart';
 import 'package:kind_clock/screens/widgets/request_widgets/status_row.dart';
-import 'package:kind_clock/services/firebase_storage.dart';
 import 'package:shimmer/shimmer.dart';
 
 class RequestDetails extends StatefulWidget {
-  final RequestModel request;
-
-  const RequestDetails({super.key, required this.request});
+  const RequestDetails({super.key});
 
   @override
   State<RequestDetails> createState() => _RequestDetailsState();
@@ -40,7 +37,17 @@ class _RequestDetailsState extends State<RequestDetails> {
   void initState() {
     super.initState();
     detailsController = Get.put(RequestDetailsController());
-    detailsController.loadRequestDetails(widget.request);
+    
+    // Get requestId from navigation arguments
+    final String? requestId = Get.arguments?['requestId'];
+    if (requestId != null && requestId.isNotEmpty) {
+      // Load request details on-demand from RequestController
+      requestController.loadRequestDetails(requestId);
+    } else {
+      // Handle error case where no requestId is provided
+      requestController.currentRequestDetails.value = null;
+      requestController.isLoadingRequestDetails.value = false;
+    }
   }
 
   Widget _buildShimmerPlaceholder() {
@@ -104,7 +111,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                 padding: const EdgeInsets.all(24.0),
                 child: SingleChildScrollView(
                   child: Obx(() {
-                    if (detailsController.isLoading.value) {
+                    if (requestController.isLoadingRequestDetails.value) {
                       return _buildLoadingContent();
                     }
 
@@ -150,7 +157,36 @@ class _RequestDetailsState extends State<RequestDetails> {
   }
 
   Widget _buildLoadedContent() {
-    final request = detailsController.requestModel.value ?? widget.request;
+    final request = requestController.currentRequestDetails.value;
+    
+    // Show error state if request is null
+    if (request == null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 64, color: Colors.grey),
+            const SizedBox(height: 16),
+            const Text(
+              'Request not found',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'The request you are looking for does not exist or has been removed.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => Get.back(),
+              child: const Text('Go Back'),
+            ),
+          ],
+        ),
+      );
+    }
+    
     final currentUserId = authController.currentUserStore.value?.userId; 
 
     return Column(
@@ -187,7 +223,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                       icon:
                           SvgPicture.asset('assets/icons/edit_underscore.svg'),
                     ),
-                    if (currentUserId != detailsController.posterUserId.value)
+                    if (currentUserId != request.userId)
                              CircleAvatar(
                                backgroundColor:  Colors.grey[300],
                                  child: IconButton(
@@ -196,14 +232,14 @@ class _RequestDetailsState extends State<RequestDetails> {
                                  onPressed: () async {
                                    final roomId = requestController.getChatRoomId(
                                    currentUserId ?? '',
-                                   detailsController.posterUserId.value,
+                                   request.userId,
                                    );
                                    Get.toNamed(
                                    Routes.chatPage,
                                    arguments: {
                                      'chatRoomId': roomId,
-                                     'receiverId': detailsController.posterUserId.value,
-                                     'receiverName': detailsController.posterUsername.value,
+                                     'receiverId': request.userId,
+                                     'receiverName': request.requester?.username ?? "User",
                                      'receiverProfilePic': " ",
                                    },
                              );
@@ -233,7 +269,7 @@ class _RequestDetailsState extends State<RequestDetails> {
               ),
               const SizedBox(height: 5),
               Text(
-                detailsController.formatDateTime(request.requestedTime),
+                "${request.requestedTime.day}/${request.requestedTime.month}/${request.requestedTime.year} at ${request.requestedTime.hour}:${request.requestedTime.minute.toString().padLeft(2, '0')}",
                 style: const TextStyle(
                   fontSize: 15,
                   height: 1.5,
@@ -245,13 +281,13 @@ class _RequestDetailsState extends State<RequestDetails> {
               DetailsRow(
                 icon: Icons.person,
                 label: "Posted by",
-                value: detailsController.posterUsername.value,
+                value: request.requester?.referralCode ?? request.requester?.username ?? "Unknown User",
               ),
               const SizedBox(height: 16),
               DetailsRow(
                 icon: Icons.person,
-                label: "Reffered by",
-                value: detailsController.referrerUsername.value,
+                label: "Referred by",
+                value: request.requester?.referralUserId != null ? "Referred User" : "N/A",
               ),
               const SizedBox(height: 16),
               DetailsRow(
@@ -263,7 +299,7 @@ class _RequestDetailsState extends State<RequestDetails> {
               DetailsRow(
                 icon: Icons.access_time,
                 label: "Posted on",
-                value: detailsController.formatDateTime(request.timestamp),
+                value: "${request.timestamp.day}/${request.timestamp.month}/${request.timestamp.year} at ${request.timestamp.hour}:${request.timestamp.minute.toString().padLeft(2, '0')}",
               ),
               const SizedBox(height: 12),
               StatusRow(
@@ -363,7 +399,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                                                 Get.to(() => ProfileScreen(user: user));
                                               },
                                             ),
-                                         if (currentUserId == detailsController.posterUserId.value)
+                                         if (currentUserId == request.userId)
                                             IconButton(
                                               icon: const Icon(Icons.chat_bubble_outline, color: Colors.blue),
                                               tooltip: "Chat",

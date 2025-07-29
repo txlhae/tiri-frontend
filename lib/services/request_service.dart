@@ -51,7 +51,7 @@ class RequestService extends GetxController {
         // Content fields (likely same names)
         'title': djangoJson['title'] ?? '',
         'description': djangoJson['description'] ?? '',
-        'location': djangoJson['location'] ?? '',
+        'location': _buildLocationString(djangoJson),
         
         // DateTime fields (handle Django format)
         'timestamp': _parseDjangoDateTime(djangoJson['created_at'] ?? djangoJson['timestamp']),
@@ -62,7 +62,7 @@ class RequestService extends GetxController {
         
         // Volunteer/People mapping
         'numberOfPeople': djangoJson['volunteers_needed'] ?? djangoJson['number_of_people'] ?? 1,
-        'hoursNeeded': djangoJson['hours_needed'] ?? 1,
+        'hoursNeeded': djangoJson['estimated_hours'] ?? djangoJson['hours_needed'] ?? 1,
         
         // User arrays (accepted volunteers)
         'acceptedUser': _mapAcceptedUsers(djangoJson),
@@ -94,6 +94,36 @@ class RequestService extends GetxController {
     }
     return djangoJson['user_id']?.toString() ?? 
            djangoJson['requester_id']?.toString() ?? '';
+  }
+  
+  /// Build location string from Django address components
+  String _buildLocationString(Map<String, dynamic> djangoJson) {
+    List<String> locationParts = [];
+    
+    // Add address if available
+    if (djangoJson['address'] != null && djangoJson['address'].toString().isNotEmpty) {
+      locationParts.add(djangoJson['address'].toString());
+    }
+    
+    // Add city if available
+    if (djangoJson['city'] != null && djangoJson['city'].toString().isNotEmpty) {
+      locationParts.add(djangoJson['city'].toString());
+    }
+    
+    // Add state if available
+    if (djangoJson['state'] != null && djangoJson['state'].toString().isNotEmpty) {
+      locationParts.add(djangoJson['state'].toString());
+    }
+    
+    // Join with commas, or use fallback
+    String location = locationParts.join(', ');
+    
+    // Fallback to legacy location field or default
+    if (location.isEmpty) {
+      location = djangoJson['location']?.toString() ?? 'Location not specified';
+    }
+    
+    return location;
   }
   
   /// Parse Django datetime strings to Flutter DateTime
@@ -145,6 +175,11 @@ class RequestService extends GetxController {
   List<Map<String, dynamic>> _mapAcceptedUsers(Map<String, dynamic> djangoJson) {
     try {
       // Handle various Django volunteer structures
+      if (djangoJson['volunteers_assigned'] is List) {
+        return (djangoJson['volunteers_assigned'] as List)
+            .map((v) => _mapDjangoUserToFlutter(v))
+            .toList();
+      }
       if (djangoJson['volunteers'] is List) {
         return (djangoJson['volunteers'] as List)
             .map((v) => _mapDjangoUserToFlutter(v))
