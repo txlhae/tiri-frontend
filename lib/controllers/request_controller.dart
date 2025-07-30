@@ -487,19 +487,48 @@ class RequestController extends GetxController {
   // =============================================================================
   
   /// Load complete request details by ID from the API
-  /// This ensures fresh data on every request details view
+  /// ✅ ENHANCED: Now verifies UserRequestStatus data is properly loaded
+  /// This ensures fresh data with enhanced volunteer status on every request details view
   Future<void> loadRequestDetails(String requestId) async {
     try {
       debugLog("🔄 LoadRequestDetails: Fetching request $requestId");
       isLoadingRequestDetails.value = true;
       currentRequestDetails.value = null;
       
-      // Fetch the request from the API
+      // Fetch the request from the API (uses RequestModelExtension.fromJsonWithRequester)
       final RequestModel? request = await requestService.getRequest(requestId);
       
       if (request != null) {
         currentRequestDetails.value = request;
+        
+        // ✅ ENHANCED: Debug logging to verify UserRequestStatus data
         debugLog("✅ LoadRequestDetails: Successfully loaded request $requestId");
+        debugLog("📊 Enhanced Data Verification:");
+        debugLog("   - User Request Status: ${request.userRequestStatus}");
+        debugLog("   - Can Request: ${request.canRequest}");
+        debugLog("   - Can Cancel Request: ${request.canCancelRequest}");
+        debugLog("   - Has Volunteered: ${request.hasVolunteered}");
+        debugLog("   - Volunteer Message: ${request.volunteerMessage ?? 'None'}");
+        debugLog("   - Requested At: ${request.requestedAt?.toString() ?? 'Never'}");
+        debugLog("   - Accepted At: ${request.acceptedAt?.toString() ?? 'Never'}");
+        
+        // Verify UserRequestStatus object is available
+        final statusObject = request.userRequestStatusObject;
+        if (statusObject != null) {
+          debugLog("✅ UserRequestStatus object is properly loaded");
+          debugLog("   - Full Status Data: ${statusObject.toJson()}");
+        } else {
+          debugLog("⚠️  UserRequestStatus object is null - may indicate backend data issue");
+        }
+        
+        // Verify requester data is also available
+        final requester = request.requester;
+        if (requester != null) {
+          debugLog("✅ Requester data available: ${requester.username}");
+        } else {
+          debugLog("⚠️  Requester data is null");
+        }
+        
       } else {
         debugLog("❌ LoadRequestDetails: Request $requestId not found");
         // Keep currentRequestDetails as null to show error state
@@ -871,57 +900,183 @@ class RequestController extends GetxController {
   // =============================================================================
 
   /// Request to volunteer for a specific request
-  /// Implements proper approval workflow via Django backend
+  /// ✅ ENHANCED: Implements proper approval workflow via Django backend with UI integration
   Future<void> requestToVolunteer(String requestId, String message) async {
     try {
       isLoading.value = true;
       debugLog("🙋 RequestController: Requesting to volunteer for request $requestId");
       debugLog("   - Message: $message");
+      debugLog("   - Message length: ${message.length} characters");
+      
+      // Validate input before API call
+      if (requestId.isEmpty) {
+        throw Exception('Request ID cannot be empty');
+      }
+      
+      if (message.trim().isEmpty) {
+        throw Exception('Volunteer message cannot be empty');
+      }
       
       // Call the request service to send volunteer request
       final success = await requestService.requestToVolunteer(requestId, message);
       
       if (success) {
         debugLog("✅ RequestController: Successfully sent volunteer request for $requestId");
-        // Refresh requests to get updated status
+        
+        // Refresh the specific request details to get updated UserRequestStatus
+        await loadRequestDetails(requestId);
+        debugLog("🔄 RequestController: Refreshed request details after volunteer request");
+        
+        // Also refresh general request lists for consistency
         await refreshRequests();
-        debugLog("🔄 RequestController: Refreshed requests after volunteer request");
+        debugLog("🔄 RequestController: Refreshed all requests after volunteer request");
+        
       } else {
         debugLog("❌ RequestController: Failed to send volunteer request for $requestId");
-        throw Exception('Failed to send volunteer request');
+        throw Exception('Failed to send volunteer request. Please try again.');
       }
     } catch (e) {
       debugLog("💥 RequestController: Error in requestToVolunteer for $requestId - $e");
-      rethrow;
+      // Re-throw with more specific error message for UI
+      if (e.toString().contains('Failed to send volunteer request')) {
+        rethrow;
+      } else {
+        throw Exception('Network error: Unable to send volunteer request. Please check your connection and try again.');
+      }
     } finally {
       isLoading.value = false;
     }
   }
 
   /// Cancel volunteer request for a specific request
-  /// Removes user from pending volunteer requests via Django backend
+  /// ✅ ENHANCED: Removes user from pending volunteer requests via Django backend with UI integration
   Future<void> cancelVolunteerRequest(String requestId) async {
     try {
       isLoading.value = true;
       debugLog("❌ RequestController: Canceling volunteer request for request $requestId");
+      
+      // Validate input before API call
+      if (requestId.isEmpty) {
+        throw Exception('Request ID cannot be empty');
+      }
+      
+      // Get current request status for validation
+      final currentRequest = currentRequestDetails.value;
+      if (currentRequest != null) {
+        debugLog("   - Current user status: ${currentRequest.userRequestStatus}");
+        debugLog("   - Can cancel request: ${currentRequest.canCancelRequest}");
+        
+        // Validate that user can actually cancel
+        if (!currentRequest.canCancelRequest) {
+          throw Exception('You cannot cancel this volunteer request at this time');
+        }
+      }
       
       // Call the request service to cancel volunteer request
       final success = await requestService.cancelVolunteerRequest(requestId);
       
       if (success) {
         debugLog("✅ RequestController: Successfully canceled volunteer request for $requestId");
-        // Refresh requests to get updated status
+        
+        // Refresh the specific request details to get updated UserRequestStatus
+        await loadRequestDetails(requestId);
+        debugLog("🔄 RequestController: Refreshed request details after canceling volunteer request");
+        
+        // Also refresh general request lists for consistency
         await refreshRequests();
-        debugLog("🔄 RequestController: Refreshed requests after canceling volunteer request");
+        debugLog("🔄 RequestController: Refreshed all requests after canceling volunteer request");
+        
       } else {
         debugLog("❌ RequestController: Failed to cancel volunteer request for $requestId");
-        throw Exception('Failed to cancel volunteer request');
+        throw Exception('Failed to cancel volunteer request. Please try again.');
       }
     } catch (e) {
       debugLog("💥 RequestController: Error in cancelVolunteerRequest for $requestId - $e");
-      rethrow;
+      // Re-throw with more specific error message for UI
+      if (e.toString().contains('Failed to cancel volunteer request') || 
+          e.toString().contains('You cannot cancel this volunteer request')) {
+        rethrow;
+      } else {
+        throw Exception('Network error: Unable to cancel volunteer request. Please check your connection and try again.');
+      }
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  /// Approve a volunteer request (for request owners)
+  /// ✅ NEW: Allows request owners to approve pending volunteer requests
+  Future<void> approveVolunteerRequest(String requestId, String volunteerUserId) async {
+    try {
+      isLoading.value = true;
+      debugLog("✅ RequestController: Approving volunteer $volunteerUserId for request $requestId");
+      
+      // Validate inputs
+      if (requestId.isEmpty || volunteerUserId.isEmpty) {
+        throw Exception('Request ID and volunteer ID cannot be empty');
+      }
+      
+      // Validate that current user owns the request
+      final currentRequest = currentRequestDetails.value;
+      final currentUserId = authController.currentUserStore.value?.userId;
+      
+      if (currentRequest == null || currentUserId == null) {
+        throw Exception('Unable to verify request ownership');
+      }
+      
+      if (currentRequest.userId != currentUserId) {
+        throw Exception('Only request owners can approve volunteers');
+      }
+      
+      // Call the request service to approve volunteer
+      final success = await requestService.approveVolunteerRequest(requestId, volunteerUserId);
+      
+      if (success) {
+        debugLog("✅ RequestController: Successfully approved volunteer $volunteerUserId for request $requestId");
+        
+        // Refresh request details to show updated volunteer list
+        await loadRequestDetails(requestId);
+        debugLog("🔄 RequestController: Refreshed request details after approving volunteer");
+        
+        // Refresh general requests
+        await refreshRequests();
+        
+      } else {
+        debugLog("❌ RequestController: Failed to approve volunteer $volunteerUserId for request $requestId");
+        throw Exception('Failed to approve volunteer request. Please try again.');
+      }
+    } catch (e) {
+      debugLog("💥 RequestController: Error in approveVolunteerRequest for $requestId - $e");
+      if (e.toString().contains('Failed to approve volunteer request') || 
+          e.toString().contains('Only request owners can approve')) {
+        rethrow;
+      } else {
+        throw Exception('Network error: Unable to approve volunteer. Please check your connection and try again.');
+      }
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  /// Get volunteer requests for a specific request (for request owners)
+  /// ✅ NEW: Retrieves pending volunteer requests for approval workflow
+  Future<List<Map<String, dynamic>>> getVolunteerRequests(String requestId) async {
+    try {
+      debugLog("📋 RequestController: Fetching volunteer requests for request $requestId");
+      
+      if (requestId.isEmpty) {
+        throw Exception('Request ID cannot be empty');
+      }
+      
+      // Call the request service to get volunteer requests
+      final requests = await requestService.getVolunteerRequests(requestId);
+      
+      debugLog("✅ RequestController: Found ${requests.length} volunteer requests for request $requestId");
+      return requests;
+      
+    } catch (e) {
+      debugLog("💥 RequestController: Error fetching volunteer requests for $requestId - $e");
+      throw Exception('Failed to load volunteer requests. Please try again.');
     }
   }
 

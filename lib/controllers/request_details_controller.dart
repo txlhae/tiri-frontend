@@ -1,79 +1,70 @@
 import 'dart:developer';
 import 'package:get/get.dart';
+import 'package:kind_clock/controllers/request_controller.dart';
 import 'package:kind_clock/models/request_model.dart';
-import 'package:kind_clock/services/firebase_storage.dart';
 
 class RequestDetailsController extends GetxController {
-  // final FirebaseStorageService storageService = Get.find<FirebaseStorageService>(); // REMOVED: Migrating to Django
+  // Access to the main RequestController for data operations
+  late final RequestController _requestController;
 
-  // Observable variables
-  final isLoading = true.obs;
-  final requestModel = Rx<RequestModel?>(null);
-  final posterUsername = "".obs;
-  final posterUserId = "".obs;
-  final referrerUsername = "".obs;
+  // Observable variables for additional UI state
+  final isLoading = false.obs;
+  final hasError = false.obs;
+  final errorMessage = "".obs;
 
-  // Load request details
-  Future<void> loadRequestDetails(RequestModel initialRequest) async {
-    isLoading.value = true;
-
-    try {
-      // Load the latest request data
-      await _loadRequest(initialRequest.requestId);
-
-      // Load user information
-      await _loadUserInfo(initialRequest.userId);
-
-      isLoading.value = false;
-    } catch (e) {
-      log('Error loading request details: $e');
-      isLoading.value = false;
-    }
+  @override
+  void onInit() {
+    super.onInit();
+    _requestController = Get.find<RequestController>();
   }
 
-  // Load request data
-  Future<void> _loadRequest(String requestId) async {
-    try {
-      final result = null; // TODO: Implement Django API call
-      // if (result != null) {
-      //   requestModel.value = result;
-      // }
-    } catch (e) {
-      log('Error fetching request: $e');
-    }
-  }
-
-  // Load user information
-  Future<void> _loadUserInfo(String userId) async {
-    try {
-      final userModel = null; // TODO: Implement Django API call
-      // if (userModel != null) {
-      //   posterUsername.value = userModel.username;
-      //   posterUserId.value = userModel.userId;
-      //   
-      //   // Load referrer information if available
-      //   if (userModel.referralUserId != null && userModel.referralUserId!.isNotEmpty) {
-      //     final referrerModel = null; // TODO: Implement Django API call  
-      //     if (referrerModel != null) {
-      //       referrerUsername.value = referrerModel.username;
-      //     }
-      //   }
-      // }
-    } catch (e) {
-      log('Error fetching user info: $e');
-    }
-  }
-
-  // Refresh data
+  /// Refresh request details by reloading from API
+  /// ✅ FIXED: Now properly integrates with RequestController.loadRequestDetails()
   Future<void> refreshData() async {
-    if (requestModel.value != null) {
-      await loadRequestDetails(requestModel.value!);
+    try {
+      isLoading.value = true;
+      hasError.value = false;
+      errorMessage.value = "";
+      
+      // Get current request ID from RequestController
+      final currentRequest = _requestController.currentRequestDetails.value;
+      if (currentRequest != null) {
+        log('🔄 RequestDetailsController: Refreshing data for request ${currentRequest.requestId}');
+        
+        // Use RequestController's loadRequestDetails for consistency
+        await _requestController.loadRequestDetails(currentRequest.requestId);
+        
+        log('✅ RequestDetailsController: Successfully refreshed request details');
+      } else {
+        log('⚠️  RequestDetailsController: No current request to refresh');
+        throw Exception('No current request available to refresh');
+      }
+    } catch (e) {
+      log('💥 RequestDetailsController: Error refreshing data - $e');
+      hasError.value = true;
+      errorMessage.value = e.toString();
+    } finally {
+      isLoading.value = false;
     }
   }
 
-  // Format date time to string
+  /// Get current request from RequestController
+  /// ✅ NEW: Provides reactive access to current request
+  RequestModel? get currentRequest => _requestController.currentRequestDetails.value;
+
+  /// Check if data is currently loading
+  /// ✅ NEW: Combines loading states from both controllers
+  bool get isDataLoading => _requestController.isLoadingRequestDetails.value || isLoading.value;
+
+  /// Format date time to string
   String formatDateTime(DateTime dateTime) {
     return "${dateTime.day}/${dateTime.month}/${dateTime.year} at ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}";
+  }
+
+  /// Clear any error state
+  void clearError() {
+    hasError.value = false;
+    errorMessage.value = "";
   }
 
   @override

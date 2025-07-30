@@ -4,8 +4,8 @@ part 'chat_message_model.freezed.dart';
 part 'chat_message_model.g.dart';
 
 @freezed
+@JsonSerializable(explicitToJson: true)
 class ChatMessageModel with _$ChatMessageModel {
-  @JsonSerializable(explicitToJson: true)
   const factory ChatMessageModel({
     required String messageId,
     required String chatRoomId,

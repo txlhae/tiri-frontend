@@ -555,6 +555,67 @@ class RequestService extends GetxController {
       return null;
     }
   }
+
+  /// Approve a volunteer request for a specific request
+  /// ✅ NEW: Allows request owners to approve pending volunteer requests
+  Future<bool> approveVolunteerRequest(String requestId, String volunteerUserId) async {
+    try {
+      log('✅ RequestService: Approving volunteer $volunteerUserId for request $requestId via Django API');
+      
+      final response = await _apiService.post(
+        '/api/requests/$requestId/approve/', 
+        data: {'volunteer_user_id': volunteerUserId}
+      );
+      
+      if (response.statusCode == 200) {
+        log('✅ RequestService: Successfully approved volunteer $volunteerUserId for request $requestId');
+        return true;
+      } else {
+        log('❌ RequestService: Failed to approve volunteer $volunteerUserId for request $requestId - Status: ${response.statusCode}');
+        return false;
+      }
+    } catch (e) {
+      log('💥 RequestService: Error approving volunteer $volunteerUserId for request $requestId - $e');
+      return false;
+    }
+  }
+
+  /// Get volunteer requests for a specific request
+  /// ✅ NEW: Retrieves pending volunteer requests for approval workflow
+  Future<List<Map<String, dynamic>>> getVolunteerRequests(String requestId) async {
+    try {
+      log('📋 RequestService: Fetching volunteer requests for request $requestId via Django API');
+      
+      final response = await _apiService.get('/api/requests/$requestId/volunteer-requests/');
+      
+      if (response.statusCode == 200 && response.data != null) {
+        final data = response.data as Map<String, dynamic>;
+        final requests = data['volunteer_requests'] as List<dynamic>? ?? [];
+        
+        log('✅ RequestService: Found ${requests.length} volunteer requests for request $requestId');
+        
+        // Convert to list of maps with proper field mapping
+        return requests.map((request) {
+          final requestData = request as Map<String, dynamic>;
+          return {
+            'id': requestData['id'],
+            'user': requestData['user'],
+            'message': requestData['message_to_requester'],
+            'status': requestData['status'],
+            'requested_at': requestData['requested_at'],
+            'user_profile': requestData['user_profile'], // Additional user info
+          };
+        }).toList();
+        
+      } else {
+        log('❌ RequestService: Failed to fetch volunteer requests for request $requestId - Status: ${response.statusCode}');
+        return [];
+      }
+    } catch (e) {
+      log('💥 RequestService: Error fetching volunteer requests for request $requestId - $e');
+      return [];
+    }
+  }
   
   // =============================================================================
   // PLACEHOLDER METHODS (For backward compatibility)

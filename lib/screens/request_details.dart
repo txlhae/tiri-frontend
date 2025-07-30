@@ -11,8 +11,6 @@ import 'package:kind_clock/models/notification_model.dart';
 import 'package:kind_clock/models/request_model.dart';
 import 'package:kind_clock/screens/profile_screen.dart';
 import 'package:kind_clock/screens/widgets/custom_widgets/custom_back_button.dart';
-import 'package:kind_clock/screens/widgets/custom_widgets/custom_button.dart';
-import 'package:kind_clock/screens/widgets/custom_widgets/custom_cancel.dart';
 import 'package:kind_clock/screens/widgets/dialog_widgets/intrested_dialog.dart';
 import 'package:kind_clock/screens/widgets/request_widgets/details_card.dart';
 import 'package:kind_clock/screens/widgets/request_widgets/details_row.dart';
@@ -39,16 +37,50 @@ class _RequestDetailsState extends State<RequestDetails> {
     super.initState();
     detailsController = Get.put(RequestDetailsController());
     
-    // Get requestId from navigation arguments
-    final String? requestId = Get.arguments?['requestId'];
-    if (requestId != null && requestId.isNotEmpty) {
-      // Load request details on-demand from RequestController
-      requestController.loadRequestDetails(requestId);
-    } else {
-      // Handle error case where no requestId is provided
-      requestController.currentRequestDetails.value = null;
-      requestController.isLoadingRequestDetails.value = false;
-    }
+    // Get requestId from navigation arguments with enhanced validation
+    final arguments = Get.arguments;
+    final String? requestId = arguments is Map<String, dynamic> 
+        ? arguments['requestId']?.toString()
+        : null;
+    
+    // ✅ FIX: Move reactive updates to post-frame to prevent setState during build
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (requestId != null && requestId.isNotEmpty && requestId.trim().isNotEmpty) {
+        try {
+          // Load request details after build completes with error handling
+          await requestController.loadRequestDetails(requestId);
+        } catch (e) {
+          // Handle loading errors gracefully
+          print('Error loading request details in initState: $e');
+          if (mounted) {
+            Get.snackbar(
+              'Loading Error',
+              'Failed to load request details. Please try again.',
+              snackPosition: SnackPosition.BOTTOM,
+              backgroundColor: Colors.red.shade600,
+              colorText: Colors.white,
+              margin: const EdgeInsets.all(16),
+            );
+          }
+        }
+      } else {
+        // Handle error case where no valid requestId is provided
+        print('Warning: No valid requestId provided to RequestDetails');
+        requestController.currentRequestDetails.value = null;
+        requestController.isLoadingRequestDetails.value = false;
+        
+        if (mounted) {
+          Get.snackbar(
+            'Navigation Error',
+            'Invalid request. Please try again.',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Colors.orange.shade600,
+            colorText: Colors.white,
+            margin: const EdgeInsets.all(16),
+          );
+        }
+      }
+    });
   }
 
   Widget _buildShimmerPlaceholder() {
@@ -159,36 +191,42 @@ class _RequestDetailsState extends State<RequestDetails> {
 
   Widget _buildLoadedContent() {
     final request = requestController.currentRequestDetails.value;
+    final currentUser = authController.currentUserStore.value;
     
-    // Show error state if request is null
+    // Enhanced error state handling with multiple scenarios
     if (request == null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, size: 64, color: Colors.grey),
-            const SizedBox(height: 16),
-            const Text(
-              'Request not found',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'The request you are looking for does not exist or has been removed.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () => Get.back(),
-              child: const Text('Go Back'),
-            ),
-          ],
-        ),
+      return _buildErrorState(
+        icon: Icons.error_outline,
+        title: 'Request not found',
+        message: 'The request you are looking for does not exist or has been removed.',
+        buttonText: 'Go Back',
+        onPressed: () => Get.back(),
       );
     }
+
+    // Check for authentication issues
+    if (currentUser == null) {
+      return _buildErrorState(
+        icon: Icons.account_circle_outlined,
+        title: 'Authentication Required',
+        message: 'Please log in to view request details.',
+        buttonText: 'Go to Login',
+        onPressed: () => Get.offAllNamed('/login'),
+      );
+    }
+
+    final currentUserId = currentUser.userId;
     
-    final currentUserId = authController.currentUserStore.value?.userId; 
+    // Check for invalid user data
+    if (currentUserId.isEmpty) {
+      return _buildErrorState(
+        icon: Icons.warning_outlined,
+        title: 'Invalid User Data',
+        message: 'There seems to be an issue with your account. Please try logging in again.',
+        buttonText: 'Refresh',
+        onPressed: () => Get.back(),
+      );
+    }
 
     return Column(
       children: [
@@ -232,7 +270,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                                  tooltip: "Chat with Poster",
                                  onPressed: () async {
                                    final roomId = requestController.getChatRoomId(
-                                   currentUserId ?? '',
+                                   currentUserId,
                                    request.userId,
                                    );
                                    Get.toNamed(
@@ -406,7 +444,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                                               tooltip: "Chat",
                                               onPressed: () async {
                                                 final roomId = requestController.getChatRoomId(
-                                                  currentUserId ?? '',
+                                                  currentUserId,
                                                   user.userId,
                                                 );
                                                 Get.toNamed(
@@ -589,109 +627,355 @@ class _RequestDetailsState extends State<RequestDetails> {
             case 'pending':
               print('Debug: Entering pending case');
               // Show pending status with cancel option
-              return Column(
-                children: [
-                  // Request Sent button (disabled) - no Obx needed
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.grey,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Text(
-                      "Request Sent",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  // Cancel Request button - wrap in Obx for loading state
-                  Obx(() => DeferPointer(
-                    child: CustomCancel(
-                      buttonText: "Cancel Request",
-                      onButtonPressed: () async {
-                        if (requestController.isLoading.value) return;
-                        
-                        try {
-                          await requestController.cancelVolunteerRequest(request.requestId);
-                          Get.snackbar(
-                            'Success',
-                            'Volunteer request canceled successfully',
-                            snackPosition: SnackPosition.BOTTOM,
-                            backgroundColor: Colors.orange,
-                            colorText: Colors.white,
-                          );
-                          detailsController.refreshData();
-                        } catch (e) {
-                          Get.snackbar(
-                            'Error',
-                            'Failed to cancel volunteer request: $e',
-                            snackPosition: SnackPosition.BOTTOM,
-                            backgroundColor: Colors.red,
-                            colorText: Colors.white,
-                          );
-                        }
-                      },
-                    ),
-                  )),
-                ],
-              );
+              return _buildPendingRequestState(request);
               
+            case 'approved':
             case 'accepted':
-              print('Debug: Entering accepted case');
-              // Show accepted status - no Obx needed (static)
-              return Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.green),
-                ),
-                child: const Text(
-                  "✅ You are accepted as a volunteer!",
-                  style: TextStyle(
-                    color: Colors.green,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              );
+              print('Debug: Entering approved/accepted case');
+              // Show approved status
+              return _buildApprovedRequestState(request);
               
             case 'not_requested':
-            case null:
             default:
               print('Debug: Entering default case (not_requested/null)');
-              // Show Interested button if user can request
-              if (canRequest) {
-                print('Debug: canRequest=true, showing Interested button');
-                // No Obx wrapper needed - loading check is inside onPressed
-                return DeferPointer(
-                  child: CustomButton(
-                    buttonText: "Interested",
-                    onButtonPressed: () {
-                      if (requestController.isLoading.value) return;
-                      
-                      Get.dialog(
-                        IntrestedDialog(
-                          questionText: "Are you interested?",
-                          submitText: "Yes",
-                          request: request,
-                          acceptedUser: currentUser!,
-                        ),
-                      ).then((_) => detailsController.refreshData());
-                    },
-                  ),
-                );
-              } else {
-                print('Debug: canRequest=false, returning Container()');
-                return Container();
-              }
+              // Show appropriate button based on canRequest status
+              return _buildInitialRequestState(request, canRequest);
           }
         },
+      ),
+    );
+  }
+
+  /// Builds the pending request state UI with status and cancel option
+  Widget _buildPendingRequestState(RequestModel request) {
+    return Column(
+      children: [
+        // Status information card
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            color: Colors.orange.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.orange.withOpacity(0.3)),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.pending_actions, color: Colors.orange.shade700, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Request Pending",
+                      style: TextStyle(
+                        color: Colors.orange.shade700,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      "Waiting for requester approval",
+                      style: TextStyle(
+                        color: Colors.orange.shade600,
+                        fontSize: 14,
+                      ),
+                    ),
+                    if (request.volunteerMessage != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        "Your message: \"${request.volunteerMessage}\"",
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 12,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        // Cancel Request button with loading state
+        Obx(() => SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: requestController.isLoading.value ? null : () async {
+              try {
+                await requestController.cancelVolunteerRequest(request.requestId);
+                Get.snackbar(
+                  'Success',
+                  'Volunteer request canceled successfully',
+                  snackPosition: SnackPosition.BOTTOM,
+                  backgroundColor: Colors.orange,
+                  colorText: Colors.white,
+                  margin: const EdgeInsets.all(16),
+                );
+                // Reload request details to get updated status
+                await requestController.loadRequestDetails(request.requestId);
+              } catch (e) {
+                Get.snackbar(
+                  'Error',
+                  'Failed to cancel volunteer request: $e',
+                  snackPosition: SnackPosition.BOTTOM,
+                  backgroundColor: Colors.red,
+                  colorText: Colors.white,
+                  margin: const EdgeInsets.all(16),
+                );
+              }
+            },
+            icon: requestController.isLoading.value 
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.cancel_outlined),
+            label: Text(requestController.isLoading.value ? "Canceling..." : "Cancel Request"),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.red.shade700,
+              side: BorderSide(color: Colors.red.shade300),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        )),
+      ],
+    );
+  }
+
+  /// Builds the approved request state UI
+  Widget _buildApprovedRequestState(RequestModel request) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.green.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.green.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.check_circle, color: Colors.green.shade700, size: 28),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Request Approved! 🎉",
+                  style: TextStyle(
+                    color: Colors.green.shade700,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  "You are confirmed as a volunteer for this request",
+                  style: TextStyle(
+                    color: Colors.green.shade600,
+                    fontSize: 14,
+                  ),
+                ),
+                if (request.acceptedAt != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    "Approved: ${_formatDateTime(request.acceptedAt!)}",
+                    style: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Builds the initial request state UI based on availability
+  Widget _buildInitialRequestState(RequestModel request, bool canRequest) {
+    if (canRequest) {
+      // Show "Interested" button - user can volunteer
+      return Column(
+        children: [
+          // Available slot information
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            margin: const EdgeInsets.only(bottom: 16),
+            decoration: BoxDecoration(
+              color: Colors.blue.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.blue.withOpacity(0.3)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.volunteer_activism, color: Colors.blue.shade700, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  "${request.numberOfPeople - request.acceptedUser.length} volunteer spots available",
+                  style: TextStyle(
+                    color: Colors.blue.shade700,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          // Interested button with loading state
+          Obx(() => SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: requestController.isLoading.value ? null : () {
+                Get.dialog(
+                  IntrestedDialog(
+                    questionText: "Are you interested in volunteering?",
+                    submitText: "Yes, I'm Interested",
+                    request: request,
+                    acceptedUser: authController.currentUserStore.value!,
+                  ),
+                ).then((_) {
+                  // Reload request details to get updated status
+                  requestController.loadRequestDetails(request.requestId);
+                });
+              },
+              icon: requestController.isLoading.value 
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Icon(Icons.volunteer_activism),
+              label: Text(requestController.isLoading.value ? "Processing..." : "I'm Interested"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue.shade600,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 2,
+              ),
+            ),
+          )),
+        ],
+      );
+    } else {
+      // Show "Not Available" state with reason
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.grey.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.withOpacity(0.3)),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.block, color: Colors.grey.shade600, size: 20),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Not Available",
+                    style: TextStyle(
+                      color: Colors.grey.shade700,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    request.acceptedUser.length >= request.numberOfPeople
+                        ? "This request is already full"
+                        : "You cannot volunteer for this request",
+                    style: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  /// Helper method to format DateTime for display
+  String _formatDateTime(DateTime dateTime) {
+    return "${dateTime.day}/${dateTime.month}/${dateTime.year} at ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}";
+  }
+
+  /// Enhanced error state widget for better user experience
+  /// ✅ NEW: Provides consistent error states with actionable feedback
+  Widget _buildErrorState({
+    required IconData icon,
+    required String title,
+    required String message,
+    required String buttonText,
+    required VoidCallback onPressed,
+  }) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 64, color: Colors.grey.shade400),
+            const SizedBox(height: 20),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey.shade600,
+                height: 1.4,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: onPressed,
+              icon: Icon(Icons.refresh),
+              label: Text(buttonText),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue.shade600,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

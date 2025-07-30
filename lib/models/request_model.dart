@@ -7,6 +7,55 @@ part 'request_model.g.dart';
 
 enum RequestStatus { pending, accepted, complete, incomplete, cancelled ,inprogress, expired}
 
+/// Enhanced user request status for volunteer workflow
+class UserRequestStatus {
+  final String requestStatus;
+  final bool canRequest;
+  final bool canCancelRequest;
+  final String? messageContent;
+  final bool hasVolunteered;
+  final DateTime? requestedAt;
+  final DateTime? acceptedAt;
+
+  const UserRequestStatus({
+    this.requestStatus = 'not_requested',
+    this.canRequest = false,
+    this.canCancelRequest = false,
+    this.messageContent,
+    this.hasVolunteered = false,
+    this.requestedAt,
+    this.acceptedAt,
+  });
+
+  factory UserRequestStatus.fromJson(Map<String, dynamic> json) {
+    return UserRequestStatus(
+      requestStatus: json['request_status'] ?? 'not_requested',
+      canRequest: json['can_request'] ?? false,
+      canCancelRequest: json['can_cancel_request'] ?? false,
+      messageContent: json['message_content'],
+      hasVolunteered: json['has_volunteered'] ?? false,
+      requestedAt: json['requested_at'] != null 
+          ? DateTime.tryParse(json['requested_at']) 
+          : null,
+      acceptedAt: json['accepted_at'] != null 
+          ? DateTime.tryParse(json['accepted_at']) 
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'request_status': requestStatus,
+      'can_request': canRequest,
+      'can_cancel_request': canCancelRequest,
+      'message_content': messageContent,
+      'has_volunteered': hasVolunteered,
+      'requested_at': requestedAt?.toIso8601String(),
+      'accepted_at': acceptedAt?.toIso8601String(),
+    };
+  }
+}
+
 @freezed
 class RequestModel with _$RequestModel {
   const factory RequestModel({
@@ -29,7 +78,7 @@ class RequestModel with _$RequestModel {
       _$RequestModelFromJson(json);
 }
 
-// Extension to add requester functionality
+// Extension to add requester functionality and enhanced user request status
 extension RequestModelExtension on RequestModel {
   // Helper method to get requester from JSON if it exists
   static UserModel? getRequesterFromJson(Map<String, dynamic> json) {
@@ -39,27 +88,23 @@ extension RequestModelExtension on RequestModel {
     return null;
   }
   
-  // Factory method to create RequestModel with requester parsed
+  // Factory method to create RequestModel with requester and enhanced user status parsed
   static RequestModel fromJsonWithRequester(Map<String, dynamic> json) {
     // Parse user request status from Django response
     final userRequestStatusData = json['user_request_status'] as Map<String, dynamic>?;
     
     final requestModel = RequestModel.fromJson(json);
     
-    // Store the requester data in a global cache if needed
+    // Store the requester data in cache for backward compatibility
     if (json['requester'] != null) {
       final requester = UserModel.fromRequesterJson(json['requester']);
       RequestModelExtension._requesterCache[requestModel.requestId] = requester;
     }
     
-    // Store user request status data
+    // Store enhanced user request status data using UserRequestStatus class
     if (userRequestStatusData != null) {
-      RequestModelExtension._userRequestStatusCache[requestModel.requestId] = {
-        'userRequestStatus': userRequestStatusData['request_status'],
-        'canRequest': userRequestStatusData['can_request'] ?? false,
-        'canCancelRequest': userRequestStatusData['can_cancel_request'] ?? false,
-        'volunteerMessage': userRequestStatusData['message_content'],
-      };
+      RequestModelExtension._userRequestStatusCache[requestModel.requestId] = 
+          UserRequestStatus.fromJson(userRequestStatusData);
     }
     
     return requestModel;
@@ -68,21 +113,21 @@ extension RequestModelExtension on RequestModel {
   // Static cache to store requester data
   static final Map<String, UserModel> _requesterCache = {};
   
-  // Static cache to store user request status data
-  static final Map<String, Map<String, dynamic>> _userRequestStatusCache = {};
+  // Enhanced cache to store UserRequestStatus objects
+  static final Map<String, UserRequestStatus> _userRequestStatusCache = {};
   
   // Get requester for this request
   UserModel? get requester => _requesterCache[requestId];
   
-  // Get user request status for this request
-  String? get userRequestStatus => _userRequestStatusCache[requestId]?['userRequestStatus'];
+  // Get enhanced user request status object
+  UserRequestStatus? get userRequestStatusObject => _userRequestStatusCache[requestId];
   
-  // Check if user can request to volunteer
-  bool get canRequest => _userRequestStatusCache[requestId]?['canRequest'] ?? false;
-  
-  // Check if user can cancel their volunteer request
-  bool get canCancelRequest => _userRequestStatusCache[requestId]?['canCancelRequest'] ?? false;
-  
-  // Get volunteer message for pending request
-  String? get volunteerMessage => _userRequestStatusCache[requestId]?['volunteerMessage'];
+  // Convenient access methods using the enhanced UserRequestStatus
+  String get userRequestStatus => userRequestStatusObject?.requestStatus ?? 'not_requested';
+  bool get canRequest => userRequestStatusObject?.canRequest ?? false;
+  bool get canCancelRequest => userRequestStatusObject?.canCancelRequest ?? false;
+  String? get volunteerMessage => userRequestStatusObject?.messageContent;
+  bool get hasVolunteered => userRequestStatusObject?.hasVolunteered ?? false;
+  DateTime? get requestedAt => userRequestStatusObject?.requestedAt;
+  DateTime? get acceptedAt => userRequestStatusObject?.acceptedAt;
 }
