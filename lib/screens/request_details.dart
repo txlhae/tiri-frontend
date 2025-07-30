@@ -12,6 +12,7 @@ import 'package:kind_clock/models/request_model.dart';
 import 'package:kind_clock/screens/profile_screen.dart';
 import 'package:kind_clock/screens/widgets/custom_widgets/custom_back_button.dart';
 import 'package:kind_clock/screens/widgets/custom_widgets/custom_button.dart';
+import 'package:kind_clock/screens/widgets/custom_widgets/custom_cancel.dart';
 import 'package:kind_clock/screens/widgets/dialog_widgets/intrested_dialog.dart';
 import 'package:kind_clock/screens/widgets/request_widgets/details_card.dart';
 import 'package:kind_clock/screens/widgets/request_widgets/details_row.dart';
@@ -526,30 +527,172 @@ class _RequestDetailsState extends State<RequestDetails> {
               const SizedBox(height: 20),
             ],
           ),
-        //intereseted button
-        if (request.userId != authController.currentUserStore.value?.userId &&
-            !request.acceptedUser.any((user) =>
-                user.userId == authController.currentUserStore.value?.userId) &&
-            request.acceptedUser.length < request.numberOfPeople)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 50.0),
-            child: DeferPointer(
-              child: CustomButton(
-                buttonText: "Interested",
-                onButtonPressed: () {
-                  Get.dialog(
-                    IntrestedDialog(
-                      questionText: "Are you interested?",
-                      submitText: "Yes",
-                      request: request,
-                      acceptedUser: authController.currentUserStore.value!,
-                    ),
-                  ).then((_) => detailsController.refreshData());
-                },
-              ),
-            ),
-          ),
+        //volunteer button with dynamic states
+        Builder(
+          builder: (context) {
+            print('Debug: About to call _buildVolunteerButton');
+            return _buildVolunteerButton(request);
+          },
+        ),
       ],
+    );
+  }
+
+  /// Builds dynamic volunteer button based on user request status
+  Widget _buildVolunteerButton(RequestModel request) {
+    final currentUser = authController.currentUserStore.value;
+    
+    // DEBUG PRINTS
+    print('=== DEBUG _buildVolunteerButton ===');
+    print('Debug: userId=${request.userId}, currentUserId=${currentUser?.userId}');
+    print('Debug: acceptedUser.length=${request.acceptedUser.length}, numberOfPeople=${request.numberOfPeople}');
+    print('Debug: userRequestStatus=${request.userRequestStatus}');
+    print('Debug: canRequest=${request.canRequest}');
+    print('Debug: Raw request data check...');
+    // Try to access extension cache directly
+    print('Debug: Extension cache check for ${request.requestId}');
+    
+    // Don't show button if user owns the request
+    if (request.userId == currentUser?.userId) {
+      print('Debug: User owns request - returning Container()');
+      return Container();
+    }
+    
+    // Don't show button if request is full (already has enough volunteers)
+    if (request.acceptedUser.length >= request.numberOfPeople) {
+      print('Debug: Request is full - returning Container()');
+      return Container();
+    }
+    
+    // Check if user is already an accepted volunteer
+    final isAcceptedVolunteer = request.acceptedUser.any(
+      (user) => user.userId == currentUser?.userId
+    );
+    if (isAcceptedVolunteer) {
+      print('Debug: User is already accepted volunteer - returning Container()');
+      return Container();
+    }
+    
+    print('Debug: Proceeding to build button UI...');
+    
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 50.0),
+      child: Builder(
+        builder: (context) {
+          // Get user request status using extension (these are not reactive)
+          final userRequestStatus = request.userRequestStatus;
+          final canRequest = request.canRequest;
+          
+          print('Debug: Switch - userRequestStatus=$userRequestStatus, canRequest=$canRequest');
+          
+          switch (userRequestStatus) {
+            case 'pending':
+              print('Debug: Entering pending case');
+              // Show pending status with cancel option
+              return Column(
+                children: [
+                  // Request Sent button (disabled) - no Obx needed
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text(
+                      "Request Sent",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  // Cancel Request button - wrap in Obx for loading state
+                  Obx(() => DeferPointer(
+                    child: CustomCancel(
+                      buttonText: "Cancel Request",
+                      onButtonPressed: () async {
+                        if (requestController.isLoading.value) return;
+                        
+                        try {
+                          await requestController.cancelVolunteerRequest(request.requestId);
+                          Get.snackbar(
+                            'Success',
+                            'Volunteer request canceled successfully',
+                            snackPosition: SnackPosition.BOTTOM,
+                            backgroundColor: Colors.orange,
+                            colorText: Colors.white,
+                          );
+                          detailsController.refreshData();
+                        } catch (e) {
+                          Get.snackbar(
+                            'Error',
+                            'Failed to cancel volunteer request: $e',
+                            snackPosition: SnackPosition.BOTTOM,
+                            backgroundColor: Colors.red,
+                            colorText: Colors.white,
+                          );
+                        }
+                      },
+                    ),
+                  )),
+                ],
+              );
+              
+            case 'accepted':
+              print('Debug: Entering accepted case');
+              // Show accepted status - no Obx needed (static)
+              return Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.green),
+                ),
+                child: const Text(
+                  "✅ You are accepted as a volunteer!",
+                  style: TextStyle(
+                    color: Colors.green,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              );
+              
+            case 'not_requested':
+            case null:
+            default:
+              print('Debug: Entering default case (not_requested/null)');
+              // Show Interested button if user can request
+              if (canRequest) {
+                print('Debug: canRequest=true, showing Interested button');
+                // No Obx wrapper needed - loading check is inside onPressed
+                return DeferPointer(
+                  child: CustomButton(
+                    buttonText: "Interested",
+                    onButtonPressed: () {
+                      if (requestController.isLoading.value) return;
+                      
+                      Get.dialog(
+                        IntrestedDialog(
+                          questionText: "Are you interested?",
+                          submitText: "Yes",
+                          request: request,
+                          acceptedUser: currentUser!,
+                        ),
+                      ).then((_) => detailsController.refreshData());
+                    },
+                  ),
+                );
+              } else {
+                print('Debug: canRequest=false, returning Container()');
+                return Container();
+              }
+          }
+        },
+      ),
     );
   }
 }

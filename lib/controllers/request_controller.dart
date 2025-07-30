@@ -866,6 +866,65 @@ class RequestController extends GetxController {
     }
   }
 
+  // =============================================================================
+  // VOLUNTEER REQUEST WORKFLOW METHODS
+  // =============================================================================
+
+  /// Request to volunteer for a specific request
+  /// Implements proper approval workflow via Django backend
+  Future<void> requestToVolunteer(String requestId, String message) async {
+    try {
+      isLoading.value = true;
+      debugLog("🙋 RequestController: Requesting to volunteer for request $requestId");
+      debugLog("   - Message: $message");
+      
+      // Call the request service to send volunteer request
+      final success = await requestService.requestToVolunteer(requestId, message);
+      
+      if (success) {
+        debugLog("✅ RequestController: Successfully sent volunteer request for $requestId");
+        // Refresh requests to get updated status
+        await refreshRequests();
+        debugLog("🔄 RequestController: Refreshed requests after volunteer request");
+      } else {
+        debugLog("❌ RequestController: Failed to send volunteer request for $requestId");
+        throw Exception('Failed to send volunteer request');
+      }
+    } catch (e) {
+      debugLog("💥 RequestController: Error in requestToVolunteer for $requestId - $e");
+      rethrow;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  /// Cancel volunteer request for a specific request
+  /// Removes user from pending volunteer requests via Django backend
+  Future<void> cancelVolunteerRequest(String requestId) async {
+    try {
+      isLoading.value = true;
+      debugLog("❌ RequestController: Canceling volunteer request for request $requestId");
+      
+      // Call the request service to cancel volunteer request
+      final success = await requestService.cancelVolunteerRequest(requestId);
+      
+      if (success) {
+        debugLog("✅ RequestController: Successfully canceled volunteer request for $requestId");
+        // Refresh requests to get updated status
+        await refreshRequests();
+        debugLog("🔄 RequestController: Refreshed requests after canceling volunteer request");
+      } else {
+        debugLog("❌ RequestController: Failed to cancel volunteer request for $requestId");
+        throw Exception('Failed to cancel volunteer request');
+      }
+    } catch (e) {
+      debugLog("💥 RequestController: Error in cancelVolunteerRequest for $requestId - $e");
+      rethrow;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
   @override
   void onClose() {
     titleController.value.dispose();

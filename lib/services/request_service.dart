@@ -70,6 +70,9 @@ class RequestService extends GetxController {
         
         // Include requester data for extension to parse
         'requester': djangoJson['requester'],
+        
+        // 🎯 CRITICAL: Preserve user_request_status for volunteer workflow
+        'user_request_status': djangoJson['user_request_status'],
       };
       
       log('✅ MAPPED to Flutter: ${flutterJson.keys.toList()}');
@@ -316,6 +319,17 @@ class RequestService extends GetxController {
       final response = await _apiService.get('/api/requests/$requestId/');
       
       if (response.statusCode == 200 && response.data != null) {
+        // 🔍 DEBUG: Log raw Django response
+        log('🔍 DEBUG: Raw Django response for request $requestId:');
+        log('${response.data}');
+        
+        // Check if user_request_status exists in response
+        final rawData = response.data as Map<String, dynamic>;
+        log('🔍 DEBUG: user_request_status in response: ${rawData.containsKey('user_request_status')}');
+        if (rawData.containsKey('user_request_status')) {
+          log('🔍 DEBUG: user_request_status value: ${rawData['user_request_status']}');
+        }
+        
         // 🎯 APPLY FIELD MAPPING
         final flutterJson = _mapDjangoToFlutter(response.data as Map<String, dynamic>);
         final RequestModel request = RequestModelExtension.fromJsonWithRequester(flutterJson);
@@ -394,6 +408,52 @@ class RequestService extends GetxController {
       }
     } catch (e) {
       log('💥 RequestService: Error deleting request $requestId - $e');
+      return false;
+    }
+  }
+  
+  /// Request to volunteer for a request
+  /// Sends a volunteer request to the Django backend
+  Future<bool> requestToVolunteer(String requestId, String message) async {
+    try {
+      log('🙋 RequestService: Requesting to volunteer for request $requestId via Django API');
+      log('Message to requester: $message');
+      
+      final response = await _apiService.post(
+        '/api/requests/$requestId/accept/', 
+        data: {'message_to_requester': message}
+      );
+      
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        log('✅ RequestService: Successfully requested to volunteer for request $requestId');
+        return true;
+      } else {
+        log('❌ RequestService: Failed to request volunteer for request $requestId - Status: ${response.statusCode}');
+        return false;
+      }
+    } catch (e) {
+      log('💥 RequestService: Error requesting to volunteer for request $requestId - $e');
+      return false;
+    }
+  }
+  
+  /// Cancel volunteer request for a request
+  /// Cancels an existing volunteer request via Django backend
+  Future<bool> cancelVolunteerRequest(String requestId) async {
+    try {
+      log('❌ RequestService: Canceling volunteer request for request $requestId via Django API');
+      
+      final response = await _apiService.post('/api/requests/$requestId/cancel-acceptance/');
+      
+      if (response.statusCode == 200) {
+        log('✅ RequestService: Successfully canceled volunteer request for request $requestId');
+        return true;
+      } else {
+        log('❌ RequestService: Failed to cancel volunteer request for request $requestId - Status: ${response.statusCode}');
+        return false;
+      }
+    } catch (e) {
+      log('💥 RequestService: Error canceling volunteer request for request $requestId - $e');
       return false;
     }
   }

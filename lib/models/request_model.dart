@@ -41,18 +41,48 @@ extension RequestModelExtension on RequestModel {
   
   // Factory method to create RequestModel with requester parsed
   static RequestModel fromJsonWithRequester(Map<String, dynamic> json) {
+    // Parse user request status from Django response
+    final userRequestStatusData = json['user_request_status'] as Map<String, dynamic>?;
+    
     final requestModel = RequestModel.fromJson(json);
+    
     // Store the requester data in a global cache if needed
     if (json['requester'] != null) {
       final requester = UserModel.fromRequesterJson(json['requester']);
       RequestModelExtension._requesterCache[requestModel.requestId] = requester;
     }
+    
+    // Store user request status data
+    if (userRequestStatusData != null) {
+      RequestModelExtension._userRequestStatusCache[requestModel.requestId] = {
+        'userRequestStatus': userRequestStatusData['request_status'],
+        'canRequest': userRequestStatusData['can_request'] ?? false,
+        'canCancelRequest': userRequestStatusData['can_cancel_request'] ?? false,
+        'volunteerMessage': userRequestStatusData['message_content'],
+      };
+    }
+    
     return requestModel;
   }
   
   // Static cache to store requester data
   static final Map<String, UserModel> _requesterCache = {};
   
+  // Static cache to store user request status data
+  static final Map<String, Map<String, dynamic>> _userRequestStatusCache = {};
+  
   // Get requester for this request
   UserModel? get requester => _requesterCache[requestId];
+  
+  // Get user request status for this request
+  String? get userRequestStatus => _userRequestStatusCache[requestId]?['userRequestStatus'];
+  
+  // Check if user can request to volunteer
+  bool get canRequest => _userRequestStatusCache[requestId]?['canRequest'] ?? false;
+  
+  // Check if user can cancel their volunteer request
+  bool get canCancelRequest => _userRequestStatusCache[requestId]?['canCancelRequest'] ?? false;
+  
+  // Get volunteer message for pending request
+  String? get volunteerMessage => _userRequestStatusCache[requestId]?['volunteerMessage'];
 }

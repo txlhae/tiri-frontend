@@ -28,46 +28,34 @@ class IntrestedDialog extends StatefulWidget {
 
 class _IntrestedDialogState extends State<IntrestedDialog> {
   final requestController = Get.find<RequestController>();
+  final TextEditingController messageController = TextEditingController();
 
   Future<void> interestUpdate() async {
-    log('AcceptedUser type: ${widget.acceptedUser.runtimeType}');
     try {
-      // Get the current list of accepted users (null-safe)
-      final currentAcceptedUsers = widget.request.acceptedUser ?? [];
-
-      // Check if this user is already in the list
-      final alreadyAccepted = currentAcceptedUsers.any(
-        (user) => user.userId == widget.acceptedUser.userId,
+      log('🙋 Sending volunteer request for: ${widget.request.requestId}');
+      
+      // Get message from text controller
+      final message = messageController.text.trim();
+      
+      // Call the new volunteer request method
+      await requestController.requestToVolunteer(
+        widget.request.requestId, 
+        message.isEmpty ? "I would like to volunteer for this request." : message
       );
-
-      // Add the user only if they aren't already accepted
-      final updatedAcceptedUsers = alreadyAccepted
-          ? currentAcceptedUsers
-          : [...currentAcceptedUsers, widget.acceptedUser];
-
-      final updatedRequest = RequestModel(
-        requestId: widget.request.requestId,
-        userId: widget.request.userId,
-        title: widget.request.title,
-        description: widget.request.description,
-        location: widget.request.location,
-        timestamp: widget.request.timestamp,
-        requestedTime: widget.request.requestedTime,
-        status: RequestStatus.values.firstWhere((e) => e.name == requestController.determineRequestStatus(widget.request), orElse: () => RequestStatus.pending),
-        acceptedUser: updatedAcceptedUsers,
-        numberOfPeople: widget.request.numberOfPeople,
-        hoursNeeded: widget.request.hoursNeeded
-      );
-
-      await requestController.controllerUpdateRequest(
-        widget.request.requestId,
-        updatedRequest,
-      );
-
-      log('Request updated');
+      
+      log('✅ Volunteer request sent successfully');
+      // Refresh data to get updated status
+      await requestController.refreshRequests();
     } catch (error) {
-      log('Error in interested dialog: $error');
+      log('💥 Error in volunteer request: $error');
+      rethrow;
     }
+  }
+
+  @override
+  void dispose() {
+    messageController.dispose();
+    super.dispose();
   }
 
   @override
@@ -80,7 +68,7 @@ class _IntrestedDialogState extends State<IntrestedDialog> {
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 15.0),
         child: SizedBox(
-          height: MediaQuery.of(context).size.height * 0.2,
+          height: MediaQuery.of(context).size.height * 0.35,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
@@ -91,6 +79,19 @@ class _IntrestedDialogState extends State<IntrestedDialog> {
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: Colors.black),
+              ),
+              // Optional message text field
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                child: TextField(
+                  controller: messageController,
+                  maxLines: 3,
+                  decoration: const InputDecoration(
+                    hintText: "Optional message to requester",
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.all(12.0),
+                  ),
+                ),
               ),
               Padding(
                 padding:
@@ -111,11 +112,11 @@ class _IntrestedDialogState extends State<IntrestedDialog> {
                   onButtonPressed: () async {
                     await interestUpdate().then(
                       (value) {
-                        Get.toNamed(
-                            Routes.homePage); // Navigate to home screen();
+                        Get.back(); // Close dialog first
+                        Get.toNamed(Routes.homePage); // Navigate to home screen
                         Get.snackbar(
                           'Success',
-                          'Request accepted successfully',
+                          'Volunteer request sent successfully',
                           snackPosition: SnackPosition.BOTTOM,
                           backgroundColor: Colors.green,
                           colorText: Colors.white,
@@ -123,10 +124,10 @@ class _IntrestedDialogState extends State<IntrestedDialog> {
                       },
                     ).onError(
                       (error, stackTrace) {
-                        Get.back();
+                        Get.back(); // Close dialog
                         Get.snackbar(
                           'Error',
-                          'Failed to accept request: $error',
+                          'Failed to send volunteer request: $error',
                           snackPosition: SnackPosition.BOTTOM,
                           backgroundColor: Colors.red,
                           colorText: Colors.white,
