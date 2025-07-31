@@ -24,6 +24,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:kind_clock/controllers/auth_controller.dart';
+import 'package:kind_clock/infrastructure/routes.dart';
+import 'package:kind_clock/models/category_model.dart';
 import 'package:kind_clock/models/request_model.dart';
 import 'package:kind_clock/models/user_model.dart';
 import 'package:kind_clock/services/request_service.dart';
@@ -76,6 +78,15 @@ class RequestController extends GetxController {
 
   final numberOfPeopleController = TextEditingController().obs;
   final hoursNeededController = TextEditingController().obs;
+
+  // =============================================================================
+  // CATEGORY MANAGEMENT
+  // =============================================================================
+  
+  final RxList<CategoryModel> categories = <CategoryModel>[].obs;
+  final Rxn<CategoryModel> selectedCategory = Rxn<CategoryModel>();
+  final RxBool isLoadingCategories = false.obs;
+  var categoryError = RxnString();
 
   var titleError = RxnString();
   var descriptionError = RxnString();
@@ -186,6 +197,10 @@ class RequestController extends GetxController {
       debugLog("📋 RequestController: Checking dependencies...");
       debugLog("   - RequestService: ✅ Available");
       debugLog("   - AuthController: ✅ Available");
+      
+      // 🚨 Initialize categories immediately (no auth required)
+      debugLog("📂 RequestController: Loading categories...");
+      loadCategories();
       
       // 🚨 CRITICAL FIX: Initialize data loading immediately
       // Don't wait for perfect auth state - start loading process
@@ -355,6 +370,492 @@ class RequestController extends GetxController {
   }
 
   // =============================================================================
+  // CATEGORY MANAGEMENT METHODS
+  // =============================================================================
+
+  /// Load categories from Django backend
+  Future<void> loadCategories() async {
+    try {
+      isLoadingCategories.value = true;
+      categoryError.value = null;
+      debugLog("📂 RequestController: Loading categories from Django API");
+      
+      try {
+        final categoriesFromApi = await requestService.fetchCategories();
+        
+        if (categoriesFromApi.isNotEmpty) {
+          categories.assignAll(categoriesFromApi);
+          debugLog("✅ RequestController: Loaded ${categories.length} categories from API");
+        } else {
+          // Fallback to predefined categories if API returns empty
+          categories.assignAll(CategoryModel.getAllCategories());
+          debugLog("📋 RequestController: Using predefined categories (${categories.length} total)");
+        }
+      } catch (apiError) {
+        debugLog("⚠️ RequestController: API error, using predefined categories - $apiError");
+        // Fallback to predefined categories if API fails
+        categories.assignAll(CategoryModel.getAllCategories());
+      }
+      
+      debugLog("📋 Available categories: ${categories.map((c) => c.name).toList()}");
+      
+      // Set default category to Home Help (ID 34) if none selected
+      if (selectedCategory.value == null && categories.isNotEmpty) {
+        // Try to find Home Help (ID 34) first, otherwise use first category
+        selectedCategory.value = categories.firstWhere(
+          (cat) => cat.id == 34,
+          orElse: () => categories.first,
+        );
+        debugLog("📌 Set default category: ${selectedCategory.value?.name} (ID: ${selectedCategory.value?.id})");
+      }
+      
+    } catch (e) {
+      debugLog("❌ RequestController: Critical error loading categories - $e");
+      categoryError.value = "Failed to load categories: $e";
+      // Even on error, try to load predefined categories
+      try {
+        categories.assignAll(CategoryModel.getAllCategories());
+        debugLog("🔄 RequestController: Loaded fallback categories");
+        
+        // Set default category to Home Help (ID 34) even in fallback
+        if (selectedCategory.value == null && categories.isNotEmpty) {
+          selectedCategory.value = categories.firstWhere(
+            (cat) => cat.id == 34,
+            orElse: () => categories.first,
+          );
+          debugLog("📌 Set fallback default category: ${selectedCategory.value?.name} (ID: ${selectedCategory.value?.id})");
+        }
+      } catch (fallbackError) {
+        debugLog("💥 RequestController: Even fallback categories failed - $fallbackError");
+        categories.clear();
+      }
+    } finally {
+      isLoadingCategories.value = false;
+    }
+  }
+
+  /// Validate category selection
+  bool validateCategory() {
+    if (selectedCategory.value == null) {
+      categoryError.value = "Please select a category";
+      return false;
+    }
+    categoryError.value = null;
+    return true;
+  }
+
+  /// Show dialog to add a new category
+  Future<void> showAddCategoryDialog(BuildContext context) async {
+    final TextEditingController nameController = TextEditingController();
+    final TextEditingController descriptionController = TextEditingController();
+    String? nameError;
+    bool isCreating = false;
+
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Add New Category'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: nameController,
+                      decoration: InputDecoration(
+                        labelText: 'Category Name *',
+                        hintText: 'e.g., Tutoring, Food Delivery',
+                        errorText: nameError,
+                        border: const OutlineInputBorder(),
+                      ),
+                      onChanged: (value) {
+                        if (nameError != null) {
+                          setState(() {
+                            nameError = null;
+                          });
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: descriptionController,
+                      decoration: const InputDecoration(
+                        labelText: 'Description (Optional)',
+                        hintText: 'Brief description of this category',
+                        border: OutlineInputBorder(),
+                      ),
+                      maxLines: 2,
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isCreating ? null : () {
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: isCreating ? null : () async {
+                    final name = nameController.text.trim();
+                    if (name.isEmpty) {
+                      setState(() {
+                        nameError = 'Category name is required';
+                      });
+                      return;
+                    }
+
+                    // Check if category already exists
+                    if (categories.any((cat) => cat.name.toLowerCase() == name.toLowerCase())) {
+                      setState(() {
+                        nameError = 'Category already exists';
+                      });
+                      return;
+                    }
+
+                    setState(() {
+                      isCreating = true;
+                    });
+
+                    try {
+                      await createNewCategory(name, descriptionController.text.trim());
+                      Navigator.of(context).pop();
+                      
+                      // Show success message
+                      Get.snackbar(
+                        'Success',
+                        'Category "$name" created successfully!',
+                        backgroundColor: Colors.green,
+                        colorText: Colors.white,
+                        duration: const Duration(seconds: 2),
+                      );
+                    } catch (e) {
+                      setState(() {
+                        nameError = 'Failed to create category: $e';
+                        isCreating = false;
+                      });
+                    }
+                  },
+                  child: isCreating 
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Create'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  /// Create a new category
+  Future<void> createNewCategory(String name, String description) async {
+    try {
+      debugLog("📝 RequestController: Creating new category - $name");
+      
+      // Create the new category with a temporary ID
+      final newCategory = CategoryModel(
+        id: categories.length + 100, // Temporary ID for local categories
+        name: name,
+        description: description.isNotEmpty ? description : null,
+      );
+
+      // Add to local list immediately for better UX
+      categories.add(newCategory);
+      
+      // Set as selected category
+      selectedCategory.value = newCategory;
+      
+      debugLog("✅ RequestController: Created category locally - $name");
+      
+      // TODO: In a real app, you would also send this to the Django API
+      // final response = await requestService.createCategory(newCategory);
+      
+    } catch (e) {
+      debugLog("❌ RequestController: Error creating category - $e");
+      throw Exception("Failed to create category: $e");
+    }
+  }
+
+  /// Show success dialog after request creation
+  Future<void> showRequestCreatedSuccessDialog(BuildContext context) async {
+    final String title = titleController.value.text.trim();
+    final String category = selectedCategory.value?.name ?? 'Home Help';
+    final String location = locationController.value.text.trim();
+    final String dateTime = selectedDateTime.value != null 
+        ? "${selectedDateTime.value!.day}/${selectedDateTime.value!.month}/${selectedDateTime.value!.year} at ${selectedDateTime.value!.hour}:${selectedDateTime.value!.minute.toString().padLeft(2, '0')}"
+        : 'Not specified';
+    final String volunteers = numberOfPeopleController.value.text.isNotEmpty 
+        ? "${numberOfPeopleController.value.text} volunteers"
+        : "1 volunteer";
+    final String hours = hoursNeededController.value.text.isNotEmpty 
+        ? "${hoursNeededController.value.text} hours"
+        : "1 hour";
+
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          elevation: 10,
+          backgroundColor: Colors.transparent,
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 10,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                // Header with success icon and title
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(24),
+                  decoration: const BoxDecoration(
+                    color: Color.fromRGBO(0, 140, 170, 1),
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(20),
+                      topRight: Radius.circular(20),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(50),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.check_circle,
+                          color: Color.fromRGBO(0, 140, 170, 1),
+                          size: 32,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Request Created Successfully!',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Your request has been posted to the community',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.white70,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // Content with request details
+                Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Request Details:',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Color.fromRGBO(3, 80, 135, 1),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      // Details container
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color.fromRGBO(251, 252, 254, 1),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: const Color.fromRGBO(0, 140, 170, 0.2),
+                            width: 1,
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            _buildDetailRow('📝 Title', title),
+                            _buildDetailRow('📂 Category', category),
+                            _buildDetailRow('📍 Location', location),
+                            _buildDetailRow('📅 Date & Time', dateTime),
+                            _buildDetailRow('👥 Volunteers Needed', volunteers),
+                            _buildDetailRow('⏰ Estimated Time', hours),
+                          ],
+                        ),
+                      ),
+                      
+                      const SizedBox(height: 20),
+                      
+                      // Info box
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color.fromRGBO(0, 140, 170, 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: const Color.fromRGBO(0, 140, 170, 0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.info_outline,
+                              color: Color.fromRGBO(0, 140, 170, 1),
+                              size: 20,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'Community members will now be able to see and respond to your request.',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: const Color.fromRGBO(3, 80, 135, 1),
+                                  height: 1.4,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // Action buttons
+                Padding(
+                  padding: const EdgeInsets.only(left: 24, right: 24, bottom: 24),
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      // Navigate to home page (request management)
+                      Get.offAllNamed(Routes.homePage);
+                    },
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      decoration: BoxDecoration(
+                        color: const Color.fromRGBO(3, 80, 135, 1),
+                        borderRadius: BorderRadius.circular(25),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color.fromRGBO(3, 80, 135, 0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.list_alt,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 10),
+                          const Text(
+                            'View My Requests',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// Helper method to build detail rows in success dialog
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 130,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+                color: Color.fromRGBO(3, 80, 135, 1),
+              ),
+            ),
+          ),
+          const Text(
+            ': ',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 13,
+              color: Color.fromRGBO(3, 80, 135, 1),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 13,
+                color: Color.fromRGBO(70, 70, 70, 1),
+                height: 1.3,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // =============================================================================
   // EXISTING METHODS (All preserved with debug logging added)
   // =============================================================================
 
@@ -404,32 +905,103 @@ class RequestController extends GetxController {
 
       isLoading.value = true;
       debugLog("📝 createRequest: Creating request via Django API");
+      print("🚨 [DEBUG] createRequest: Creating request via Django API");
 
+      // 🚨 COMPLETE FIX: Include ALL required Django backend fields
       final requestData = {
+        // Core content fields
         'title': titleController.value.text.trim(),
         'description': descriptionController.value.text.trim(),
-        'location': locationController.value.text.trim(),
-        'date_needed': selectedDateTime.value?.toIso8601String(),
-        'number_of_people': int.tryParse(numberOfPeopleController.value.text) ?? 1,
-        'hours_needed': int.tryParse(hoursNeededController.value.text) ?? 1,
-        'status': 'pending',
-        'priority': 'medium',
+        
+        // ✅ NEW: Category field - Use selected category ID or default to 34 (Home Help)
+        'category': selectedCategory.value?.id ?? 34, // ✅ FIXED: Use actual selected category or default to valid ID 34
+        
+        // ✅ REQUIRED: Location fields - Django expects separate latitude/longitude/address/city
+        'latitude': 0.0,  // Default coordinates (can be enhanced with GPS later)
+        'longitude': 0.0, // Default coordinates (can be enhanced with GPS later) 
+        'address': locationController.value.text.trim(), // ✅ FIXED: was 'location'
+        'city': locationController.value.text.trim(), // ✅ FINAL FIX: Required city field (not nullable)
+        
+        // ✅ REQUIRED: Date/time field with correct name
+        'date_needed': selectedDateTime.value?.toIso8601String(), // ✅ FIXED: Django expects 'date_needed' not 'date_time_needed'
+        
+        // ✅ REQUIRED: Volunteer and time fields with correct names
+        'volunteers_needed': int.tryParse(numberOfPeopleController.value.text) ?? 1, // ✅ FIXED: was 'number_of_people'
+        'estimated_hours': int.tryParse(hoursNeededController.value.text) ?? 1, // ✅ FIXED: was 'hours_needed'
+        
+        // ✅ FIXED: Priority value - Django expects "normal" not "medium"
+        'priority': 'normal', // ✅ FIXED: was 'medium' (invalid Django choice)
       };
 
-      final success = await requestService.createRequest(requestData);
-
-      if (success) {
-        debugLog("✅ createRequest: Request created successfully");
-        clearForm();
-        await loadRequests();
-        return true;
-      } else {
-        debugLog("❌ createRequest: Failed to create request");
+      debugLog("📋 Request payload: $requestData");
+      print("🚨 [DEBUG] Request payload: $requestData");
+      
+      debugLog("🔍 Payload validation:");
+      print("🚨 [DEBUG] Payload validation:");
+      debugLog("   - Title: '${requestData['title']}' (${requestData['title']?.runtimeType})");
+      debugLog("   - Category ID: ${requestData['category']} (${requestData['category']?.runtimeType}) - ${selectedCategory.value?.name ?? 'Default Home Help'}");
+      print("🚨 [DEBUG] Category ID: ${requestData['category']} (${requestData['category']?.runtimeType}) - ${selectedCategory.value?.name ?? 'Default Home Help'}");
+      print("🚨 [DEBUG]    - Title: '${requestData['title']}' (${requestData['title']?.runtimeType})");
+      debugLog("   - Description: '${requestData['description']}' (${requestData['description']?.runtimeType})");
+      print("🚨 [DEBUG]    - Description: '${requestData['description']}' (${requestData['description']?.runtimeType})");
+      debugLog("   - Category: ${requestData['category']} (${requestData['category']?.runtimeType})");
+      print("🚨 [DEBUG]    - Category: ${requestData['category']} (${requestData['category']?.runtimeType})");
+      debugLog("   - Address: '${requestData['address']}' (${requestData['address']?.runtimeType})");
+      print("🚨 [DEBUG]    - Address: '${requestData['address']}' (${requestData['address']?.runtimeType})");
+      debugLog("   - City: '${requestData['city']}' (${requestData['city']?.runtimeType})");
+      print("🚨 [DEBUG]    - City: '${requestData['city']}' (${requestData['city']?.runtimeType})");
+      debugLog("   - Date needed: '${requestData['date_needed']}' (${requestData['date_needed']?.runtimeType})");
+      print("🚨 [DEBUG]    - Date needed: '${requestData['date_needed']}' (${requestData['date_needed']?.runtimeType})");
+      debugLog("   - Volunteers needed: ${requestData['volunteers_needed']} (${requestData['volunteers_needed']?.runtimeType})");
+      print("🚨 [DEBUG]    - Volunteers needed: ${requestData['volunteers_needed']} (${requestData['volunteers_needed']?.runtimeType})");
+      debugLog("   - Estimated hours: ${requestData['estimated_hours']} (${requestData['estimated_hours']?.runtimeType})");
+      print("🚨 [DEBUG]    - Estimated hours: ${requestData['estimated_hours']} (${requestData['estimated_hours']?.runtimeType})");
+      
+      // 🚨 ADD DETAILED ERROR HANDLING
+      try {
+        print("🚨 [DEBUG] About to call requestService.createRequest...");
+        final success = await requestService.createRequest(requestData);
+        print("🚨 [DEBUG] requestService.createRequest returned: $success");
+        
+        if (success) {
+          debugLog("✅ createRequest: Request created successfully");
+          print("🚨 [DEBUG] ✅ Request created successfully");
+          
+          // Show success dialog
+          if (Get.context != null) {
+            await showRequestCreatedSuccessDialog(Get.context!);
+          }
+          
+          clearForm();
+          await loadRequests();
+          return true;
+        } else {
+          debugLog("❌ createRequest: Failed to create request - service returned false");
+          print("🚨 [DEBUG] ❌ Failed to create request - service returned false");
+          debugLog("🔍 Check RequestService.createRequest() logs for Django response details");
+          print("🚨 [DEBUG] 🔍 Check RequestService.createRequest() logs for Django response details");
+          return false;
+        }
+      } catch (serviceError) {
+        debugLog("💥 createRequest: Service error details: $serviceError");
+        print("🚨 [DEBUG] 💥 Service error details: $serviceError");
+        debugLog("💥 Service error type: ${serviceError.runtimeType}");
+        print("🚨 [DEBUG] 💥 Service error type: ${serviceError.runtimeType}");
+        
+        // Check if it's a DioException with response details
+        if (serviceError.toString().contains('400')) {
+          debugLog("🔍 400 Bad Request detected - likely Django validation error");
+          print("🚨 [DEBUG] 🔍 400 Bad Request detected - likely Django validation error");
+          debugLog("🔍 This suggests Django is rejecting specific field values or formats");
+          print("🚨 [DEBUG] 🔍 This suggests Django is rejecting specific field values or formats");
+        }
+        
         return false;
       }
       
     } catch (e) {
-      debugLog("❌ createRequest error: $e");
+      debugLog("❌ createRequest controller error: $e");
+      debugLog("❌ Controller error type: ${e.runtimeType}");
       return false;
     } finally {
       isLoading.value = false;
@@ -558,11 +1130,15 @@ class RequestController extends GetxController {
         locationController.value.text.isEmpty ? "Location is required" : null;
     dateTimeError.value =
         selectedDateTime.value == null ? "Please select a date and time" : null;
+    
+    // ✅ NEW: Category validation
+    categoryError.value = selectedCategory.value == null ? "Please select a category" : null;
 
     return titleError.value == null &&
         descriptionError.value == null &&
         locationError.value == null &&
-        dateTimeError.value == null;
+        dateTimeError.value == null &&
+        categoryError.value == null; // ✅ NEW: Include category validation
   }
 
   void clearForm() {
@@ -577,10 +1153,18 @@ class RequestController extends GetxController {
     selectedDateController.value.clear();
     selectedTimeController.value.clear();
     
+    // ✅ NEW: Reset category selection to first category (default)
+    if (categories.isNotEmpty) {
+      selectedCategory.value = categories.first;
+    } else {
+      selectedCategory.value = null;
+    }
+    
     titleError.value = null;
     descriptionError.value = null;
     locationError.value = null;
     dateTimeError.value = null;
+    categoryError.value = null; // ✅ NEW: Clear category error
   }
 
   void setDateTime(DateTime date, TimeOfDay time) {
@@ -1002,6 +1586,79 @@ class RequestController extends GetxController {
         rethrow;
       } else {
         throw Exception('Network error: Unable to cancel volunteer request. Please check your connection and try again.');
+      }
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  /// Delete request (for request owners only)
+  /// This completely deletes the request from the system
+  Future<void> deleteRequest(String requestId) async {
+    try {
+      isLoading.value = true;
+      debugLog("🗑️ RequestController: Deleting request $requestId");
+      
+      // Validate input before API call
+      if (requestId.isEmpty) {
+        throw Exception('Request ID cannot be empty');
+      }
+      
+      // Get current request details to verify ownership
+      final currentUser = authController.currentUserStore.value;
+      if (currentUser == null) {
+        throw Exception('You must be logged in to delete a request');
+      }
+      
+      // Check if user owns this request
+      final currentRequest = requestList.firstWhereOrNull((req) => req.requestId == requestId) ??
+                           myRequestList.firstWhereOrNull((req) => req.requestId == requestId) ??
+                           communityRequests.firstWhereOrNull((req) => req.requestId == requestId) ??
+                           myPostRequests.firstWhereOrNull((req) => req.requestId == requestId);
+      
+      if (currentRequest != null && currentRequest.userId != currentUser.userId) {
+        throw Exception('You can only delete your own requests');
+      }
+      
+      debugLog("   - Request owner: ${currentRequest?.userId}");
+      debugLog("   - Current user: ${currentUser.userId}");
+      
+      // Call the request service to delete request
+      final success = await requestService.deleteRequest(requestId);
+      
+      if (success) {
+        debugLog("✅ RequestController: Successfully deleted request $requestId");
+        
+        // Remove from local lists immediately for better UX
+        requestList.removeWhere((req) => req.requestId == requestId);
+        myRequestList.removeWhere((req) => req.requestId == requestId);
+        communityRequests.removeWhere((req) => req.requestId == requestId);
+        myPostRequests.removeWhere((req) => req.requestId == requestId);
+        
+        // Clear current request details if it's the deleted request
+        if (currentRequestDetails.value?.requestId == requestId) {
+          currentRequestDetails.value = null;
+        }
+        
+        // Refresh the main request lists to sync with backend
+        await refreshRequests();
+        debugLog("🔄 RequestController: Refreshed all requests after deleting request");
+        
+      } else {
+        debugLog("❌ RequestController: Failed to delete request $requestId");
+        throw Exception('Failed to delete request. Please try again.');
+      }
+    } catch (e) {
+      debugLog("💥 RequestController: Error in deleteRequest for $requestId - $e");
+      
+      // Re-throw with more specific error message for UI
+      if (e.toString().contains('Failed to delete request') || 
+          e.toString().contains('You can only delete your own requests') ||
+          e.toString().contains('Request not found') ||
+          e.toString().contains('You must be logged in')) {
+        rethrow;
+      } else {
+        throw Exception('Network error: Unable to delete request. Please check your connection and try again.');
       }
     } finally {
       isLoading.value = false;

@@ -8,7 +8,6 @@ import 'package:kind_clock/controllers/request_controller.dart';
 import 'package:kind_clock/models/notification_model.dart';
 import 'package:kind_clock/models/request_model.dart';
 import 'package:kind_clock/models/user_model.dart';
-import 'package:kind_clock/screens/auth_screens/register_screen.dart';
 import 'package:kind_clock/screens/widgets/custom_widgets/custom_button.dart';
 import 'package:kind_clock/screens/widgets/custom_widgets/custom_cancel.dart';
 import 'package:kind_clock/screens/widgets/custom_widgets/custom_form_field.dart';
@@ -102,7 +101,7 @@ class _CancelDialogState extends State<CancelDialog> {
 
                       final isAcceptedUser =
                           widget.request.acceptedUser.isNotEmpty &&
-                              widget.request.acceptedUser!
+                              widget.request.acceptedUser
                                   .any((user) => user.userId == currentUserId);
 
                       final isRequester =  widget.request.userId == currentUserId;
@@ -110,48 +109,49 @@ class _CancelDialogState extends State<CancelDialog> {
                       log(isAcceptedUser
                           ? "Inside your helps"
                           : "Inside not User");
-                      // Update accepted users list
-                      List<UserModel> updatedAcceptedUsers =
-                          widget.request.acceptedUser ?? [];
-
-                      if (isAcceptedUser) {
-                        updatedAcceptedUsers = widget.request.acceptedUser!
-                            .where((user) => user.userId != currentUserId)
-                            .toList();
-                      }
-
                       if (isRequester) {
-                        updatedAcceptedUsers = [];
+                        // For request owners: DELETE the request entirely
+                        await requestController.deleteRequest(widget.request.requestId);
+                      } else {
+                        // For accepted volunteers: Update request to remove them
+                        // Update accepted users list
+                        List<UserModel> updatedAcceptedUsers =
+                            widget.request.acceptedUser;
+
+                        if (isAcceptedUser) {
+                          updatedAcceptedUsers = widget.request.acceptedUser
+                              .where((user) => user.userId != currentUserId)
+                              .toList();
+                        }
+
+                        // Update request status
+                        final newStatus = RequestStatus.values.firstWhere((e) => e.name == requestController.determineRequestStatus(widget.request), orElse: () => RequestStatus.pending);
+
+                        // Build updated request model
+                        RequestModel requestUpdate = RequestModel(
+                          requestId: widget.request.requestId,
+                          userId: widget.request.userId,
+                          title: widget.request.title,
+                          description: widget.request.description,
+                          location: widget.request.location,
+                          timestamp: widget.request.timestamp,
+                          requestedTime: widget.request.requestedTime,
+                          status: newStatus,
+                          acceptedUser: updatedAcceptedUsers,
+                          numberOfPeople: widget.request.numberOfPeople,
+                          hoursNeeded: widget.request.hoursNeeded
+                        );
+                        log("Updated Request Data: ${requestUpdate.toJson()}");
+
+                        await requestController.controllerUpdateRequest(
+                            widget.request.requestId, requestUpdate);
                       }
-
-                      // Update request status
-                      final newStatus = isRequester
-                          ? RequestStatus.cancelled
-                          : RequestStatus.values.firstWhere((e) => e.name == requestController.determineRequestStatus(widget.request), orElse: () => RequestStatus.pending);
-
-                      // Build updated request model
-                      RequestModel requestUpdate = RequestModel(
-                        requestId: widget.request.requestId,
-                        userId: widget.request.userId,
-                        title: widget.request.title,
-                        description: widget.request.description,
-                        location: widget.request.location,
-                        timestamp: widget.request.timestamp,
-                        requestedTime: widget.request.requestedTime,
-                        status: newStatus,
-                        acceptedUser: updatedAcceptedUsers,
-                        numberOfPeople: widget.request.numberOfPeople,
-                        hoursNeeded: widget.request.hoursNeeded
-                      );
-                      log("Updated Request Data: ${requestUpdate.toJson()}");
-
-                      await requestController.controllerUpdateRequest(
-                          widget.request.requestId, requestUpdate);
 
                       // Notifications
-                      if (isRequester && widget.request.acceptedUser != null) {
-                        for (var user in widget.request.acceptedUser!) {
-                          final notification = NotificationModel(
+                      if (isRequester && widget.request.acceptedUser.isNotEmpty) {
+                        for (var user in widget.request.acceptedUser) {
+                          // Create notification for accepted users
+                          NotificationModel(
                             body:
                                 "'${widget.request.title}' has been cancelled by the requester. Reason: ${reasonController.text}",
                             timestamp: DateTime.now(),
@@ -169,7 +169,8 @@ class _CancelDialogState extends State<CancelDialog> {
                           // REMOVED: Firebase dependency
                         }
                       } else if (isAcceptedUser) {
-                        final notification = NotificationModel(
+                        // Create notification for requester
+                        NotificationModel(
                           body:
                               "Your request '${widget.request.title}' was cancelled by a helper. Reason: ${reasonController.text}",
                           timestamp: DateTime.now(),

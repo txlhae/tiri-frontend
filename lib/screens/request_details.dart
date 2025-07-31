@@ -579,9 +579,12 @@ class _RequestDetailsState extends State<RequestDetails> {
   Widget _buildVolunteerButton(RequestModel request) {
     final currentUser = authController.currentUserStore.value;
     
-    // 1. Don't show button if user owns the request ✅
+    // 1. Show delete button if user owns the request ✅
     if (request.userId == currentUser?.userId) {
-      return Container();
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 50.0),
+        child: _buildOwnerDeleteButton(request),
+      );
     }
     
     // 2. Check if current user has already volunteered (pending/approved) ✅
@@ -726,6 +729,124 @@ class _RequestDetailsState extends State<RequestDetails> {
                   )
                 : const Icon(Icons.cancel_outlined),
             label: Text(requestController.isLoading.value ? "Canceling..." : "Cancel Request"),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.red.shade700,
+              side: BorderSide(color: Colors.red.shade300),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        )),
+      ],
+    );
+  }
+
+  /// Builds the owner delete button for request owners
+  Widget _buildOwnerDeleteButton(RequestModel request) {
+    return Column(
+      children: [
+        // Owner information card
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            color: Color.fromRGBO(0, 140, 170, 1).withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Color.fromRGBO(0, 140, 170, 1).withOpacity(0.3)),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.person_outline, color: Color.fromRGBO(0, 140, 170, 1), size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Your Request",
+                      style: TextStyle(
+                        color: Color.fromRGBO(0, 140, 170, 1),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      "You are the owner of this request",
+                      style: TextStyle(
+                        color: Color.fromRGBO(0, 140, 170, 1).withOpacity(0.8),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        // Delete Request button with loading state
+        Obx(() => SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: requestController.isLoading.value ? null : () async {
+              // Show confirmation dialog
+              final bool? confirmed = await Get.dialog<bool>(
+                AlertDialog(
+                  title: const Text('Delete Request'),
+                  content: const Text('Are you sure you want to delete this request? This action cannot be undone.'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Get.back(result: false),
+                      child: const Text('Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () => Get.back(result: true),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.red,
+                      ),
+                      child: const Text('Delete'),
+                    ),
+                  ],
+                ),
+              );
+              
+              if (confirmed == true) {
+                try {
+                  await requestController.deleteRequest(request.requestId);
+                  Get.snackbar(
+                    'Success',
+                    'Request deleted successfully',
+                    snackPosition: SnackPosition.BOTTOM,
+                    backgroundColor: Colors.green,
+                    colorText: Colors.white,
+                    margin: const EdgeInsets.all(16),
+                  );
+                  // Navigate back to the requests list
+                  Get.back();
+                } catch (e) {
+                  Get.snackbar(
+                    'Error',
+                    'Failed to delete request: $e',
+                    snackPosition: SnackPosition.BOTTOM,
+                    backgroundColor: Colors.red,
+                    colorText: Colors.white,
+                    margin: const EdgeInsets.all(16),
+                  );
+                }
+              }
+            },
+            icon: requestController.isLoading.value 
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.delete_outline),
+            label: Text(requestController.isLoading.value ? "Deleting..." : "Delete Request"),
             style: OutlinedButton.styleFrom(
               foregroundColor: Colors.red.shade700,
               side: BorderSide(color: Colors.red.shade300),

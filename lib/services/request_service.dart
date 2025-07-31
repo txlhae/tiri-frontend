@@ -4,7 +4,9 @@
 
 import 'dart:developer';
 import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:get/get.dart';
+import 'package:kind_clock/models/category_model.dart';
 import 'package:kind_clock/models/request_model.dart';
 import 'package:kind_clock/models/user_model.dart';
 import 'package:kind_clock/services/api_service.dart';
@@ -400,6 +402,26 @@ class RequestService extends GetxController {
       }
     } catch (e) {
       log('💥 RequestService: Error creating request - $e');
+      print('🚨 [SERVICE DEBUG] Error creating request - $e');
+      
+      // 🚨 CRITICAL: Extract DioException details to see actual Django errors
+      if (e is DioException) {
+        print('🚨 [SERVICE DEBUG] DioException detected!');
+        print('🚨 [SERVICE DEBUG] HTTP Status: ${e.response?.statusCode}');
+        print('🚨 [SERVICE DEBUG] Django Response: ${e.response?.data}');
+        print('🚨 [SERVICE DEBUG] Request URL: ${e.requestOptions.path}');
+        print('🚨 [SERVICE DEBUG] Request Data: ${e.requestOptions.data}');
+        
+        // Extract field-specific errors from Django
+        if (e.response?.data is Map) {
+          final errors = e.response!.data as Map;
+          print('🚨 [SERVICE DEBUG] === DJANGO FIELD ERRORS ===');
+          errors.forEach((field, error) {
+            print('🚨 [SERVICE DEBUG] Field "$field": $error');
+          });
+        }
+      }
+      
       return false;
     }
   }
@@ -665,6 +687,52 @@ class RequestService extends GetxController {
       }
     } catch (e) {
       log('💥 RequestService: Error fetching volunteer requests for request $requestId - $e');
+      return [];
+    }
+  }
+  
+  // =============================================================================
+  // CATEGORY OPERATIONS
+  // =============================================================================
+  
+  /// Fetch all categories from Django backend
+  /// Returns list of categories for request categorization
+  Future<List<CategoryModel>> fetchCategories() async {
+    try {
+      log('📂 RequestService: Fetching categories from Django API');
+      
+      final response = await _apiService.get('/api/categories/');
+      
+      if (response.statusCode == 200 && response.data != null) {
+        final dynamic responseData = response.data;
+        final List<dynamic> categoriesJson = responseData is Map ? 
+          (responseData['results'] ?? responseData['data'] ?? []) : 
+          (responseData is List ? responseData : []);
+        
+        log('📥 Raw Django categories: ${categoriesJson.length}');
+        
+        final List<CategoryModel> categories = categoriesJson
+            .map((categoryJson) => CategoryModel.fromJson(categoryJson as Map<String, dynamic>))
+            .toList();
+        
+        log('✅ RequestService: Fetched ${categories.length} categories');
+        log('📋 Categories: ${categories.map((c) => c.name).toList()}');
+        
+        return categories;
+      } else {
+        log('❌ RequestService: Failed to fetch categories - Status: ${response.statusCode}');
+        return [];
+      }
+    } catch (e) {
+      log('💥 RequestService: Error fetching categories - $e');
+      
+      // 🚨 Enhanced error logging for category fetching
+      if (e is DioException) {
+        print('🚨 [SERVICE DEBUG] Category fetch error:');
+        print('🚨 [SERVICE DEBUG] - Status Code: ${e.response?.statusCode}');
+        print('🚨 [SERVICE DEBUG] - Response Data: ${e.response?.data}');
+      }
+      
       return [];
     }
   }

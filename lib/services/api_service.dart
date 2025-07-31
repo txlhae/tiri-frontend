@@ -552,11 +552,12 @@ class ApiService {
     
     switch (statusCode) {
       case 400:
-        // Try to extract error message from response
-        if (data is Map && data.containsKey('message')) {
-          return Exception(data['message']);
-        }
-        return Exception('Invalid request. Please check your input.');
+        // 🚨 DEBUG FIX: Preserve original DioException for debugging Django validation errors
+        print('🚨 [API_SERVICE DEBUG] 400 Bad Request detected');
+        print('🚨 [API_SERVICE DEBUG] Response data: ${data}');
+        
+        // Throw the original DioException so RequestService can extract Django errors
+        throw error;
       
       case 401:
         return Exception('Authentication failed. Please login again.');

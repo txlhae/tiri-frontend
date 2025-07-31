@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:kind_clock/controllers/notification_controller.dart';
 import 'package:kind_clock/controllers/request_controller.dart';
+import 'package:kind_clock/models/category_model.dart';
 import 'package:kind_clock/screens/widgets/custom_widgets/custom_back_button.dart';
 import 'package:kind_clock/screens/widgets/custom_widgets/custom_button.dart';
 import 'package:kind_clock/screens/widgets/custom_widgets/custom_form_field.dart';
@@ -94,6 +95,139 @@ class AddRequestPage extends StatelessWidget {
                             if (controller.descriptionError.value != null)
                               Text(controller.descriptionError.value!,
                                   style: const TextStyle(color: Colors.red)),
+                          ],
+                        )),
+                    const SizedBox(
+                      height: 20,
+                    ),
+                    // Category Selection
+                    Obx(() => Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF9F9F9),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: controller.categoryError.value != null 
+                                      ? Colors.red 
+                                      : Colors.grey.shade300,
+                                ),
+                              ),
+                              child: controller.isLoadingCategories.value
+                                  ? const Padding(
+                                      padding: EdgeInsets.all(12.0),
+                                      child: Row(
+                                        children: [
+                                          SizedBox(
+                                            width: 16,
+                                            height: 16,
+                                            child: CircularProgressIndicator(strokeWidth: 2),
+                                          ),
+                                          SizedBox(width: 10),
+                                          Text("Loading categories..."),
+                                        ],
+                                      ),
+                                    )
+                                  : DropdownButtonHideUnderline(
+                                      child: DropdownButton<CategoryModel>(
+                                        value: controller.selectedCategory.value,
+                                        hint: Text(
+                                          controller.categories.isEmpty 
+                                              ? "No categories available - Add one below"
+                                              : "Select Category",
+                                          style: TextStyle(
+                                            color: controller.categories.isEmpty ? Colors.orange : Colors.grey,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                        isExpanded: true,
+                                        icon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
+                                        items: [
+                                          // Regular category items
+                                          ...controller.categories.map((category) {
+                                            return DropdownMenuItem<CategoryModel>(
+                                              value: category,
+                                              child: Row(
+                                                children: [
+                                                  Icon(
+                                                    category.icon,
+                                                    color: category.color,
+                                                    size: 20,
+                                                  ),
+                                                  const SizedBox(width: 10),
+                                                  Expanded(
+                                                    child: Text(
+                                                      category.displayText,
+                                                      style: const TextStyle(fontSize: 16),
+                                                      overflow: TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            );
+                                          }).toList(),
+                                          // Add separator if categories exist
+                                          if (controller.categories.isNotEmpty)
+                                            const DropdownMenuItem<CategoryModel>(
+                                              enabled: false,
+                                              value: null,
+                                              child: Divider(),
+                                            ),
+                                          // Add Category option
+                                          const DropdownMenuItem<CategoryModel>(
+                                            value: null,
+                                            child: Row(
+                                              children: [
+                                                Icon(
+                                                  Icons.add,
+                                                  color: Colors.blue,
+                                                  size: 20,
+                                                ),
+                                                SizedBox(width: 10),
+                                                Text(
+                                                  'Add New Category',
+                                                  style: TextStyle(
+                                                    fontSize: 16,
+                                                    color: Colors.blue,
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                        onChanged: (CategoryModel? newValue) {
+                                          if (newValue == null) {
+                                            // User selected "Add New Category"
+                                            controller.showAddCategoryDialog(context);
+                                          } else {
+                                            controller.selectedCategory.value = newValue;
+                                            controller.categoryError.value = null; // Clear error on selection
+                                          }
+                                        },
+                                      ),
+                                    ),
+                            ),
+                            if (controller.categoryError.value != null)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8.0, left: 15.0),
+                                child: Text(
+                                  controller.categoryError.value!,
+                                  style: const TextStyle(color: Colors.red, fontSize: 12),
+                                ),
+                              ),
+                            // Show helpful text when no categories are loaded
+                            if (controller.categories.isEmpty && !controller.isLoadingCategories.value)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8.0, left: 15.0),
+                                child: Text(
+                                  "Tap 'Add New Category' to create your first category",
+                                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                                ),
+                              ),
                           ],
                         )),
                     const SizedBox(
@@ -201,14 +335,18 @@ class AddRequestPage extends StatelessWidget {
                     Padding(
                       padding: const EdgeInsets.symmetric(
                           vertical: 10.0, horizontal: 60.0),
-                      child: CustomButton(
-                        buttonText: "Save",
+                      child: Obx(() => CustomButton(
+                        buttonText: controller.isLoading.value ? "Creating..." : "Create Request",
                         onButtonPressed: () {
-                          controller.saveRequest().then((value) {
-                            notificationController.loadNotification();
-                          });
+                          if (!controller.isLoading.value) {
+                            controller.saveRequest().then((success) {
+                              if (success) {
+                                notificationController.loadNotification();
+                              }
+                            });
+                          }
                         },
-                      ),
+                      )),
                     ),
                   ],
                 ),
