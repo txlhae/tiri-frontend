@@ -146,7 +146,7 @@ class _CommunityRequestsState extends State<CommunityRequests> {
                                               Text(
                                                 DateFormat('dd MMM yyyy')
                                                     .format(
-                                                        request.requestedTime),
+                                                        request.requestedTime ?? request.timestamp),
                                                 style: const TextStyle(
                                                   color: Color.fromRGBO(
                                                       22, 178, 217, 1),
@@ -163,7 +163,7 @@ class _CommunityRequestsState extends State<CommunityRequests> {
                                                       color: Colors.black)),
                                               Text(
                                                 DateFormat('h:mm a').format(
-                                                    request.requestedTime),
+                                                    request.requestedTime ?? request.timestamp),
                                                 style: const TextStyle(
                                                   color: Color.fromRGBO(
                                                       22, 178, 217, 1),
@@ -179,7 +179,7 @@ class _CommunityRequestsState extends State<CommunityRequests> {
                                                       fontSize: 12,
                                                       color: Colors.black)),
                                               Text(
-                                                request.location,
+                                                request.location ?? 'Not specified',
                                                 style: const TextStyle(
                                                   color: Colors.black,
                                                   fontWeight: FontWeight.bold,

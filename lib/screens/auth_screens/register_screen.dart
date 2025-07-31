@@ -9,7 +9,6 @@ import 'package:kind_clock/infrastructure/routes.dart';
 import 'package:kind_clock/screens/widgets/custom_widgets/custom_button.dart';
 import 'package:kind_clock/screens/widgets/custom_widgets/custom_form_field.dart';
 import 'package:kind_clock/screens/widgets/navigate_row.dart';
-import 'package:kind_clock/services/firebase_storage.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});

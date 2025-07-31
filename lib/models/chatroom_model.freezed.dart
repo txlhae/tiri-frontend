@@ -170,8 +170,7 @@ class __$$ChatRoomModelImplCopyWithImpl<$Res>
 }
 
 /// @nodoc
-
-@JsonSerializable(explicitToJson: true)
+@JsonSerializable()
 class _$ChatRoomModelImpl implements _ChatRoomModel {
   const _$ChatRoomModelImpl(
       {required this.chatRoomId,

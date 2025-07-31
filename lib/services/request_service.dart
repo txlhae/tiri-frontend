@@ -207,8 +207,8 @@ class RequestService extends GetxController {
     final userMap = djangoUser as Map<String, dynamic>;
     return {
       'userId': userMap['id']?.toString() ?? '',
-      'name': userMap['username'] ?? userMap['full_name'] ?? 'Unknown',
-      'email': userMap['email'] ?? '',
+      'username': userMap['username'] ?? userMap['full_name'] ?? 'Unknown', // Fixed: Use 'username' key
+      'email': userMap['email']?.toString() ?? '', // Fixed: Handle null email properly
       'imageUrl': userMap['profile_image_url'] ?? userMap['profile_image'],
       // Add other UserModel fields as needed
     };
@@ -318,30 +318,53 @@ class RequestService extends GetxController {
       
       final response = await _apiService.get('/api/requests/$requestId/');
       
+      // Enhanced debug logging for API response
+      print('🌐 API URL: ${response.requestOptions.uri}');
+      print('🌐 Status Code: ${response.statusCode}');
+      print('🌐 Response Headers: ${response.headers}');
+      print('🌐 Raw Response Data Type: ${response.data.runtimeType}');
+      print('🌐 Raw Response: ${response.data}');
+      
       if (response.statusCode == 200 && response.data != null) {
-        // 🔍 DEBUG: Log raw Django response
-        log('🔍 DEBUG: Raw Django response for request $requestId:');
-        log('${response.data}');
-        
-        // Check if user_request_status exists in response
-        final rawData = response.data as Map<String, dynamic>;
-        log('🔍 DEBUG: user_request_status in response: ${rawData.containsKey('user_request_status')}');
-        if (rawData.containsKey('user_request_status')) {
-          log('🔍 DEBUG: user_request_status value: ${rawData['user_request_status']}');
+        try {
+          // 🔍 DEBUG: Log raw Django response
+          log('🔍 DEBUG: Raw Django response for request $requestId:');
+          log('${response.data}');
+          
+          // Check if user_request_status exists in response
+          final rawData = response.data as Map<String, dynamic>;
+          log('🔍 DEBUG: user_request_status in response: ${rawData.containsKey('user_request_status')}');
+          if (rawData.containsKey('user_request_status')) {
+            log('🔍 DEBUG: user_request_status value: ${rawData['user_request_status']}');
+          }
+          
+          // 🎯 APPLY FIELD MAPPING
+          print('🔄 Applying Django to Flutter field mapping...');
+          final flutterJson = _mapDjangoToFlutter(response.data as Map<String, dynamic>);
+          print('✅ Field mapping completed successfully');
+          print('🔍 Mapped JSON: $flutterJson');
+          
+          print('🏗️ Creating RequestModel from mapped JSON...');
+          final RequestModel request = RequestModelExtension.fromJsonWithRequester(flutterJson);
+          print('✅ RequestModel created successfully');
+          
+          log('✅ RequestService: Mapped request $requestId successfully');
+          return request;
+          
+        } catch (parseError) {
+          print('❌ JSON Parse Error: $parseError');
+          print('❌ Parse Error Stack Trace: ${parseError.toString()}');
+          print('❌ Failed to parse response data: ${response.data}');
+          return null;
         }
-        
-        // 🎯 APPLY FIELD MAPPING
-        final flutterJson = _mapDjangoToFlutter(response.data as Map<String, dynamic>);
-        final RequestModel request = RequestModelExtension.fromJsonWithRequester(flutterJson);
-        
-        log('✅ RequestService: Mapped request $requestId successfully');
-        return request;
       } else {
         log('❌ RequestService: Failed to fetch request $requestId - Status: ${response.statusCode}');
+        print('❌ Response body: ${response.data}');
         return null;
       }
     } catch (e) {
       log('💥 RequestService: Error fetching request $requestId - $e');
+      print('💥 Full error stack trace: $e');
       return null;
     }
   }

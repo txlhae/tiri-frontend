@@ -872,19 +872,6 @@ class AuthController extends GetxController {
     }
   }
 
-  /// Load referrer information
-  Future<void> _loadReferrerInfo(UserModel user) async {
-    try {
-      if (user.referralUserId != null && user.referralUserId!.isNotEmpty) {
-        // For now, we'll need to implement a user lookup method in the backend
-        // This would be a GET /api/users/{id}/ endpoint
-        referredUid.value = user.referralUserId!;
-        referredUser.value = 'Referrer'; // Placeholder until we implement user lookup
-      }
-    } catch (e) {
-      log('Error loading referrer info: $e');
-    }
-  }
 
   /// Clear login form
   void _clearLoginForm() {

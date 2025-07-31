@@ -12,9 +12,11 @@ _$RequestModelImpl _$$RequestModelImplFromJson(Map<String, dynamic> json) =>
       userId: json['userId'] as String,
       title: json['title'] as String,
       description: json['description'] as String,
-      location: json['location'] as String,
+      location: json['location'] as String?,
       timestamp: DateTime.parse(json['timestamp'] as String),
-      requestedTime: DateTime.parse(json['requestedTime'] as String),
+      requestedTime: json['requestedTime'] == null
+          ? null
+          : DateTime.parse(json['requestedTime'] as String),
       status: $enumDecode(_$RequestStatusEnumMap, json['status']),
       acceptedUser: (json['acceptedUser'] as List<dynamic>?)
               ?.map((e) => UserModel.fromJson(e as Map<String, dynamic>))
@@ -35,10 +37,10 @@ Map<String, dynamic> _$$RequestModelImplToJson(_$RequestModelImpl instance) =>
       'description': instance.description,
       'location': instance.location,
       'timestamp': instance.timestamp.toIso8601String(),
-      'requestedTime': instance.requestedTime.toIso8601String(),
+      'requestedTime': instance.requestedTime?.toIso8601String(),
       'status': _$RequestStatusEnumMap[instance.status]!,
-      'acceptedUser': instance.acceptedUser.map((e) => e.toJson()).toList(),
-      'feedbackList': instance.feedbackList?.map((e) => e.toJson()).toList(),
+      'acceptedUser': instance.acceptedUser,
+      'feedbackList': instance.feedbackList,
       'numberOfPeople': instance.numberOfPeople,
       'hoursNeeded': instance.hoursNeeded,
     };

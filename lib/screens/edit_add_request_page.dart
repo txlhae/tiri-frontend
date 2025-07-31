@@ -32,7 +32,7 @@ void didChangeDependencies() {
   if (_initialized) return;
   _initialized = true;
 
-  final requestedTime = widget.request.requestedTime;
+  final requestedTime = widget.request.requestedTime ?? widget.request.timestamp;
 
   requestController.selectedDate.value = requestedTime;
   requestController.selectedTime.value = TimeOfDay.fromDateTime(requestedTime);
@@ -48,7 +48,7 @@ void didChangeDependencies() {
   // Fill other form fields
   requestController.titleController.value.text = widget.request.title;
   requestController.descriptionController.value.text = widget.request.description;
-  requestController.locationController.value.text = widget.request.location;
+  requestController.locationController.value.text = widget.request.location ?? '';
   requestController.numberOfPeopleController.value.text =
       widget.request.numberOfPeople.toString();
       requestController.hoursNeededController.value.text =

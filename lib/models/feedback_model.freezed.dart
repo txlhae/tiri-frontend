@@ -183,8 +183,7 @@ class __$$FeedbackModelImplCopyWithImpl<$Res>
 }
 
 /// @nodoc
-
-@JsonSerializable(explicitToJson: true)
+@JsonSerializable()
 class _$FeedbackModelImpl implements _FeedbackModel {
   const _$FeedbackModelImpl(
       {required this.feedbackId,

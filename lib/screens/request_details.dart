@@ -251,7 +251,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                           authController.currentUserStore.value?.userId &&
                       request.status != RequestStatus.complete &&
                       request.status != RequestStatus.expired &&
-                      request.requestedTime.isAfter(DateTime.now()))
+                      (request.requestedTime ?? request.timestamp).isAfter(DateTime.now()))
                     IconButton(
                       onPressed: () {
                         Get.toNamed(
@@ -308,7 +308,7 @@ class _RequestDetailsState extends State<RequestDetails> {
               ),
               const SizedBox(height: 5),
               Text(
-                "${request.requestedTime.day}/${request.requestedTime.month}/${request.requestedTime.year} at ${request.requestedTime.hour}:${request.requestedTime.minute.toString().padLeft(2, '0')}",
+                "${(request.requestedTime ?? request.timestamp).day}/${(request.requestedTime ?? request.timestamp).month}/${(request.requestedTime ?? request.timestamp).year} at ${(request.requestedTime ?? request.timestamp).hour}:${(request.requestedTime ?? request.timestamp).minute.toString().padLeft(2, '0')}",
                 style: const TextStyle(
                   fontSize: 15,
                   height: 1.5,
@@ -332,7 +332,7 @@ class _RequestDetailsState extends State<RequestDetails> {
               DetailsRow(
                 icon: Icons.location_on,
                 label: "Location",
-                value: request.location,
+                value: request.location ?? 'Location not specified',
               ),
               const SizedBox(height: 12),
               DetailsRow(
@@ -478,7 +478,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                     if ((request.status == RequestStatus.accepted || request.status == RequestStatus.incomplete ) &&
                         authController.currentUserStore.value?.userId ==
                             request.userId &&
-                        request.requestedTime.isBefore(DateTime.now()))
+                        (request.requestedTime ?? request.timestamp).isBefore(DateTime.now()))
                       DeferPointer(
                         child: GestureDetector(
                           behavior: HitTestBehavior.translucent,
@@ -514,7 +514,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                         request.acceptedUser.any((user) =>
                             user.userId ==
                                 authController.currentUserStore.value?.userId &&
-                            request.requestedTime.isBefore(DateTime.now())))
+                            (request.requestedTime ?? request.timestamp).isBefore(DateTime.now())))
                       DeferPointer(
                         child: GestureDetector(
                           onTap: () {

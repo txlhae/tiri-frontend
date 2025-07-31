@@ -24,15 +24,16 @@ mixin _$RequestModel {
   String get userId => throw _privateConstructorUsedError;
   String get title => throw _privateConstructorUsedError;
   String get description => throw _privateConstructorUsedError;
-  String get location => throw _privateConstructorUsedError;
+  String? get location =>
+      throw _privateConstructorUsedError; // Made nullable - can be null from backend
   DateTime get timestamp => throw _privateConstructorUsedError;
-  DateTime get requestedTime => throw _privateConstructorUsedError;
+  DateTime? get requestedTime =>
+      throw _privateConstructorUsedError; // Made nullable - might not always be set
   RequestStatus get status => throw _privateConstructorUsedError;
   List<UserModel> get acceptedUser => throw _privateConstructorUsedError;
   List<FeedbackModel>? get feedbackList => throw _privateConstructorUsedError;
-  @JsonKey(defaultValue: 1)
-  int get numberOfPeople => throw _privateConstructorUsedError;
-  @JsonKey(defaultValue: 1)
+  int get numberOfPeople =>
+      throw _privateConstructorUsedError; // Removed required for @Default fields
   int get hoursNeeded => throw _privateConstructorUsedError;
 
   /// Serializes this RequestModel to a JSON map.
@@ -56,14 +57,14 @@ abstract class $RequestModelCopyWith<$Res> {
       String userId,
       String title,
       String description,
-      String location,
+      String? location,
       DateTime timestamp,
-      DateTime requestedTime,
+      DateTime? requestedTime,
       RequestStatus status,
       List<UserModel> acceptedUser,
       List<FeedbackModel>? feedbackList,
-      @JsonKey(defaultValue: 1) int numberOfPeople,
-      @JsonKey(defaultValue: 1) int hoursNeeded});
+      int numberOfPeople,
+      int hoursNeeded});
 }
 
 /// @nodoc
@@ -85,9 +86,9 @@ class _$RequestModelCopyWithImpl<$Res, $Val extends RequestModel>
     Object? userId = null,
     Object? title = null,
     Object? description = null,
-    Object? location = null,
+    Object? location = freezed,
     Object? timestamp = null,
-    Object? requestedTime = null,
+    Object? requestedTime = freezed,
     Object? status = null,
     Object? acceptedUser = null,
     Object? feedbackList = freezed,
@@ -111,18 +112,18 @@ class _$RequestModelCopyWithImpl<$Res, $Val extends RequestModel>
           ? _value.description
           : description // ignore: cast_nullable_to_non_nullable
               as String,
-      location: null == location
+      location: freezed == location
           ? _value.location
           : location // ignore: cast_nullable_to_non_nullable
-              as String,
+              as String?,
       timestamp: null == timestamp
           ? _value.timestamp
           : timestamp // ignore: cast_nullable_to_non_nullable
               as DateTime,
-      requestedTime: null == requestedTime
+      requestedTime: freezed == requestedTime
           ? _value.requestedTime
           : requestedTime // ignore: cast_nullable_to_non_nullable
-              as DateTime,
+              as DateTime?,
       status: null == status
           ? _value.status
           : status // ignore: cast_nullable_to_non_nullable
@@ -160,14 +161,14 @@ abstract class _$$RequestModelImplCopyWith<$Res>
       String userId,
       String title,
       String description,
-      String location,
+      String? location,
       DateTime timestamp,
-      DateTime requestedTime,
+      DateTime? requestedTime,
       RequestStatus status,
       List<UserModel> acceptedUser,
       List<FeedbackModel>? feedbackList,
-      @JsonKey(defaultValue: 1) int numberOfPeople,
-      @JsonKey(defaultValue: 1) int hoursNeeded});
+      int numberOfPeople,
+      int hoursNeeded});
 }
 
 /// @nodoc
@@ -187,9 +188,9 @@ class __$$RequestModelImplCopyWithImpl<$Res>
     Object? userId = null,
     Object? title = null,
     Object? description = null,
-    Object? location = null,
+    Object? location = freezed,
     Object? timestamp = null,
-    Object? requestedTime = null,
+    Object? requestedTime = freezed,
     Object? status = null,
     Object? acceptedUser = null,
     Object? feedbackList = freezed,
@@ -213,18 +214,18 @@ class __$$RequestModelImplCopyWithImpl<$Res>
           ? _value.description
           : description // ignore: cast_nullable_to_non_nullable
               as String,
-      location: null == location
+      location: freezed == location
           ? _value.location
           : location // ignore: cast_nullable_to_non_nullable
-              as String,
+              as String?,
       timestamp: null == timestamp
           ? _value.timestamp
           : timestamp // ignore: cast_nullable_to_non_nullable
               as DateTime,
-      requestedTime: null == requestedTime
+      requestedTime: freezed == requestedTime
           ? _value.requestedTime
           : requestedTime // ignore: cast_nullable_to_non_nullable
-              as DateTime,
+              as DateTime?,
       status: null == status
           ? _value.status
           : status // ignore: cast_nullable_to_non_nullable
@@ -250,22 +251,21 @@ class __$$RequestModelImplCopyWithImpl<$Res>
 }
 
 /// @nodoc
-
-@JsonSerializable(explicitToJson: true)
+@JsonSerializable()
 class _$RequestModelImpl implements _RequestModel {
   const _$RequestModelImpl(
       {required this.requestId,
       required this.userId,
       required this.title,
       required this.description,
-      required this.location,
+      this.location,
       required this.timestamp,
-      required this.requestedTime,
+      this.requestedTime,
       required this.status,
       final List<UserModel> acceptedUser = const [],
       final List<FeedbackModel>? feedbackList,
-      @JsonKey(defaultValue: 1) required this.numberOfPeople,
-      @JsonKey(defaultValue: 1) required this.hoursNeeded})
+      this.numberOfPeople = 1,
+      this.hoursNeeded = 1})
       : _acceptedUser = acceptedUser,
         _feedbackList = feedbackList;
 
@@ -281,11 +281,13 @@ class _$RequestModelImpl implements _RequestModel {
   @override
   final String description;
   @override
-  final String location;
+  final String? location;
+// Made nullable - can be null from backend
   @override
   final DateTime timestamp;
   @override
-  final DateTime requestedTime;
+  final DateTime? requestedTime;
+// Made nullable - might not always be set
   @override
   final RequestStatus status;
   final List<UserModel> _acceptedUser;
@@ -308,10 +310,11 @@ class _$RequestModelImpl implements _RequestModel {
   }
 
   @override
-  @JsonKey(defaultValue: 1)
+  @JsonKey()
   final int numberOfPeople;
+// Removed required for @Default fields
   @override
-  @JsonKey(defaultValue: 1)
+  @JsonKey()
   final int hoursNeeded;
 
   @override
@@ -382,19 +385,18 @@ class _$RequestModelImpl implements _RequestModel {
 
 abstract class _RequestModel implements RequestModel {
   const factory _RequestModel(
-          {required final String requestId,
-          required final String userId,
-          required final String title,
-          required final String description,
-          required final String location,
-          required final DateTime timestamp,
-          required final DateTime requestedTime,
-          required final RequestStatus status,
-          final List<UserModel> acceptedUser,
-          final List<FeedbackModel>? feedbackList,
-          @JsonKey(defaultValue: 1) required final int numberOfPeople,
-          @JsonKey(defaultValue: 1) required final int hoursNeeded}) =
-      _$RequestModelImpl;
+      {required final String requestId,
+      required final String userId,
+      required final String title,
+      required final String description,
+      final String? location,
+      required final DateTime timestamp,
+      final DateTime? requestedTime,
+      required final RequestStatus status,
+      final List<UserModel> acceptedUser,
+      final List<FeedbackModel>? feedbackList,
+      final int numberOfPeople,
+      final int hoursNeeded}) = _$RequestModelImpl;
 
   factory _RequestModel.fromJson(Map<String, dynamic> json) =
       _$RequestModelImpl.fromJson;
@@ -408,11 +410,11 @@ abstract class _RequestModel implements RequestModel {
   @override
   String get description;
   @override
-  String get location;
+  String? get location; // Made nullable - can be null from backend
   @override
   DateTime get timestamp;
   @override
-  DateTime get requestedTime;
+  DateTime? get requestedTime; // Made nullable - might not always be set
   @override
   RequestStatus get status;
   @override
@@ -420,10 +422,8 @@ abstract class _RequestModel implements RequestModel {
   @override
   List<FeedbackModel>? get feedbackList;
   @override
-  @JsonKey(defaultValue: 1)
-  int get numberOfPeople;
+  int get numberOfPeople; // Removed required for @Default fields
   @override
-  @JsonKey(defaultValue: 1)
   int get hoursNeeded;
 
   /// Create a copy of RequestModel

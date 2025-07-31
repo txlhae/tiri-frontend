@@ -179,7 +179,7 @@ class _MyHelpsState extends State<MyHelps> {
                                   color:Colors.black ),
                                   ),
                                   Text(DateFormat('dd MMM yyyy','en_US')
-                                  .format(request.requestedTime),
+                                  .format(request.requestedTime ?? request.timestamp),
                                       style: const TextStyle(
                                           color: Color.fromRGBO(22, 178, 217, 1), 
                                           fontWeight: FontWeight.bold)),
@@ -192,7 +192,7 @@ class _MyHelpsState extends State<MyHelps> {
                                style: TextStyle(fontSize: 12,
                                color: Colors.black)),
                               Text(
-                               requestController.formatDateTime(request.requestedTime).split(", ").last,
+                               requestController.formatDateTime(request.requestedTime ?? request.timestamp).split(", ").last,
                                 style: const TextStyle(
                                color: Color.fromRGBO(22, 178, 217, 1),
                               fontWeight: FontWeight.w600,
@@ -205,7 +205,7 @@ class _MyHelpsState extends State<MyHelps> {
                                   const Text("Location: ", 
                                   style: TextStyle(fontSize: 12,
                                   color: Colors.black)),
-                                  Text(request.location,
+                                  Text(request.location ?? 'Not specified',
                                       style: const TextStyle(fontWeight: FontWeight.bold, 
                                       color: Colors.black)),
                                 ],
@@ -218,7 +218,7 @@ class _MyHelpsState extends State<MyHelps> {
                                 style: ElevatedButton.styleFrom(
                                     backgroundColor: request.status != RequestStatus.complete &&
                                             request.status != RequestStatus.expired &&
-                                             request.requestedTime.isAfter(DateTime.now())
+                                             (request.requestedTime ?? request.timestamp).isAfter(DateTime.now())
                                         ? const Color.fromRGBO(3, 80, 135, 1)
                                         : Colors.grey,
                                     padding: const EdgeInsets.symmetric(
@@ -231,7 +231,7 @@ class _MyHelpsState extends State<MyHelps> {
                                   log("Cancel it");
                                   if (request.status !=RequestStatus.complete &&
                                       request.status !=RequestStatus.expired && 
-                                      request.requestedTime.isAfter(DateTime.now())) {
+                                      (request.requestedTime ?? request.timestamp).isAfter(DateTime.now())) {
                                     Get.dialog(
                                       CancelDialog(
                                         questionText:

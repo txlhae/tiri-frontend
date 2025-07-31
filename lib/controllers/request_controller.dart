@@ -316,7 +316,7 @@ class RequestController extends GetxController {
         debugLog("     * Is Pending: ${request.status == RequestStatus.pending}");
         debugLog("     * Is InProgress: ${request.status == RequestStatus.inprogress}");
         debugLog("     * Requested Time: ${request.requestedTime}");
-        debugLog("     * Is Future Time: ${request.requestedTime.isAfter(DateTime.now())}");
+        debugLog("     * Is Future Time: ${(request.requestedTime ?? request.timestamp).isAfter(DateTime.now())}");
         debugLog("     * Request User ID: ${request.userId}");
         debugLog("     * Current User ID: ${currentUser?.userId}");
         debugLog("     * Is Own Request: ${request.userId == currentUser?.userId}");
@@ -331,7 +331,7 @@ class RequestController extends GetxController {
         // Check overall eligibility
         final isEligible = currentUser != null && 
                           (request.status == RequestStatus.pending || request.status == RequestStatus.inprogress) &&
-                          request.requestedTime.isAfter(DateTime.now()) &&
+                          (request.requestedTime ?? request.timestamp).isAfter(DateTime.now()) &&
                           request.userId != currentUser.userId && 
                           request.acceptedUser.length < request.numberOfPeople &&
                           !alreadyAccepted;
@@ -383,7 +383,7 @@ class RequestController extends GetxController {
         final userSearchResults = myPostRequests.where((request) => 
           request.title.toLowerCase().contains(query.toLowerCase()) ||
           request.description.toLowerCase().contains(query.toLowerCase()) ||
-          request.location.toLowerCase().contains(query.toLowerCase())
+          (request.location ?? '').toLowerCase().contains(query.toLowerCase())
         ).toList();
         
         myRequestList.assignAll(userSearchResults);
@@ -786,7 +786,7 @@ class RequestController extends GetxController {
     final now = DateTime.now();
     final acceptedCount = request.acceptedUser.length;
     final requiredCount = request.numberOfPeople;
-    final timeUp = request.requestedTime.isBefore(now);
+    final timeUp = (request.requestedTime ?? request.timestamp).isBefore(now);
     
     if (timeUp) {
       if (acceptedCount == 0) {
@@ -842,7 +842,7 @@ class RequestController extends GetxController {
     try {
       debugLog("📍 fetchMyRequestsByLocation: $location");
       final filtered = myPostRequests.where((request) => 
-        request.location.toLowerCase().contains(location.toLowerCase())
+        (request.location ?? '').toLowerCase().contains(location.toLowerCase())
       ).toList();
       myRequestList.assignAll(filtered);
     } catch (e) {
@@ -922,6 +922,10 @@ class RequestController extends GetxController {
       
       if (success) {
         debugLog("✅ RequestController: Successfully sent volunteer request for $requestId");
+        
+        // Clear the cache to ensure fresh data is loaded
+        RequestModelExtension.clearUserStatusCache(requestId);
+        debugLog("🗑️ RequestController: Cleared cache for request $requestId to ensure fresh data");
         
         // Refresh the specific request details to get updated UserRequestStatus
         await loadRequestDetails(requestId);

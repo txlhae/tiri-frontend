@@ -2,8 +2,6 @@ import 'dart:developer';
 import 'package:get/get.dart';
 import 'package:kind_clock/controllers/auth_controller.dart';
 import 'package:kind_clock/models/notification_model.dart';
-import 'package:kind_clock/screens/auth_screens/register_screen.dart';
-import 'package:kind_clock/services/firebase_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class NotificationController extends GetxController {
@@ -38,7 +36,8 @@ class NotificationController extends GetxController {
 
   Future<void> updateNotify(NotificationModel notify) async {
     try {
-      // await _store.updateNotification(notify); // REMOVED: Firebase dependency
+      // await _store.updateNotification(notify);
+ // REMOVED: Firebase dependency
       log("Notification updated successfully");
     } catch (e) {
       log("Error updating notification: $e");
@@ -57,7 +56,8 @@ class NotificationController extends GetxController {
 
   Future<void> sendReminderNotification(NotificationModel notification) async {
     try {
-      // await _store.saveNotification(notification); // REMOVED: Firebase dependency
+      // await _store.saveNotification(notification);
+ // REMOVED: Firebase dependency
       log("Reminder notification saved successfully");
     } catch (e) {
       log("Error while saving reminder notification: $e");

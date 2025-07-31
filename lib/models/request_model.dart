@@ -63,14 +63,14 @@ class RequestModel with _$RequestModel {
   required String userId,
   required String title,
   required String description,
-  required String location,
+  String? location, // Made nullable - can be null from backend
   required DateTime timestamp,
-  required DateTime requestedTime,
+  DateTime? requestedTime, // Made nullable - might not always be set
   required RequestStatus status,
   @Default([]) List<UserModel> acceptedUser, 
   List<FeedbackModel>? feedbackList,
-  @Default(1) required int numberOfPeople,
-  @Default(1) required int hoursNeeded,
+  @Default(1) int numberOfPeople, // Removed required for @Default fields
+  @Default(1) int hoursNeeded, // Removed required for @Default fields
 }) = _RequestModel;
 
   // Convert JSON to Model
@@ -115,6 +115,24 @@ extension RequestModelExtension on RequestModel {
   
   // Enhanced cache to store UserRequestStatus objects
   static final Map<String, UserRequestStatus> _userRequestStatusCache = {};
+  
+  // Cache management methods
+  /// Clear user request status cache for a specific request
+  static void clearUserStatusCache(String requestId) {
+    if (_userRequestStatusCache.containsKey(requestId)) {
+      _userRequestStatusCache.remove(requestId);
+      print('🗑️ RequestModelExtension: Cleared user status cache for request $requestId');
+    } else {
+      print('🔍 RequestModelExtension: No cache entry found for request $requestId to clear');
+    }
+  }
+  
+  /// Clear all user request status cache entries
+  static void clearAllUserStatusCache() {
+    final cacheSize = _userRequestStatusCache.length;
+    _userRequestStatusCache.clear();
+    print('🗑️ RequestModelExtension: Cleared all user status cache ($cacheSize entries)');
+  }
   
   // Get requester for this request
   UserModel? get requester => _requesterCache[requestId];

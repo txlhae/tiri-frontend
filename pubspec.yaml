@@ -1,3 +1,4 @@
+# pubspec.yaml
 name: kind_clock
 description: "A new Flutter project."
 publish_to: 'none'
@@ -19,8 +20,8 @@ dependencies:
   firebase_auth: ^6.0.0
   firebase_storage: ^13.0.0
   cloud_firestore: ^6.0.0
-  freezed_annotation: ^3.1.0
-  json_annotation: ^4.9.0
+  freezed_annotation: ^2.4.1
+  json_annotation: ^4.8.1
   shimmer: ^3.0.0
   flutter_svg: ^2.0.17
   defer_pointer: ^0.0.2
@@ -38,9 +39,9 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
-  freezed: ^3.2.0
-  build_runner: ^2.4.13
-  json_serializable: ^6.9.0
+  freezed: ^2.4.7
+  build_runner: ^2.4.7
+  json_serializable: ^6.7.1
 
 flutter:
   uses-material-design: true

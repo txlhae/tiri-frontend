@@ -247,8 +247,7 @@ class __$$UserModelImplCopyWithImpl<$Res>
 }
 
 /// @nodoc
-
-@JsonSerializable(explicitToJson: true)
+@JsonSerializable()
 class _$UserModelImpl implements _UserModel {
   const _$UserModelImpl(
       {required this.userId,

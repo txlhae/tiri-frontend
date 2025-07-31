@@ -38,7 +38,7 @@ class _IntrestedDialogState extends State<IntrestedDialog> {
   void initState() {
     super.initState();
     // Set default arrival time to request time
-    _selectedTime = TimeOfDay.fromDateTime(widget.request.requestedTime);
+    _selectedTime = TimeOfDay.fromDateTime(widget.request.requestedTime ?? widget.request.timestamp);
     _timeController.text = _formatTimeOfDay(_selectedTime!);
   }
 
@@ -247,14 +247,14 @@ class _IntrestedDialogState extends State<IntrestedDialog> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '📍 ${widget.request.location}',
+                            '📍 ${widget.request.location ?? 'Location not specified'}',
                             style: TextStyle(
                               color: Colors.grey.shade600,
                               fontSize: 14,
                             ),
                           ),
                           Text(
-                            '📅 ${_formatDateTime(widget.request.requestedTime)}',
+                            '📅 ${_formatDateTime(widget.request.requestedTime ?? widget.request.timestamp)}',
                             style: TextStyle(
                               color: Colors.grey.shade600,
                               fontSize: 14,

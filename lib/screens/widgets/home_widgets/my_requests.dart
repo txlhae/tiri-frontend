@@ -95,14 +95,14 @@ class MyRequests extends StatelessWidget {
                       _buildRequestDetail(
                           "Required date: ",
                           DateFormat('dd MMM yyyy', 'en_US')
-                              .format(request.requestedTime)),
+                              .format(request.requestedTime ?? request.timestamp)),
                       _buildRequestDetail(
                           "Time: ",
                           requestController
-                              .formatDateTime(request.requestedTime)
+                              .formatDateTime(request.requestedTime ?? request.timestamp)
                               .split(", ")
                               .last),
-                      _buildRequestDetail("Location: ", request.location),
+                      _buildRequestDetail("Location: ", request.location ?? 'Not specified'),
                       const SizedBox(height: 5),
                       Row(
                         children: [
@@ -114,7 +114,7 @@ class MyRequests extends StatelessWidget {
                           ),
                           const Spacer(),
                           if (!_isRequestCompleted(request.status) &&
-                              request.requestedTime.isAfter(DateTime.now()))
+                              (request.requestedTime ?? request.timestamp).isAfter(DateTime.now()))
                             _buildCancelButton(request),
                         ],
                       ),
