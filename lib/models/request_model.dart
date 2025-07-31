@@ -28,11 +28,30 @@ class UserRequestStatus {
   });
 
   factory UserRequestStatus.fromJson(Map<String, dynamic> json) {
+    // Try multiple possible field names for the message
+    final messageContent = json['message_content'] ?? 
+                          json['message_to_requester'] ?? 
+                          json['volunteer_message'] ?? 
+                          json['message'] ?? 
+                          json['user_message'] ?? '';
+    
+    print('🔍 UserRequestStatus.fromJson DEBUG:');
+    print('   - request_status: ${json['request_status']}');
+    print('   - ALL JSON KEYS: ${json.keys.toList()}');
+    print('   - message_content: "${json['message_content']}"');
+    print('   - message_to_requester: "${json['message_to_requester']}"');
+    print('   - volunteer_message: "${json['volunteer_message']}"');
+    print('   - message: "${json['message']}"');
+    print('   - user_message: "${json['user_message']}"');
+    print('   - FINAL messageContent: "$messageContent"');
+    print('   - messageContent type: ${messageContent.runtimeType}');
+    print('   - messageContent isEmpty: ${messageContent?.toString().isEmpty}');
+    
     return UserRequestStatus(
       requestStatus: json['request_status'] ?? 'not_requested',
       canRequest: json['can_request'] ?? false,
       canCancelRequest: json['can_cancel_request'] ?? false,
-      messageContent: json['message_content'],
+      messageContent: messageContent,
       hasVolunteered: json['has_volunteered'] ?? false,
       requestedAt: json['requested_at'] != null 
           ? DateTime.tryParse(json['requested_at']) 
@@ -144,7 +163,13 @@ extension RequestModelExtension on RequestModel {
   String get userRequestStatus => userRequestStatusObject?.requestStatus ?? 'not_requested';
   bool get canRequest => userRequestStatusObject?.canRequest ?? false;
   bool get canCancelRequest => userRequestStatusObject?.canCancelRequest ?? false;
-  String? get volunteerMessage => userRequestStatusObject?.messageContent;
+  String? get volunteerMessage {
+    final statusObject = userRequestStatusObject;
+    final message = statusObject?.messageContent;
+    // Debug logging can be removed in production
+    // print('🔍 volunteerMessage getter DEBUG for requestId: $requestId');
+    return message;
+  }
   bool get hasVolunteered => userRequestStatusObject?.hasVolunteered ?? false;
   DateTime? get requestedAt => userRequestStatusObject?.requestedAt;
   DateTime? get acceptedAt => userRequestStatusObject?.acceptedAt;

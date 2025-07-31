@@ -568,7 +568,6 @@ class _RequestDetailsState extends State<RequestDetails> {
         //volunteer button with dynamic states
         Builder(
           builder: (context) {
-            print('Debug: About to call _buildVolunteerButton');
             return _buildVolunteerButton(request);
           },
         ),
@@ -580,69 +579,58 @@ class _RequestDetailsState extends State<RequestDetails> {
   Widget _buildVolunteerButton(RequestModel request) {
     final currentUser = authController.currentUserStore.value;
     
-    // DEBUG PRINTS
-    print('=== DEBUG _buildVolunteerButton ===');
-    print('Debug: userId=${request.userId}, currentUserId=${currentUser?.userId}');
-    print('Debug: acceptedUser.length=${request.acceptedUser.length}, numberOfPeople=${request.numberOfPeople}');
-    print('Debug: userRequestStatus=${request.userRequestStatus}');
-    print('Debug: canRequest=${request.canRequest}');
-    print('Debug: Raw request data check...');
-    // Try to access extension cache directly
-    print('Debug: Extension cache check for ${request.requestId}');
-    
-    // Don't show button if user owns the request
+    // 1. Don't show button if user owns the request ✅
     if (request.userId == currentUser?.userId) {
-      print('Debug: User owns request - returning Container()');
       return Container();
     }
     
-    // Don't show button if request is full (already has enough volunteers)
-    if (request.acceptedUser.length >= request.numberOfPeople) {
-      print('Debug: Request is full - returning Container()');
-      return Container();
-    }
+    // 2. Check if current user has already volunteered (pending/approved) ✅
+    // Show user's volunteer status REGARDLESS of whether request is "full"
+    final userRequestStatus = request.userRequestStatus;
+    final canRequest = request.canRequest;
+    final canCancelRequest = request.canCancelRequest;
+    final hasVolunteered = request.hasVolunteered;
+    final volunteerMessage = request.volunteerMessage;
     
-    // Check if user is already an accepted volunteer
+    // Check if user is already an accepted volunteer (in acceptedUser list)
     final isAcceptedVolunteer = request.acceptedUser.any(
       (user) => user.userId == currentUser?.userId
     );
+    
     if (isAcceptedVolunteer) {
-      print('Debug: User is already accepted volunteer - returning Container()');
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 50.0),
+        child: _buildApprovedRequestState(request),
+      );
+    }
+    
+    // Check for pending volunteer status (user has volunteered but not yet accepted)
+    if (userRequestStatus == 'pending' || 
+        (hasVolunteered && canCancelRequest) ||
+        (volunteerMessage != null && volunteerMessage.isNotEmpty)) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 50.0),
+        child: _buildPendingRequestState(request),
+      );
+    }
+    
+    // Check for approved/accepted status that might not be in acceptedUser list yet
+    if (userRequestStatus == 'approved' || userRequestStatus == 'accepted') {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 50.0),
+        child: _buildApprovedRequestState(request),
+      );
+    }
+    
+    // 3. ONLY NOW check if request is full for NEW volunteers ✅
+    if (request.acceptedUser.length >= request.numberOfPeople) {
       return Container();
     }
     
-    print('Debug: Proceeding to build button UI...');
-    
+    // 4. Show "I'm Interested" button for new volunteers ✅
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 50.0),
-      child: Builder(
-        builder: (context) {
-          // Get user request status using extension (these are not reactive)
-          final userRequestStatus = request.userRequestStatus;
-          final canRequest = request.canRequest;
-          
-          print('Debug: Switch - userRequestStatus=$userRequestStatus, canRequest=$canRequest');
-          
-          switch (userRequestStatus) {
-            case 'pending':
-              print('Debug: Entering pending case');
-              // Show pending status with cancel option
-              return _buildPendingRequestState(request);
-              
-            case 'approved':
-            case 'accepted':
-              print('Debug: Entering approved/accepted case');
-              // Show approved status
-              return _buildApprovedRequestState(request);
-              
-            case 'not_requested':
-            default:
-              print('Debug: Entering default case (not_requested/null)');
-              // Show appropriate button based on canRequest status
-              return _buildInitialRequestState(request, canRequest);
-          }
-        },
-      ),
+      child: _buildInitialRequestState(request, canRequest),
     );
   }
 
@@ -684,17 +672,17 @@ class _RequestDetailsState extends State<RequestDetails> {
                         fontSize: 14,
                       ),
                     ),
-                    if (request.volunteerMessage != null) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        "Your message: \"${request.volunteerMessage}\"",
-                        style: TextStyle(
-                          color: Colors.grey.shade600,
-                          fontSize: 12,
-                          fontStyle: FontStyle.italic,
-                        ),
+                    const SizedBox(height: 8),
+                    Text(
+                      request.volunteerMessage != null && request.volunteerMessage!.trim().isNotEmpty
+                          ? "Your message: \"${request.volunteerMessage}\""
+                          : "Your message: \"No message provided\"",
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 12,
+                        fontStyle: FontStyle.italic,
                       ),
-                    ],
+                    ),
                   ],
                 ),
               ),

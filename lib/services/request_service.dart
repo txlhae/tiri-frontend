@@ -335,7 +335,20 @@ class RequestService extends GetxController {
           final rawData = response.data as Map<String, dynamic>;
           log('🔍 DEBUG: user_request_status in response: ${rawData.containsKey('user_request_status')}');
           if (rawData.containsKey('user_request_status')) {
+            final userRequestStatus = rawData['user_request_status'] as Map<String, dynamic>?;
             log('🔍 DEBUG: user_request_status value: ${rawData['user_request_status']}');
+            log('🔍 DEBUG: ALL user_request_status KEYS: ${userRequestStatus?.keys.toList()}');
+            log('🔍 DEBUG: message_content in user_request_status: ${userRequestStatus?.containsKey('message_content')}');
+            if (userRequestStatus?.containsKey('message_content') == true) {
+              log('🔍 DEBUG: message_content value: "${userRequestStatus!['message_content']}"');
+            }
+            // Check other possible message field names
+            final possibleMessageFields = ['message_to_requester', 'volunteer_message', 'message', 'user_message'];
+            for (final field in possibleMessageFields) {
+              if (userRequestStatus?.containsKey(field) == true) {
+                log('🔍 DEBUG: $field value: "${userRequestStatus![field]}"');
+              }
+            }
           }
           
           // 🎯 APPLY FIELD MAPPING
@@ -440,12 +453,28 @@ class RequestService extends GetxController {
   Future<bool> requestToVolunteer(String requestId, String message) async {
     try {
       log('🙋 RequestService: Requesting to volunteer for request $requestId via Django API');
-      log('Message to requester: $message');
+      log('Message to requester: "$message"');
+      log('Message length: ${message.length} characters');
+      
+      final requestData = {'message_to_requester': message};
+      log('🔍 SENDING DATA: $requestData');
+      
+      // Also try alternative field names that the backend might expect
+      final alternativeData = {
+        'message_to_requester': message,
+        'message_content': message,
+        'volunteer_message': message,
+        'message': message,
+      };
+      log('🔍 TRYING ALTERNATIVE DATA FORMAT: $alternativeData');
       
       final response = await _apiService.post(
         '/api/requests/$requestId/accept/', 
-        data: {'message_to_requester': message}
+        data: alternativeData
       );
+      
+      log('🌐 RESPONSE STATUS: ${response.statusCode}');
+      log('🌐 RESPONSE DATA: ${response.data}');
       
       if (response.statusCode == 200 || response.statusCode == 201) {
         log('✅ RequestService: Successfully requested to volunteer for request $requestId');

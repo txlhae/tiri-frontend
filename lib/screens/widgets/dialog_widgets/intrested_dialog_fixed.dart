@@ -165,21 +165,13 @@ class _IntrestedDialogState extends State<IntrestedDialog> {
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       elevation: 8,
-      child: Theme(
-        data: Theme.of(context).copyWith(
-          textTheme: Theme.of(context).textTheme.copyWith(
-            bodyMedium: const TextStyle(color: Colors.black87),
-            bodyLarge: const TextStyle(color: Colors.black87),
-            bodySmall: const TextStyle(color: Colors.black87),
-          ),
+      child: Container(
+        width: MediaQuery.of(context).size.width * 0.9,
+        constraints: BoxConstraints(
+          maxWidth: 400,
+          maxHeight: MediaQuery.of(context).size.height * 0.85, // Limit max height to 85% of screen
         ),
-        child: Container(
-          width: MediaQuery.of(context).size.width * 0.9,
-          constraints: BoxConstraints(
-            maxWidth: 400,
-            maxHeight: MediaQuery.of(context).size.height * 0.85, // Limit max height to 85% of screen
-          ),
-          child: Column(
+        child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             // Header - Fixed at top
@@ -245,7 +237,6 @@ class _IntrestedDialogState extends State<IntrestedDialog> {
                                   style: TextStyle(
                                     fontWeight: FontWeight.w600,
                                     fontSize: 14,
-                                    color: Colors.black87,
                                   ),
                                 ),
                               ],
@@ -256,7 +247,6 @@ class _IntrestedDialogState extends State<IntrestedDialog> {
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
-                                color: Colors.black87,
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -295,7 +285,6 @@ class _IntrestedDialogState extends State<IntrestedDialog> {
                                 style: TextStyle(
                                   fontWeight: FontWeight.w600,
                                   fontSize: 14,
-                                  color: Colors.black87,
                                 ),
                               ),
                               const Text(
@@ -312,16 +301,8 @@ class _IntrestedDialogState extends State<IntrestedDialog> {
                             controller: _messageController,
                             maxLines: 4,
                             maxLength: 300,
-                            style: const TextStyle(
-                              color: Colors.black87,
-                              fontSize: 14,
-                            ),
                             decoration: InputDecoration(
                               hintText: 'Hi! I would love to help with this request. I have experience in...',
-                              hintStyle: TextStyle(
-                                color: Colors.grey.shade500,
-                                fontSize: 14,
-                              ),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
@@ -364,13 +345,12 @@ class _IntrestedDialogState extends State<IntrestedDialog> {
                                 style: TextStyle(
                                   fontWeight: FontWeight.w600,
                                   fontSize: 14,
-                                  color: Colors.black87,
                                 ),
                               ),
-                              Text(
+                              const Text(
                                 ' (optional)',
                                 style: TextStyle(
-                                  color: Colors.grey.shade600,
+                                  color: Colors.grey,
                                   fontSize: 12,
                                 ),
                               ),
@@ -380,16 +360,8 @@ class _IntrestedDialogState extends State<IntrestedDialog> {
                           TextField(
                             controller: _timeController,
                             readOnly: true,
-                            style: const TextStyle(
-                              color: Colors.black87,
-                              fontSize: 14,
-                            ),
                             decoration: InputDecoration(
                               hintText: 'Select arrival time',
-                              hintStyle: TextStyle(
-                                color: Colors.grey.shade500,
-                                fontSize: 14,
-                              ),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
@@ -480,7 +452,6 @@ class _IntrestedDialogState extends State<IntrestedDialog> {
           ],
         ),
       ),
-    ),
     );
   }
 
