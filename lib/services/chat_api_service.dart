@@ -1,0 +1,356 @@
+// lib/services/chat_api_service.dart
+
+import 'dart:developer';
+import 'package:dio/dio.dart';
+import '../services/api_service.dart';
+import '../models/chatroom_model.dart';
+import '../models/chat_message_model.dart';
+
+/// Chat API Service for handling all chat-related backend communication
+/// 
+/// Features:
+/// - Real-time message synchronization
+/// - Chat room management
+/// - Message pagination
+/// - Read status updates
+/// - Error handling with Dio exceptions
+class ChatApiService {
+  // Get the singleton ApiService instance
+  static final ApiService _apiService = ApiService.instance;
+
+  // =============================================================================
+  // CHAT ROOMS
+  // =============================================================================
+
+  /// Get all chat rooms for the current user
+  /// 
+  /// Returns a list of chat rooms with participant information,
+  /// last messages, and unread counts
+  static Future<List<ChatRoomModel>> getChatRooms() async {
+    try {
+      log('🔄 Fetching chat rooms...', name: 'ChatAPI');
+      
+      final response = await _apiService.get('/api/chat/rooms/');
+      
+      if (response.statusCode == 200) {
+        final data = response.data;
+        final List<dynamic> roomsJson = data['results'] ?? data;
+        
+        final chatRooms = roomsJson
+            .map((json) => _mapChatRoomFromBackend(json as Map<String, dynamic>))
+            .toList();
+        
+        log('✅ Fetched ${chatRooms.length} chat rooms', name: 'ChatAPI');
+        return chatRooms;
+      } else {
+        log('❌ Failed to fetch chat rooms - Status: ${response.statusCode}', name: 'ChatAPI');
+        throw DioException(
+          requestOptions: response.requestOptions,
+          response: response,
+          message: 'Failed to fetch chat rooms',
+        );
+      }
+    } catch (e) {
+      log('❌ Error fetching chat rooms: $e', name: 'ChatAPI');
+      rethrow;
+    }
+  }
+
+  /// Get or create a chat room for a specific service request
+  /// 
+  /// This method handles the creation of chat rooms between users
+  /// in the context of a service request
+  static Future<ChatRoomModel> getOrCreateChatRoom(
+    String requestId,
+    String userId1,
+    String userId2,
+  ) async {
+    try {
+      log('🔄 Getting or creating chat room for request: $requestId', name: 'ChatAPI');
+      
+      final requestData = {
+        'service_request_id': requestId,
+        'participants': [userId1, userId2],
+      };
+      
+      final response = await _apiService.post(
+        '/api/chat/rooms/get_or_create/',
+        data: requestData,
+      );
+      
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final chatRoom = _mapChatRoomFromBackend(response.data as Map<String, dynamic>);
+        log('✅ Chat room ready: ${chatRoom.chatRoomId}', name: 'ChatAPI');
+        return chatRoom;
+      } else {
+        log('❌ Failed to get/create chat room - Status: ${response.statusCode}', name: 'ChatAPI');
+        throw DioException(
+          requestOptions: response.requestOptions,
+          response: response,
+          message: 'Failed to get or create chat room',
+        );
+      }
+    } catch (e) {
+      log('❌ Error getting/creating chat room: $e', name: 'ChatAPI');
+      rethrow;
+    }
+  }
+
+  /// Get chat room details by ID
+  static Future<ChatRoomModel> getChatRoom(String roomId) async {
+    try {
+      log('🔄 Fetching chat room: $roomId', name: 'ChatAPI');
+      
+      final response = await _apiService.get('/api/chat/rooms/$roomId/');
+      
+      if (response.statusCode == 200) {
+        final chatRoom = _mapChatRoomFromBackend(response.data as Map<String, dynamic>);
+        log('✅ Chat room fetched: ${chatRoom.chatRoomId}', name: 'ChatAPI');
+        return chatRoom;
+      } else {
+        log('❌ Failed to fetch chat room - Status: ${response.statusCode}', name: 'ChatAPI');
+        throw DioException(
+          requestOptions: response.requestOptions,
+          response: response,
+          message: 'Failed to fetch chat room',
+        );
+      }
+    } catch (e) {
+      log('❌ Error fetching chat room: $e', name: 'ChatAPI');
+      rethrow;
+    }
+  }
+
+  // =============================================================================
+  // MESSAGES
+  // =============================================================================
+
+  /// Get messages for a specific chat room with pagination
+  /// 
+  /// [roomId] - The chat room ID
+  /// [page] - Page number (default: 1)
+  /// [pageSize] - Number of messages per page (default: 50)
+  /// 
+  /// Returns messages ordered by timestamp (newest first)
+  static Future<List<ChatMessageModel>> getMessages(
+    String roomId, {
+    int page = 1,
+    int pageSize = 50,
+  }) async {
+    try {
+      log('🔄 Fetching messages for room: $roomId (page: $page)', name: 'ChatAPI');
+      
+      final response = await _apiService.get(
+        '/api/chat/rooms/$roomId/messages/',
+        queryParameters: {
+          'page': page,
+          'page_size': pageSize,
+        },
+      );
+      
+      if (response.statusCode == 200) {
+        final data = response.data;
+        final List<dynamic> messagesJson = data['results'] ?? data;
+        
+        final messages = messagesJson
+            .map((json) => _mapMessageFromBackend(json as Map<String, dynamic>))
+            .toList();
+        
+        log('✅ Fetched ${messages.length} messages for room: $roomId', name: 'ChatAPI');
+        return messages;
+      } else {
+        log('❌ Failed to fetch messages - Status: ${response.statusCode}', name: 'ChatAPI');
+        throw DioException(
+          requestOptions: response.requestOptions,
+          response: response,
+          message: 'Failed to fetch messages',
+        );
+      }
+    } catch (e) {
+      log('❌ Error fetching messages: $e', name: 'ChatAPI');
+      rethrow;
+    }
+  }
+
+  /// Send a new message to a chat room
+  /// 
+  /// [roomId] - The chat room ID
+  /// [content] - The message content
+  /// 
+  /// Returns the created message with server-generated ID and timestamp
+  static Future<ChatMessageModel> sendMessage(
+    String roomId,
+    String content,
+  ) async {
+    try {
+      log('🔄 Sending message to room: $roomId', name: 'ChatAPI');
+      
+      final messageData = {
+        'message': content,
+      };
+      
+      final response = await _apiService.post(
+        '/api/chat/rooms/$roomId/send_message/',
+        data: messageData,
+      );
+      
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        final message = _mapMessageFromBackend(response.data as Map<String, dynamic>);
+        log('✅ Message sent successfully: ${message.messageId}', name: 'ChatAPI');
+        return message;
+      } else {
+        log('❌ Failed to send message - Status: ${response.statusCode}', name: 'ChatAPI');
+        throw DioException(
+          requestOptions: response.requestOptions,
+          response: response,
+          message: 'Failed to send message',
+        );
+      }
+    } catch (e) {
+      log('❌ Error sending message: $e', name: 'ChatAPI');
+      rethrow;
+    }
+  }
+
+  /// Mark all messages in a chat room as read
+  /// 
+  /// [roomId] - The chat room ID
+  /// 
+  /// This updates the read status for all unread messages
+  /// in the specified chat room for the current user
+  static Future<void> markMessagesAsRead(String roomId) async {
+    try {
+      log('🔄 Marking messages as read for room: $roomId', name: 'ChatAPI');
+      
+      final response = await _apiService.post(
+        '/api/chat/rooms/$roomId/mark_read/',
+        data: {},
+      );
+      
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        log('✅ Messages marked as read for room: $roomId', name: 'ChatAPI');
+      } else {
+        log('❌ Failed to mark messages as read - Status: ${response.statusCode}', name: 'ChatAPI');
+        throw DioException(
+          requestOptions: response.requestOptions,
+          response: response,
+          message: 'Failed to mark messages as read',
+        );
+      }
+    } catch (e) {
+      log('❌ Error marking messages as read: $e', name: 'ChatAPI');
+      rethrow;
+    }
+  }
+
+  // =============================================================================
+  // UTILITY METHODS
+  // =============================================================================
+
+  /// Create a new chat room between two users
+  /// 
+  /// [userId1] - First participant ID
+  /// [userId2] - Second participant ID
+  /// [serviceRequestId] - Optional service request ID to associate with the room
+  /// 
+  /// Returns the newly created chat room
+  static Future<ChatRoomModel> createChatRoom(
+    String userId1,
+    String userId2, {
+    String? serviceRequestId,
+  }) async {
+    try {
+      log('🔄 Creating chat room between users: $userId1, $userId2', name: 'ChatAPI');
+      
+      final roomData = {
+        'participants': [userId1, userId2],
+        if (serviceRequestId != null) 'service_request_id': serviceRequestId,
+      };
+      
+      final response = await _apiService.post(
+        '/api/chat/rooms/',
+        data: roomData,
+      );
+      
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        final chatRoom = _mapChatRoomFromBackend(response.data as Map<String, dynamic>);
+        log('✅ Chat room created: ${chatRoom.chatRoomId}', name: 'ChatAPI');
+        return chatRoom;
+      } else {
+        log('❌ Failed to create chat room - Status: ${response.statusCode}', name: 'ChatAPI');
+        throw DioException(
+          requestOptions: response.requestOptions,
+          response: response,
+          message: 'Failed to create chat room',
+        );
+      }
+    } catch (e) {
+      log('❌ Error creating chat room: $e', name: 'ChatAPI');
+      rethrow;
+    }
+  }
+
+  // =============================================================================
+  // ERROR HANDLING
+  // =============================================================================
+
+  /// Handle chat-specific API errors
+  /// 
+  /// This method provides user-friendly error messages
+  /// for common chat API error scenarios
+  static String getErrorMessage(dynamic error) {
+    if (error is DioException) {
+      switch (error.response?.statusCode) {
+        case 400:
+          return 'Invalid request. Please check your input.';
+        case 401:
+          return 'Authentication required. Please log in again.';
+        case 403:
+          return 'You don\'t have permission to access this chat.';
+        case 404:
+          return 'Chat room not found.';
+        case 429:
+          return 'Too many requests. Please wait a moment.';
+        case 500:
+          return 'Server error. Please try again later.';
+        default:
+          return 'Network error. Please check your connection.';
+      }
+    }
+    
+    return 'An unexpected error occurred.';
+  }
+
+  // =============================================================================
+  // PRIVATE MAPPING METHODS
+  // =============================================================================
+
+  /// Map backend chat room JSON to ChatRoomModel
+  static ChatRoomModel _mapChatRoomFromBackend(Map<String, dynamic> json) {
+    return ChatRoomModel(
+      chatRoomId: json['id']?.toString() ?? '',
+      participantIds: List<String>.from(json['participants'] ?? []),
+      lastMessage: json['last_message']?['message'],
+      lastMessageTime: json['last_message']?['timestamp'] != null
+          ? DateTime.parse(json['last_message']['timestamp'])
+          : null,
+      unreadCountForReceiver: json['unread_count'] ?? 0,
+      lastSenderId: json['last_message']?['sender']?.toString(),
+    );
+  }
+
+  /// Map backend message JSON to ChatMessageModel
+  static ChatMessageModel _mapMessageFromBackend(Map<String, dynamic> json) {
+    return ChatMessageModel(
+      messageId: json['id']?.toString() ?? '',
+      chatRoomId: json['chat_room']?.toString() ?? '',
+      senderId: json['sender']?.toString() ?? '',
+      receiverId: json['receiver']?.toString() ?? '',
+      message: json['message'] ?? '',
+      isSeen: json['is_read'] ?? false,
+      timestamp: DateTime.parse(json['timestamp']),
+      senderName: json['sender_name'],
+      senderProfilePic: json['sender_profile_pic'],
+    );
+  }
+}

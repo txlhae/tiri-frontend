@@ -27,6 +27,8 @@ mixin _$ChatMessageModel {
   String get message => throw _privateConstructorUsedError;
   bool get isSeen => throw _privateConstructorUsedError;
   DateTime get timestamp => throw _privateConstructorUsedError;
+  String? get senderName => throw _privateConstructorUsedError;
+  String? get senderProfilePic => throw _privateConstructorUsedError;
 
   /// Serializes this ChatMessageModel to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -51,7 +53,9 @@ abstract class $ChatMessageModelCopyWith<$Res> {
       String receiverId,
       String message,
       bool isSeen,
-      DateTime timestamp});
+      DateTime timestamp,
+      String? senderName,
+      String? senderProfilePic});
 }
 
 /// @nodoc
@@ -76,6 +80,8 @@ class _$ChatMessageModelCopyWithImpl<$Res, $Val extends ChatMessageModel>
     Object? message = null,
     Object? isSeen = null,
     Object? timestamp = null,
+    Object? senderName = freezed,
+    Object? senderProfilePic = freezed,
   }) {
     return _then(_value.copyWith(
       messageId: null == messageId
@@ -106,6 +112,14 @@ class _$ChatMessageModelCopyWithImpl<$Res, $Val extends ChatMessageModel>
           ? _value.timestamp
           : timestamp // ignore: cast_nullable_to_non_nullable
               as DateTime,
+      senderName: freezed == senderName
+          ? _value.senderName
+          : senderName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      senderProfilePic: freezed == senderProfilePic
+          ? _value.senderProfilePic
+          : senderProfilePic // ignore: cast_nullable_to_non_nullable
+              as String?,
     ) as $Val);
   }
 }
@@ -125,7 +139,9 @@ abstract class _$$ChatMessageModelImplCopyWith<$Res>
       String receiverId,
       String message,
       bool isSeen,
-      DateTime timestamp});
+      DateTime timestamp,
+      String? senderName,
+      String? senderProfilePic});
 }
 
 /// @nodoc
@@ -148,6 +164,8 @@ class __$$ChatMessageModelImplCopyWithImpl<$Res>
     Object? message = null,
     Object? isSeen = null,
     Object? timestamp = null,
+    Object? senderName = freezed,
+    Object? senderProfilePic = freezed,
   }) {
     return _then(_$ChatMessageModelImpl(
       messageId: null == messageId
@@ -178,6 +196,14 @@ class __$$ChatMessageModelImplCopyWithImpl<$Res>
           ? _value.timestamp
           : timestamp // ignore: cast_nullable_to_non_nullable
               as DateTime,
+      senderName: freezed == senderName
+          ? _value.senderName
+          : senderName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      senderProfilePic: freezed == senderProfilePic
+          ? _value.senderProfilePic
+          : senderProfilePic // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -192,7 +218,9 @@ class _$ChatMessageModelImpl implements _ChatMessageModel {
       required this.receiverId,
       required this.message,
       this.isSeen = false,
-      required this.timestamp});
+      required this.timestamp,
+      this.senderName,
+      this.senderProfilePic});
 
   factory _$ChatMessageModelImpl.fromJson(Map<String, dynamic> json) =>
       _$$ChatMessageModelImplFromJson(json);
@@ -212,10 +240,14 @@ class _$ChatMessageModelImpl implements _ChatMessageModel {
   final bool isSeen;
   @override
   final DateTime timestamp;
+  @override
+  final String? senderName;
+  @override
+  final String? senderProfilePic;
 
   @override
   String toString() {
-    return 'ChatMessageModel(messageId: $messageId, chatRoomId: $chatRoomId, senderId: $senderId, receiverId: $receiverId, message: $message, isSeen: $isSeen, timestamp: $timestamp)';
+    return 'ChatMessageModel(messageId: $messageId, chatRoomId: $chatRoomId, senderId: $senderId, receiverId: $receiverId, message: $message, isSeen: $isSeen, timestamp: $timestamp, senderName: $senderName, senderProfilePic: $senderProfilePic)';
   }
 
   @override
@@ -234,13 +266,17 @@ class _$ChatMessageModelImpl implements _ChatMessageModel {
             (identical(other.message, message) || other.message == message) &&
             (identical(other.isSeen, isSeen) || other.isSeen == isSeen) &&
             (identical(other.timestamp, timestamp) ||
-                other.timestamp == timestamp));
+                other.timestamp == timestamp) &&
+            (identical(other.senderName, senderName) ||
+                other.senderName == senderName) &&
+            (identical(other.senderProfilePic, senderProfilePic) ||
+                other.senderProfilePic == senderProfilePic));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(runtimeType, messageId, chatRoomId, senderId,
-      receiverId, message, isSeen, timestamp);
+      receiverId, message, isSeen, timestamp, senderName, senderProfilePic);
 
   /// Create a copy of ChatMessageModel
   /// with the given fields replaced by the non-null parameter values.
@@ -267,7 +303,9 @@ abstract class _ChatMessageModel implements ChatMessageModel {
       required final String receiverId,
       required final String message,
       final bool isSeen,
-      required final DateTime timestamp}) = _$ChatMessageModelImpl;
+      required final DateTime timestamp,
+      final String? senderName,
+      final String? senderProfilePic}) = _$ChatMessageModelImpl;
 
   factory _ChatMessageModel.fromJson(Map<String, dynamic> json) =
       _$ChatMessageModelImpl.fromJson;
@@ -286,6 +324,10 @@ abstract class _ChatMessageModel implements ChatMessageModel {
   bool get isSeen;
   @override
   DateTime get timestamp;
+  @override
+  String? get senderName;
+  @override
+  String? get senderProfilePic;
 
   /// Create a copy of ChatMessageModel
   /// with the given fields replaced by the non-null parameter values.

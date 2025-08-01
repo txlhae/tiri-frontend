@@ -272,6 +272,24 @@ class ApiService {
     }
   }
 
+  /// Get current access token
+  /// 
+  /// Returns the current access token if available, null otherwise
+  Future<String?> getStoredAccessToken() async {
+    if (_accessToken != null) {
+      return _accessToken;
+    }
+    
+    // Try to load from secure storage if not in memory
+    try {
+      _accessToken = await _secureStorage.read(key: _accessTokenKey);
+      return _accessToken;
+    } catch (e) {
+      log('Error getting stored access token: $e', name: 'API');
+      return null;
+    }
+  }
+
   /// Refresh access token using refresh token
   Future<bool> _refreshTokenIfNeeded() async {
     if (_isRefreshing) {

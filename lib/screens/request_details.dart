@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:kind_clock/controllers/auth_controller.dart';
+import 'package:kind_clock/controllers/chat_controller.dart';
 import 'package:kind_clock/controllers/notification_controller.dart';
 import 'package:kind_clock/controllers/request_controller.dart';
 import 'package:kind_clock/controllers/request_details_controller.dart';
@@ -293,20 +294,34 @@ class _RequestDetailsState extends State<RequestDetails> {
                                  icon: SvgPicture.asset('assets/icons/message.svg'),
                                  tooltip: "Chat with Poster",
                                  onPressed: () async {
-                                   final roomId = requestController.getChatRoomId(
-                                   currentUserId,
-                                   request.userId,
-                                   );
-                                   Get.toNamed(
-                                   Routes.chatPage,
-                                   arguments: {
-                                     'chatRoomId': roomId,
-                                     'receiverId': request.userId,
-                                     'receiverName': request.requester?.username ?? "User",
-                                     'receiverProfilePic': " ",
-                                   },
-                             );
-                           },
+                                   // Get or create chat room using the new API integration
+                                   final chatController = Get.put(ChatController());
+                                   
+                                   try {
+                                     final roomId = await chatController.createOrGetChatRoom(
+                                       currentUserId,
+                                       request.userId,
+                                       serviceRequestId: request.requestId,
+                                     );
+                                     
+                                     Get.toNamed(
+                                       Routes.chatPage,
+                                       arguments: {
+                                         'chatRoomId': roomId,
+                                         'receiverId': request.userId,
+                                         'receiverName': request.requester?.username ?? "User",
+                                         'receiverProfilePic': " ",
+                                       },
+                                     );
+                                   } catch (e) {
+                                     Get.snackbar(
+                                       'Error',
+                                       'Failed to create chat room. Please try again.',
+                                       backgroundColor: Colors.red.shade100,
+                                       colorText: Colors.red.shade700,
+                                     );
+                                   }
+                                 },
                        ),
                       ),
                 ],
@@ -462,19 +477,33 @@ class _RequestDetailsState extends State<RequestDetails> {
                                               icon: const Icon(Icons.chat_bubble_outline, color: Colors.blue),
                                               tooltip: "Chat",
                                               onPressed: () async {
-                                                final roomId = requestController.getChatRoomId(
-                                                  currentUserId,
-                                                  user.userId,
-                                                );
-                                                Get.toNamed(
-                                                  Routes.chatPage,
-                                                  arguments: {
-                                                    'chatRoomId': roomId,
-                                                    'receiverId': user.userId,
-                                                    'receiverName': user.username,
-                                                    'receiverProfilePic':user.imageUrl ?? " ",
-                                                  },
-                                                );
+                                                // Get or create chat room using the new API integration
+                                                final chatController = Get.put(ChatController());
+                                                
+                                                try {
+                                                  final roomId = await chatController.createOrGetChatRoom(
+                                                    currentUserId,
+                                                    user.userId,
+                                                    serviceRequestId: request.requestId,
+                                                  );
+                                                  
+                                                  Get.toNamed(
+                                                    Routes.chatPage,
+                                                    arguments: {
+                                                      'chatRoomId': roomId,
+                                                      'receiverId': user.userId,
+                                                      'receiverName': user.username,
+                                                      'receiverProfilePic': user.imageUrl ?? " ",
+                                                    },
+                                                  );
+                                                } catch (e) {
+                                                  Get.snackbar(
+                                                    'Error',
+                                                    'Failed to create chat room. Please try again.',
+                                                    backgroundColor: Colors.red.shade100,
+                                                    colorText: Colors.red.shade700,
+                                                  );
+                                                }
                                               },
                                             ),
                                           ],

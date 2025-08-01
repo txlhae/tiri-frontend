@@ -45,6 +45,14 @@ class _ChatPageState extends State<ChatPage> {
      chatController.markMessagesAsSeen(widget.receiverId);
   }
 
+  @override
+  void dispose() {
+    // Disconnect WebSocket when leaving chat page
+    chatController.disconnectWebSocket();
+    messageController.dispose();
+    super.dispose();
+  }
+
   void sendMessage() {
     final text = messageController.text.trim();
     if (text.isEmpty) return;
@@ -56,6 +64,9 @@ class _ChatPageState extends State<ChatPage> {
       message: text,
     );
     messageController.clear();
+    
+    // Stop typing indicator
+    chatController.sendTypingIndicator(false);
   }
 
   @override
@@ -105,14 +116,32 @@ class _ChatPageState extends State<ChatPage> {
                     ),
                 ),
                 const SizedBox(width: 12),
-                Text(
-                  widget.receiverName,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 18,
-                    color: Colors.white,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        widget.receiverName,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 18,
+                          color: Colors.white,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      // Connection status indicator
+                      Obx(() => Text(
+                        chatController.connectionStatusText,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: chatController.isWebSocketConnected.value 
+                              ? Colors.lightGreen 
+                              : Colors.white70,
+                        ),
+                      )),
+                    ],
                   ),
-                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
@@ -121,15 +150,91 @@ class _ChatPageState extends State<ChatPage> {
       ),
       body: Column(
         children: [
+          // Error message display
+          Obx(() {
+            if (chatController.errorMessage.value.isNotEmpty) {
+              return Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(8),
+                color: Colors.red.shade100,
+                child: Row(
+                  children: [
+                    Icon(Icons.error_outline, color: Colors.red.shade700, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        chatController.errorMessage.value,
+                        style: TextStyle(color: Colors.red.shade700, fontSize: 12),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, size: 16),
+                      onPressed: () => chatController.errorMessage.value = '',
+                      color: Colors.red.shade700,
+                    ),
+                  ],
+                ),
+              );
+            }
+            return const SizedBox.shrink();
+          }),
+          
     Expanded(
       child: Obx(() {
+        // Show loading indicator when loading messages
+        if (chatController.isLoadingMessages.value && chatController.messages.isEmpty) {
+          return const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('Loading messages...', style: TextStyle(fontSize: 16)),
+              ],
+            ),
+          );
+        }
+        
         final messages = chatController.messages;
         chatController.markMessagesAsSeen(widget.receiverId);
+        
+        if (messages.isEmpty && !chatController.isLoadingMessages.value) {
+          return const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.chat_bubble_outline, size: 64, color: Colors.grey),
+                SizedBox(height: 16),
+                Text(
+                  'No messages yet',
+                  style: TextStyle(fontSize: 18, color: Colors.grey),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Start the conversation!',
+                  style: TextStyle(fontSize: 14, color: Colors.grey),
+                ),
+              ],
+            ),
+          );
+        }
+        
         return ListView.builder(
           padding: const EdgeInsets.all(12),
-          itemCount: messages.length,
+          itemCount: messages.length + (chatController.isLoadingMoreMessages.value ? 1 : 0),
           itemBuilder: (context, index) {
-            final ChatMessageModel message = messages[index];
+            // Show loading indicator at the top when loading more messages
+            if (index == 0 && chatController.isLoadingMoreMessages.value) {
+              return const Padding(
+                padding: EdgeInsets.all(16),
+                child: Center(
+                  child: CircularProgressIndicator(),
+                ),
+              );
+            }
+            
+            final messageIndex = chatController.isLoadingMoreMessages.value ? index - 1 : index;
+            final ChatMessageModel message = messages[messageIndex];
             final isMe = message.senderId == currentUserId;
 
             return Align(
@@ -210,6 +315,20 @@ class _ChatPageState extends State<ChatPage> {
                     borderRadius: BorderRadius.circular(24),
                     child: TextField(
                     controller: messageController,
+                    onChanged: (text) {
+                      // Send typing indicator via WebSocket
+                      if (text.isNotEmpty) {
+                        chatController.sendTypingIndicator(true);
+                      } else {
+                        chatController.sendTypingIndicator(false);
+                      }
+                    },
+                    onSubmitted: (_) {
+                      // Send message when user presses enter
+                      sendMessage();
+                      // Stop typing indicator
+                      chatController.sendTypingIndicator(false);
+                    },
                     decoration: InputDecoration(
                       hintText: "Type a message...",
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -232,15 +351,28 @@ class _ChatPageState extends State<ChatPage> {
 
                 ),
                 const SizedBox(width: 8),
-                CircleAvatar(
-                  backgroundColor: Colors.blue,
+                Obx(() => CircleAvatar(
+                  backgroundColor: chatController.isSendingMessage.value 
+                      ? Colors.grey 
+                      : Colors.blue,
                   radius: 20,
-                  child: IconButton(
-                    alignment: Alignment.center,
-                    icon: const Icon(Icons.send, color: Colors.white),
-                    onPressed: sendMessage,
-                  ),
-                ),
+                  child: chatController.isSendingMessage.value
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : IconButton(
+                          alignment: Alignment.center,
+                          icon: const Icon(Icons.send, color: Colors.white),
+                          onPressed: chatController.isSendingMessage.value 
+                              ? null 
+                              : sendMessage,
+                        ),
+                )),
               ],
             ),
           ),

@@ -14,6 +14,8 @@ class ChatMessageModel with _$ChatMessageModel {
     required String message,
     @Default(false) bool isSeen,
     required DateTime timestamp,
+    String? senderName,
+    String? senderProfilePic,
   }) = _ChatMessageModel;
 
   factory ChatMessageModel.fromJson(Map<String, dynamic> json) =>

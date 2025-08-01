@@ -26,6 +26,10 @@ mixin _$ChatRoomModel {
   DateTime? get lastMessageTime => throw _privateConstructorUsedError;
   int get unreadCountForReceiver => throw _privateConstructorUsedError;
   String? get lastSenderId => throw _privateConstructorUsedError;
+  String? get serviceRequestId => throw _privateConstructorUsedError;
+  DateTime? get createdAt => throw _privateConstructorUsedError;
+  DateTime? get updatedAt => throw _privateConstructorUsedError;
+  ChatMessageModel? get lastMessageObject => throw _privateConstructorUsedError;
 
   /// Serializes this ChatRoomModel to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -49,7 +53,13 @@ abstract class $ChatRoomModelCopyWith<$Res> {
       String? lastMessage,
       DateTime? lastMessageTime,
       int unreadCountForReceiver,
-      String? lastSenderId});
+      String? lastSenderId,
+      String? serviceRequestId,
+      DateTime? createdAt,
+      DateTime? updatedAt,
+      ChatMessageModel? lastMessageObject});
+
+  $ChatMessageModelCopyWith<$Res>? get lastMessageObject;
 }
 
 /// @nodoc
@@ -73,6 +83,10 @@ class _$ChatRoomModelCopyWithImpl<$Res, $Val extends ChatRoomModel>
     Object? lastMessageTime = freezed,
     Object? unreadCountForReceiver = null,
     Object? lastSenderId = freezed,
+    Object? serviceRequestId = freezed,
+    Object? createdAt = freezed,
+    Object? updatedAt = freezed,
+    Object? lastMessageObject = freezed,
   }) {
     return _then(_value.copyWith(
       chatRoomId: null == chatRoomId
@@ -99,7 +113,37 @@ class _$ChatRoomModelCopyWithImpl<$Res, $Val extends ChatRoomModel>
           ? _value.lastSenderId
           : lastSenderId // ignore: cast_nullable_to_non_nullable
               as String?,
+      serviceRequestId: freezed == serviceRequestId
+          ? _value.serviceRequestId
+          : serviceRequestId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      createdAt: freezed == createdAt
+          ? _value.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      updatedAt: freezed == updatedAt
+          ? _value.updatedAt
+          : updatedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      lastMessageObject: freezed == lastMessageObject
+          ? _value.lastMessageObject
+          : lastMessageObject // ignore: cast_nullable_to_non_nullable
+              as ChatMessageModel?,
     ) as $Val);
+  }
+
+  /// Create a copy of ChatRoomModel
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $ChatMessageModelCopyWith<$Res>? get lastMessageObject {
+    if (_value.lastMessageObject == null) {
+      return null;
+    }
+
+    return $ChatMessageModelCopyWith<$Res>(_value.lastMessageObject!, (value) {
+      return _then(_value.copyWith(lastMessageObject: value) as $Val);
+    });
   }
 }
 
@@ -117,7 +161,14 @@ abstract class _$$ChatRoomModelImplCopyWith<$Res>
       String? lastMessage,
       DateTime? lastMessageTime,
       int unreadCountForReceiver,
-      String? lastSenderId});
+      String? lastSenderId,
+      String? serviceRequestId,
+      DateTime? createdAt,
+      DateTime? updatedAt,
+      ChatMessageModel? lastMessageObject});
+
+  @override
+  $ChatMessageModelCopyWith<$Res>? get lastMessageObject;
 }
 
 /// @nodoc
@@ -139,6 +190,10 @@ class __$$ChatRoomModelImplCopyWithImpl<$Res>
     Object? lastMessageTime = freezed,
     Object? unreadCountForReceiver = null,
     Object? lastSenderId = freezed,
+    Object? serviceRequestId = freezed,
+    Object? createdAt = freezed,
+    Object? updatedAt = freezed,
+    Object? lastMessageObject = freezed,
   }) {
     return _then(_$ChatRoomModelImpl(
       chatRoomId: null == chatRoomId
@@ -165,6 +220,22 @@ class __$$ChatRoomModelImplCopyWithImpl<$Res>
           ? _value.lastSenderId
           : lastSenderId // ignore: cast_nullable_to_non_nullable
               as String?,
+      serviceRequestId: freezed == serviceRequestId
+          ? _value.serviceRequestId
+          : serviceRequestId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      createdAt: freezed == createdAt
+          ? _value.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      updatedAt: freezed == updatedAt
+          ? _value.updatedAt
+          : updatedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      lastMessageObject: freezed == lastMessageObject
+          ? _value.lastMessageObject
+          : lastMessageObject // ignore: cast_nullable_to_non_nullable
+              as ChatMessageModel?,
     ));
   }
 }
@@ -178,7 +249,11 @@ class _$ChatRoomModelImpl implements _ChatRoomModel {
       this.lastMessage,
       this.lastMessageTime,
       this.unreadCountForReceiver = 0,
-      this.lastSenderId = null})
+      this.lastSenderId = null,
+      this.serviceRequestId,
+      this.createdAt,
+      this.updatedAt,
+      this.lastMessageObject})
       : _participantIds = participantIds;
 
   factory _$ChatRoomModelImpl.fromJson(Map<String, dynamic> json) =>
@@ -204,10 +279,18 @@ class _$ChatRoomModelImpl implements _ChatRoomModel {
   @override
   @JsonKey()
   final String? lastSenderId;
+  @override
+  final String? serviceRequestId;
+  @override
+  final DateTime? createdAt;
+  @override
+  final DateTime? updatedAt;
+  @override
+  final ChatMessageModel? lastMessageObject;
 
   @override
   String toString() {
-    return 'ChatRoomModel(chatRoomId: $chatRoomId, participantIds: $participantIds, lastMessage: $lastMessage, lastMessageTime: $lastMessageTime, unreadCountForReceiver: $unreadCountForReceiver, lastSenderId: $lastSenderId)';
+    return 'ChatRoomModel(chatRoomId: $chatRoomId, participantIds: $participantIds, lastMessage: $lastMessage, lastMessageTime: $lastMessageTime, unreadCountForReceiver: $unreadCountForReceiver, lastSenderId: $lastSenderId, serviceRequestId: $serviceRequestId, createdAt: $createdAt, updatedAt: $updatedAt, lastMessageObject: $lastMessageObject)';
   }
 
   @override
@@ -226,7 +309,15 @@ class _$ChatRoomModelImpl implements _ChatRoomModel {
             (identical(other.unreadCountForReceiver, unreadCountForReceiver) ||
                 other.unreadCountForReceiver == unreadCountForReceiver) &&
             (identical(other.lastSenderId, lastSenderId) ||
-                other.lastSenderId == lastSenderId));
+                other.lastSenderId == lastSenderId) &&
+            (identical(other.serviceRequestId, serviceRequestId) ||
+                other.serviceRequestId == serviceRequestId) &&
+            (identical(other.createdAt, createdAt) ||
+                other.createdAt == createdAt) &&
+            (identical(other.updatedAt, updatedAt) ||
+                other.updatedAt == updatedAt) &&
+            (identical(other.lastMessageObject, lastMessageObject) ||
+                other.lastMessageObject == lastMessageObject));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -238,7 +329,11 @@ class _$ChatRoomModelImpl implements _ChatRoomModel {
       lastMessage,
       lastMessageTime,
       unreadCountForReceiver,
-      lastSenderId);
+      lastSenderId,
+      serviceRequestId,
+      createdAt,
+      updatedAt,
+      lastMessageObject);
 
   /// Create a copy of ChatRoomModel
   /// with the given fields replaced by the non-null parameter values.
@@ -263,7 +358,11 @@ abstract class _ChatRoomModel implements ChatRoomModel {
       final String? lastMessage,
       final DateTime? lastMessageTime,
       final int unreadCountForReceiver,
-      final String? lastSenderId}) = _$ChatRoomModelImpl;
+      final String? lastSenderId,
+      final String? serviceRequestId,
+      final DateTime? createdAt,
+      final DateTime? updatedAt,
+      final ChatMessageModel? lastMessageObject}) = _$ChatRoomModelImpl;
 
   factory _ChatRoomModel.fromJson(Map<String, dynamic> json) =
       _$ChatRoomModelImpl.fromJson;
@@ -280,6 +379,14 @@ abstract class _ChatRoomModel implements ChatRoomModel {
   int get unreadCountForReceiver;
   @override
   String? get lastSenderId;
+  @override
+  String? get serviceRequestId;
+  @override
+  DateTime? get createdAt;
+  @override
+  DateTime? get updatedAt;
+  @override
+  ChatMessageModel? get lastMessageObject;
 
   /// Create a copy of ChatRoomModel
   /// with the given fields replaced by the non-null parameter values.

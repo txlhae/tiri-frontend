@@ -16,6 +16,8 @@ Map<String, dynamic> _$ChatMessageModelToJson(ChatMessageModel instance) =>
       'message': instance.message,
       'isSeen': instance.isSeen,
       'timestamp': instance.timestamp.toIso8601String(),
+      'senderName': instance.senderName,
+      'senderProfilePic': instance.senderProfilePic,
     };
 
 _$ChatMessageModelImpl _$$ChatMessageModelImplFromJson(
@@ -28,6 +30,8 @@ _$ChatMessageModelImpl _$$ChatMessageModelImplFromJson(
       message: json['message'] as String,
       isSeen: json['isSeen'] as bool? ?? false,
       timestamp: DateTime.parse(json['timestamp'] as String),
+      senderName: json['senderName'] as String?,
+      senderProfilePic: json['senderProfilePic'] as String?,
     );
 
 Map<String, dynamic> _$$ChatMessageModelImplToJson(
@@ -40,4 +44,6 @@ Map<String, dynamic> _$$ChatMessageModelImplToJson(
       'message': instance.message,
       'isSeen': instance.isSeen,
       'timestamp': instance.timestamp.toIso8601String(),
+      'senderName': instance.senderName,
+      'senderProfilePic': instance.senderProfilePic,
     };

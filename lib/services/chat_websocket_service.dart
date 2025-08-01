@@ -1,0 +1,401 @@
+// lib/services/chat_websocket_service.dart
+
+import 'dart:async';
+import 'dart:convert';
+import 'dart:developer';
+import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:web_socket_channel/status.dart' as status;
+import '../services/api_service.dart';
+import '../config/api_config.dart';
+import '../models/chat_message_model.dart';
+
+/// Connection states for WebSocket
+enum ConnectionState {
+  disconnected,
+  connecting,
+  connected,
+  error,
+  reconnecting,
+}
+
+/// WebSocket Service for real-time chat messaging
+/// 
+/// Features:
+/// - Real-time message delivery
+/// - JWT authentication
+/// - Auto-reconnection with exponential backoff
+/// - Connection state management
+/// - Message echo handling
+class ChatWebSocketService {
+  // =============================================================================
+  // PRIVATE VARIABLES
+  // =============================================================================
+  
+  static WebSocketChannel? _channel;
+  static String? _currentRoomId;
+  static String? _currentUserId;
+  static Timer? _reconnectTimer;
+  static Timer? _heartbeatTimer;
+  static int _reconnectAttempts = 0;
+  static const int _maxReconnectAttempts = 5;
+  static const int _baseReconnectDelay = 1000; // milliseconds
+  
+  /// Stream controller for incoming messages
+  static final StreamController<ChatMessageModel> _messageController = 
+      StreamController<ChatMessageModel>.broadcast();
+  
+  /// Stream controller for connection state changes
+  static final StreamController<ConnectionState> _connectionStateController = 
+      StreamController<ConnectionState>.broadcast();
+
+  static ConnectionState _currentState = ConnectionState.disconnected;
+
+  // =============================================================================
+  // PUBLIC GETTERS
+  // =============================================================================
+  
+  /// Stream of incoming chat messages
+  static Stream<ChatMessageModel> get messageStream => _messageController.stream;
+  
+  /// Stream of connection state changes
+  static Stream<ConnectionState> get connectionStateStream => _connectionStateController.stream;
+  
+  /// Current connection state
+  static ConnectionState get connectionState => _currentState;
+  
+  /// Whether WebSocket is currently connected
+  static bool get isConnected => _currentState == ConnectionState.connected;
+  
+  /// Current room ID
+  static String? get currentRoomId => _currentRoomId;
+
+  // =============================================================================
+  // CONNECTION MANAGEMENT
+  // =============================================================================
+
+  /// Connect to a chat room WebSocket
+  /// 
+  /// [roomId] - The chat room ID to connect to
+  /// [userId] - The current user ID for message handling
+  static Future<void> connect(String roomId, String userId) async {
+    if (_currentRoomId == roomId && isConnected) {
+      log('⚡ Already connected to room: $roomId', name: 'WebSocket');
+      return;
+    }
+    
+    // Disconnect from previous room if connected
+    if (_currentRoomId != null && _currentRoomId != roomId) {
+      await disconnect();
+    }
+    
+    _currentRoomId = roomId;
+    _currentUserId = userId;
+    _updateConnectionState(ConnectionState.connecting);
+    
+    try {
+      log('🔌 Connecting to WebSocket for room: $roomId', name: 'WebSocket');
+      
+      // Get JWT token from existing auth system
+      final token = await _getAuthToken();
+      if (token == null) {
+        throw Exception('No authentication token available');
+      }
+      
+      // Build WebSocket URL
+      final wsUrl = _buildWebSocketUrl(roomId, token);
+      log('🔗 WebSocket URL: $wsUrl', name: 'WebSocket');
+      
+      // Create WebSocket connection
+      _channel = WebSocketChannel.connect(Uri.parse(wsUrl));
+      
+      // Set up message listener
+      _setupMessageListener();
+      
+      // Start heartbeat
+      _startHeartbeat();
+      
+      // Reset reconnect attempts on successful connection
+      _reconnectAttempts = 0;
+      _updateConnectionState(ConnectionState.connected);
+      
+      log('✅ WebSocket connected successfully to room: $roomId', name: 'WebSocket');
+      
+    } catch (e) {
+      log('❌ WebSocket connection failed: $e', name: 'WebSocket');
+      _updateConnectionState(ConnectionState.error);
+      _scheduleReconnect();
+    }
+  }
+
+  /// Disconnect from current WebSocket
+  static Future<void> disconnect() async {
+    if (_channel == null) return;
+    
+    log('🔌 Disconnecting WebSocket from room: $_currentRoomId', name: 'WebSocket');
+    
+    _stopHeartbeat();
+    _stopReconnectTimer();
+    
+    try {
+      await _channel?.sink.close(status.normalClosure);
+    } catch (e) {
+      log('⚠️ Error during WebSocket disconnect: $e', name: 'WebSocket');
+    } finally {
+      _channel = null;
+      _currentRoomId = null;
+      _currentUserId = null;
+      _reconnectAttempts = 0;
+      _updateConnectionState(ConnectionState.disconnected);
+    }
+  }
+
+  /// Force reconnect to current room
+  static Future<void> reconnect() async {
+    if (_currentRoomId != null && _currentUserId != null) {
+      await disconnect();
+      await connect(_currentRoomId!, _currentUserId!);
+    }
+  }
+
+  // =============================================================================
+  // MESSAGE HANDLING
+  // =============================================================================
+
+  /// Send a message through WebSocket
+  /// 
+  /// Note: This should be used alongside REST API calls for reliability
+  static void sendMessage(String content) {
+    if (!isConnected || _channel == null) {
+      log('⚠️ Cannot send message - WebSocket not connected', name: 'WebSocket');
+      return;
+    }
+    
+    try {
+      final message = {
+        'type': 'chat_message',
+        'content': content.trim(),
+        'sender_id': _currentUserId,
+        'room_id': _currentRoomId,
+      };
+      
+      _channel!.sink.add(json.encode(message));
+      log('📤 Message sent via WebSocket: ${content.substring(0, content.length > 50 ? 50 : content.length)}...', name: 'WebSocket');
+      
+    } catch (e) {
+      log('❌ Failed to send message via WebSocket: $e', name: 'WebSocket');
+    }
+  }
+
+  /// Send typing indicator
+  static void sendTypingIndicator(bool isTyping) {
+    if (!isConnected || _channel == null) return;
+    
+    try {
+      final message = {
+        'type': 'typing_indicator',
+        'is_typing': isTyping,
+        'sender_id': _currentUserId,
+        'room_id': _currentRoomId,
+      };
+      
+      _channel!.sink.add(json.encode(message));
+      
+    } catch (e) {
+      log('❌ Failed to send typing indicator: $e', name: 'WebSocket');
+    }
+  }
+
+  // =============================================================================
+  // PRIVATE METHODS
+  // =============================================================================
+
+  /// Get authentication token from existing auth system
+  static Future<String?> _getAuthToken() async {
+    try {
+      // Use the existing ApiService to get the token
+      return await ApiService.instance.getStoredAccessToken();
+    } catch (e) {
+      log('❌ Failed to get auth token: $e', name: 'WebSocket');
+      return null;
+    }
+  }
+
+  /// Build WebSocket URL with authentication
+  static String _buildWebSocketUrl(String roomId, String token) {
+    // Convert HTTP base URL to WebSocket URL
+    String wsBaseUrl = ApiConfig.baseUrl
+        .replaceAll('http://', 'ws://')
+        .replaceAll('https://', 'wss://');
+    
+    return '$wsBaseUrl/ws/chat/$roomId/?token=$token';
+  }
+
+  /// Set up message listener for incoming WebSocket messages
+  static void _setupMessageListener() {
+    _channel?.stream.listen(
+      (data) {
+        try {
+          final Map<String, dynamic> messageData = json.decode(data);
+          _handleIncomingMessage(messageData);
+        } catch (e) {
+          log('❌ Error parsing WebSocket message: $e', name: 'WebSocket');
+        }
+      },
+      onError: (error) {
+        log('❌ WebSocket stream error: $error', name: 'WebSocket');
+        _updateConnectionState(ConnectionState.error);
+        _scheduleReconnect();
+      },
+      onDone: () {
+        log('🔌 WebSocket connection closed', name: 'WebSocket');
+        if (_currentState == ConnectionState.connected) {
+          _updateConnectionState(ConnectionState.disconnected);
+          _scheduleReconnect();
+        }
+      },
+    );
+  }
+
+  /// Handle incoming WebSocket messages
+  static void _handleIncomingMessage(Map<String, dynamic> messageData) {
+    try {
+      final messageType = messageData['type'];
+      
+      switch (messageType) {
+        case 'chat_message':
+          _handleChatMessage(messageData);
+          break;
+        case 'typing_indicator':
+          _handleTypingIndicator(messageData);
+          break;
+        case 'connection_ack':
+          log('✅ WebSocket connection acknowledged', name: 'WebSocket');
+          break;
+        case 'error':
+          log('❌ WebSocket error: ${messageData['message']}', name: 'WebSocket');
+          break;
+        default:
+          log('⚠️ Unknown message type: $messageType', name: 'WebSocket');
+      }
+    } catch (e) {
+      log('❌ Error handling WebSocket message: $e', name: 'WebSocket');
+    }
+  }
+
+  /// Handle incoming chat messages
+  static void _handleChatMessage(Map<String, dynamic> messageData) {
+    try {
+      // Map WebSocket message format to ChatMessageModel
+      final message = ChatMessageModel(
+        messageId: messageData['id']?.toString() ?? '',
+        chatRoomId: messageData['room_id']?.toString() ?? _currentRoomId ?? '',
+        senderId: messageData['sender_id']?.toString() ?? '',
+        receiverId: messageData['receiver_id']?.toString() ?? '',
+        message: messageData['content'] ?? '',
+        timestamp: messageData['timestamp'] != null 
+            ? DateTime.parse(messageData['timestamp'])
+            : DateTime.now(),
+        isSeen: messageData['is_read'] ?? false,
+        senderName: messageData['sender_name'],
+        senderProfilePic: messageData['sender_profile_pic'],
+      );
+      
+      // Only emit messages that are not from the current user (avoid echo)
+      if (message.senderId != _currentUserId) {
+        _messageController.add(message);
+        log('📥 Received message from WebSocket: ${message.messageId}', name: 'WebSocket');
+      }
+      
+    } catch (e) {
+      log('❌ Error processing chat message: $e', name: 'WebSocket');
+    }
+  }
+
+  /// Handle typing indicators
+  static void _handleTypingIndicator(Map<String, dynamic> messageData) {
+    // TODO: Implement typing indicator handling
+    // This would emit to a separate typing indicator stream
+    log('⌨️ Typing indicator: ${messageData['is_typing']}', name: 'WebSocket');
+  }
+
+  /// Update connection state and notify listeners
+  static void _updateConnectionState(ConnectionState newState) {
+    if (_currentState != newState) {
+      _currentState = newState;
+      _connectionStateController.add(newState);
+      log('🔄 Connection state changed to: $newState', name: 'WebSocket');
+    }
+  }
+
+  /// Schedule reconnection with exponential backoff
+  static void _scheduleReconnect() {
+    if (_reconnectAttempts >= _maxReconnectAttempts) {
+      log('❌ Max reconnect attempts reached. Giving up.', name: 'WebSocket');
+      _updateConnectionState(ConnectionState.error);
+      return;
+    }
+    
+    if (_currentRoomId == null || _currentUserId == null) {
+      log('⚠️ Cannot reconnect - missing room or user ID', name: 'WebSocket');
+      return;
+    }
+    
+    _reconnectAttempts++;
+    final delay = _baseReconnectDelay * (1 << (_reconnectAttempts - 1)); // Exponential backoff
+    
+    log('🔄 Scheduling reconnect attempt $_reconnectAttempts in ${delay}ms', name: 'WebSocket');
+    _updateConnectionState(ConnectionState.reconnecting);
+    
+    _reconnectTimer = Timer(Duration(milliseconds: delay), () {
+      connect(_currentRoomId!, _currentUserId!);
+    });
+  }
+
+  /// Start heartbeat to keep connection alive
+  static void _startHeartbeat() {
+    _heartbeatTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      if (isConnected && _channel != null) {
+        try {
+          final heartbeat = {
+            'type': 'heartbeat',
+            'timestamp': DateTime.now().toIso8601String(),
+          };
+          _channel!.sink.add(json.encode(heartbeat));
+        } catch (e) {
+          log('❌ Heartbeat failed: $e', name: 'WebSocket');
+        }
+      }
+    });
+  }
+
+  /// Stop heartbeat timer
+  static void _stopHeartbeat() {
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = null;
+  }
+
+  /// Stop reconnect timer
+  static void _stopReconnectTimer() {
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
+  }
+
+  // =============================================================================
+  // CLEANUP
+  // =============================================================================
+
+  /// Dispose all resources and close streams
+  static Future<void> dispose() async {
+    await disconnect();
+    
+    if (!_messageController.isClosed) {
+      await _messageController.close();
+    }
+    
+    if (!_connectionStateController.isClosed) {
+      await _connectionStateController.close();
+    }
+    
+    log('🧹 WebSocket service disposed', name: 'WebSocket');
+  }
+}
