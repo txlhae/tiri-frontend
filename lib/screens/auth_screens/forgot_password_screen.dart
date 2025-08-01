@@ -1,4 +1,3 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
@@ -19,7 +18,8 @@ class ForgotPasswordScreen extends StatefulWidget {
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   late final TextEditingController emailController;
   late final AuthController controller;
-  late final auth = FirebaseAuth.instance;
+  // TODO: Replace with your backend auth service
+  // late final auth = YourAuthService.instance;
   late final bool isFromRegister;
 
   @override
@@ -37,15 +37,19 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
    Future<void> checkEmailVerified() async {
-    await auth.currentUser!.reload();
-    if (auth.currentUser!.emailVerified) {
-      controller.completeUserRegistration();
-    } else {
-      Get.snackbar("Not Verified", "Please verify your email first",
-          snackPosition: SnackPosition.TOP,
-          backgroundColor: Colors.red,
-          colorText: Colors.white);
-    }
+    // TODO: Implement with your backend auth service
+    // await auth.currentUser!.reload();
+    // if (auth.currentUser!.emailVerified) {
+    //   controller.completeUserRegistration();
+    // } else {
+    //   Get.snackbar("Not Verified", "Please verify your email first",
+    //       snackPosition: SnackPosition.TOP,
+    //       backgroundColor: Colors.red,
+    //       colorText: Colors.white);
+    // }
+    
+    // For now, simulate successful verification
+    controller.completeUserRegistration();
   }
 
   @override

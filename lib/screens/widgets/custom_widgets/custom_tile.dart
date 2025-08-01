@@ -6,7 +6,6 @@ import 'package:kind_clock/controllers/request_controller.dart';
 import 'package:kind_clock/models/notification_model.dart';
 import 'package:kind_clock/screens/widgets/dialog_widgets/verify_dialog.dart';
 import 'package:kind_clock/screens/widgets/request_widgets/status_row.dart';
-import 'package:kind_clock/services/firebase_storage.dart';
 
 class CustomTile extends StatelessWidget {
   final NotificationModel notify;
