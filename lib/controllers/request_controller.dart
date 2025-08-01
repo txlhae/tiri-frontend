@@ -117,6 +117,14 @@ class RequestController extends GetxController {
   final RxBool isLoadingRequestDetails = false.obs;
 
   // =============================================================================
+  // PENDING VOLUNTEERS MANAGEMENT (Enterprise-Grade)
+  // =============================================================================
+  
+  final RxList<Map<String, dynamic>> pendingVolunteers = <Map<String, dynamic>>[].obs;
+  final RxBool isLoadingPendingVolunteers = false.obs;
+  final RxString pendingVolunteersError = ''.obs;
+
+  // =============================================================================
   // 🚨 DEBUG: Enhanced initialization with detailed logging
   // =============================================================================
 
@@ -1063,7 +1071,8 @@ class RequestController extends GetxController {
   /// This ensures fresh data with enhanced volunteer status on every request details view
   Future<void> loadRequestDetails(String requestId) async {
     try {
-      debugLog("🔄 LoadRequestDetails: Fetching request $requestId");
+      debugLog("🔄 LoadRequestDetails: STARTING - Fetching request $requestId");
+      print("🔄 LoadRequestDetails: STARTING - Fetching request $requestId"); // Force print to console
       isLoadingRequestDetails.value = true;
       currentRequestDetails.value = null;
       
@@ -1099,6 +1108,30 @@ class RequestController extends GetxController {
           debugLog("✅ Requester data available: ${requester.username}");
         } else {
           debugLog("⚠️  Requester data is null");
+        }
+        
+        // ✅ NEW: Load pending volunteers if user is the request owner
+        final currentUserId = authController.currentUserStore.value?.userId;
+        debugLog("🔍 LoadRequestDetails: Checking ownership - currentUserId: $currentUserId, request.userId: ${request.userId}");
+        print("🔍 LoadRequestDetails: Checking ownership - currentUserId: $currentUserId, request.userId: ${request.userId}"); // Force print
+        
+        if (currentUserId != null && request.userId == currentUserId) {
+          debugLog("👥 LoadRequestDetails: User IS request owner, loading pending volunteers");
+          print("👥 LoadRequestDetails: User IS request owner, loading pending volunteers"); // Force print
+          // Load pending volunteers in the background (don't await to avoid blocking UI)
+          loadPendingVolunteers(requestId).catchError((error) {
+            debugLog("⚠️ LoadRequestDetails: Failed to load pending volunteers - $error");
+            print("⚠️ LoadRequestDetails: Failed to load pending volunteers - $error"); // Force print
+          });
+        } else {
+          debugLog("❌ LoadRequestDetails: User is NOT request owner or currentUserId is null");
+          print("❌ LoadRequestDetails: User is NOT request owner or currentUserId is null"); // Force print
+          debugLog("   - currentUserId: $currentUserId");
+          debugLog("   - request.userId: ${request.userId}");
+          debugLog("   - Are they equal? ${currentUserId == request.userId}");
+          print("   - currentUserId: $currentUserId");
+          print("   - request.userId: ${request.userId}");
+          print("   - Are they equal? ${currentUserId == request.userId}");
         }
         
       } else {
@@ -1699,6 +1732,10 @@ class RequestController extends GetxController {
         await loadRequestDetails(requestId);
         debugLog("🔄 RequestController: Refreshed request details after approving volunteer");
         
+        // Refresh pending volunteers list
+        await loadPendingVolunteers(requestId);
+        debugLog("🔄 RequestController: Refreshed pending volunteers after approving volunteer");
+        
         // Refresh general requests
         await refreshRequests();
         
@@ -1716,6 +1753,123 @@ class RequestController extends GetxController {
       }
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  /// Reject a volunteer request for a specific service request
+  /// ✅ NEW: Enterprise-grade reject volunteer functionality with comprehensive validation
+  Future<void> rejectVolunteerRequest(String requestId, String volunteerUserId) async {
+    try {
+      isLoading.value = true;
+      debugLog("❌ RequestController: Rejecting volunteer $volunteerUserId for request $requestId");
+      
+      // Validate inputs
+      if (requestId.isEmpty || volunteerUserId.isEmpty) {
+        throw Exception('Request ID and volunteer ID cannot be empty');
+      }
+      
+      // Validate that current user owns the request
+      final currentRequest = currentRequestDetails.value;
+      final currentUserId = authController.currentUserStore.value?.userId;
+      
+      if (currentRequest == null || currentUserId == null) {
+        throw Exception('Unable to verify request ownership');
+      }
+      
+      if (currentRequest.userId != currentUserId) {
+        throw Exception('Only request owners can reject volunteers');
+      }
+      
+      // Call the request service to reject volunteer
+      final success = await requestService.rejectVolunteerRequest(requestId, volunteerUserId);
+      
+      if (success) {
+        debugLog("✅ RequestController: Successfully rejected volunteer $volunteerUserId for request $requestId");
+        
+        // Refresh request details to show updated volunteer list
+        await loadRequestDetails(requestId);
+        debugLog("🔄 RequestController: Refreshed request details after rejecting volunteer");
+        
+        // Refresh pending volunteers list
+        await loadPendingVolunteers(requestId);
+        debugLog("🔄 RequestController: Refreshed pending volunteers after rejecting volunteer");
+        
+        // Refresh general requests
+        await refreshRequests();
+        
+      } else {
+        debugLog("❌ RequestController: Failed to reject volunteer $volunteerUserId for request $requestId");
+        throw Exception('Failed to reject volunteer request. Please try again.');
+      }
+    } catch (e) {
+      debugLog("💥 RequestController: Error in rejectVolunteerRequest for $requestId - $e");
+      if (e.toString().contains('Failed to reject volunteer request') || 
+          e.toString().contains('Only request owners can reject')) {
+        rethrow;
+      } else {
+        throw Exception('Network error: Unable to reject volunteer. Please check your connection and try again.');
+      }
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  /// Load all volunteer requests for a request (for request owners only)
+  /// ✅ UPDATED: Now loads ALL volunteer requests (pending, approved, rejected)
+  Future<void> loadPendingVolunteers(String requestId) async {
+    try {
+      isLoadingPendingVolunteers.value = true;
+      pendingVolunteersError.value = '';
+      debugLog("📋 RequestController: Loading all volunteer requests for request $requestId");
+      print("📋 RequestController: Loading all volunteer requests for request $requestId"); // Force print
+      
+      // Validate inputs
+      if (requestId.isEmpty) {
+        throw Exception('Request ID cannot be empty');
+      }
+      
+      // Validate that current user owns the request (for security)
+      final currentRequest = currentRequestDetails.value;
+      final currentUserId = authController.currentUserStore.value?.userId;
+      
+      if (currentRequest == null || currentUserId == null) {
+        throw Exception('Unable to verify request ownership');
+      }
+      
+      if (currentRequest.userId != currentUserId) {
+        debugLog("⚠️ RequestController: User is not request owner, skipping pending volunteers load");
+        pendingVolunteers.value = [];
+        return;
+      }
+      
+      // Fetch pending volunteers from service
+      final volunteers = await getVolunteerRequests(requestId);
+      debugLog("📥 RequestController: Raw volunteers data: ${volunteers.length} volunteers found");
+      print("📥 RequestController: Raw volunteers data: ${volunteers.length} volunteers found"); // Force print
+      
+      // Debug: Log each volunteer's data structure
+      for (int i = 0; i < volunteers.length; i++) {
+        final vol = volunteers[i];
+        debugLog("   Volunteer $i: id=${vol['id']}, status=${vol['status']}, volunteer=${vol['volunteer']?['username']}");
+        print("   Volunteer $i: id=${vol['id']}, status=${vol['status']}, volunteer=${vol['volunteer']?['username']}"); // Force print
+      }
+      
+      // Store ALL volunteer requests (pending, approved, rejected)
+      // UI will handle different displays based on status
+      pendingVolunteers.value = volunteers;
+      debugLog("✅ RequestController: Loaded ${volunteers.length} volunteer requests for request $requestId");
+      print("✅ RequestController: Loaded ${volunteers.length} volunteer requests for request $requestId"); // Force print
+      debugLog("📊 RequestController: Volunteer requests data: ${volunteers.map((v) => '${v['volunteer']?['username']}(${v['status']})').toList()}");
+      print("📊 RequestController: Volunteer requests data: ${volunteers.map((v) => '${v['volunteer']?['username']}(${v['status']})').toList()}"); // Force print
+      
+    } catch (e) {
+      debugLog("💥 RequestController: Error loading pending volunteers for $requestId - $e");
+      print("💥 RequestController: Error loading pending volunteers for $requestId - $e"); // Force print
+      pendingVolunteersError.value = 'Failed to load pending volunteers. Please try again.';
+      pendingVolunteers.value = [];
+    } finally {
+      isLoadingPendingVolunteers.value = false;
+      print("🏁 RequestController: loadPendingVolunteers completed for $requestId"); // Force print
     }
   }
 

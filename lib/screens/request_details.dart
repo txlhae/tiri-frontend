@@ -565,6 +565,92 @@ class _RequestDetailsState extends State<RequestDetails> {
               const SizedBox(height: 20),
             ],
           ),
+
+        // 👥 VOLUNTEER REQUESTS SECTION (for request owners only)
+        if (request.userId == currentUserId)
+          Obx(() => Column(
+            children: [
+              DetailsCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          "Volunteer Requests",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.shade100,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            "${requestController.pendingVolunteers.length}",
+                            style: TextStyle(
+                              color: Colors.blue.shade700,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    if (requestController.isLoadingPendingVolunteers.value)
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(20.0),
+                          child: CircularProgressIndicator(),
+                        ),
+                      )
+                    else if (requestController.pendingVolunteers.isEmpty)
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          children: [
+                            Icon(
+                              Icons.people_outline,
+                              size: 48,
+                              color: Colors.grey.shade400,
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              "No volunteer requests yet",
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey.shade600,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              "Volunteer requests will appear here when people apply",
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey.shade500,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      ...requestController.pendingVolunteers.map((volunteer) => 
+                        _buildVolunteerRequestCard(volunteer, request.requestId)
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+          )),
+
         //volunteer button with dynamic states
         Builder(
           builder: (context) {
@@ -639,6 +725,37 @@ class _RequestDetailsState extends State<RequestDetails> {
 
   /// Builds the pending request state UI with status and cancel option
   Widget _buildPendingRequestState(RequestModel request) {
+    // 🔍 NEW: Get the actual volunteer status from backend
+    final actualVolunteerStatus = _getCurrentUserVolunteerStatus(request);
+    
+    // 🎯 Determine display based on actual backend status
+    String statusTitle;
+    String statusSubtitle;
+    Color statusColor;
+    IconData statusIcon;
+    
+    switch (actualVolunteerStatus?.toLowerCase()) {
+      case 'approved':
+        statusTitle = "Request Approved ✅";
+        statusSubtitle = "You have been approved as a volunteer!";
+        statusColor = Colors.green.shade700;
+        statusIcon = Icons.check_circle;
+        break;
+      case 'rejected':
+        statusTitle = "Request Rejected ❌";
+        statusSubtitle = "Your volunteer request was not accepted";
+        statusColor = Colors.red.shade700;
+        statusIcon = Icons.cancel;
+        break;
+      case 'pending':
+      default:
+        statusTitle = "Request Pending ⏳";
+        statusSubtitle = "Waiting for requester approval";
+        statusColor = Colors.orange.shade700;
+        statusIcon = Icons.pending_actions;
+        break;
+    }
+    
     return Column(
       children: [
         // Status information card
@@ -647,31 +764,31 @@ class _RequestDetailsState extends State<RequestDetails> {
           padding: const EdgeInsets.all(16),
           margin: const EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
-            color: Colors.orange.withOpacity(0.1),
+            color: statusColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.orange.withOpacity(0.3)),
+            border: Border.all(color: statusColor.withOpacity(0.3)),
           ),
           child: Row(
             children: [
-              Icon(Icons.pending_actions, color: Colors.orange.shade700, size: 20),
+              Icon(statusIcon, color: statusColor, size: 20),
               const SizedBox(width: 8),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "Request Pending",
+                      statusTitle,
                       style: TextStyle(
-                        color: Colors.orange.shade700,
+                        color: statusColor,
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      "Waiting for requester approval",
+                      statusSubtitle,
                       style: TextStyle(
-                        color: Colors.orange.shade600,
+                        color: statusColor.withOpacity(0.8),
                         fontSize: 14,
                       ),
                     ),
@@ -1087,6 +1204,432 @@ class _RequestDetailsState extends State<RequestDetails> {
         ),
       ),
     );
+  }
+
+  // 👥 Build volunteer request card with status-based actions
+  Widget _buildVolunteerRequestCard(Map<String, dynamic> volunteer, String requestId) {
+    final volunteerData = volunteer['volunteer'] ?? {};
+    final volunteerId = volunteerData['userId'] ?? '';
+    final volunteerName = volunteerData['username'] ?? 'Unknown';
+    final volunteerEmail = volunteerData['email'] ?? '';
+    final volunteerMessage = volunteer['message'] ?? '';
+    final appliedAt = volunteer['applied_at'] ?? '';
+    final status = volunteer['status']?.toString().toLowerCase() ?? 'pending';
+    
+    // Get status display info
+    Color statusColor;
+    Color statusBgColor;
+    String statusText;
+    IconData statusIcon;
+    
+    switch (status) {
+      case 'approved':
+        statusColor = Colors.green.shade700;
+        statusBgColor = Colors.green.shade100;
+        statusText = 'APPROVED';
+        statusIcon = Icons.check_circle;
+        break;
+      case 'rejected':
+        statusColor = Colors.red.shade700;
+        statusBgColor = Colors.red.shade100;
+        statusText = 'REJECTED';
+        statusIcon = Icons.cancel;
+        break;
+      case 'pending':
+      default:
+        statusColor = Colors.orange.shade700;
+        statusBgColor = Colors.orange.shade100;
+        statusText = 'PENDING';
+        statusIcon = Icons.schedule;
+        break;
+    }
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Volunteer Info Header
+          Row(
+            children: [
+              CircleAvatar(
+                backgroundColor: Colors.blue.shade100,
+                child: Text(
+                  volunteerName.isNotEmpty ? volunteerName[0].toUpperCase() : '?',
+                  style: TextStyle(
+                    color: Colors.blue.shade700,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      volunteerName,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black,
+                      ),
+                    ),
+                    if (volunteerEmail.isNotEmpty)
+                      Text(
+                        volunteerEmail,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: statusBgColor,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(statusIcon, size: 14, color: statusColor),
+                    const SizedBox(width: 4),
+                    Text(
+                      statusText,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: statusColor,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          
+          // Volunteer Message (if any)
+          if (volunteerMessage.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.blue.shade100),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Message:",
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.blue.shade700,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    volunteerMessage,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          
+          // Applied At Info
+          if (appliedAt.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(Icons.schedule, size: 16, color: Colors.grey.shade600),
+                const SizedBox(width: 4),
+                Text(
+                  "Applied: ${_formatDateTimeString(appliedAt)}",
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ],
+            ),
+          ],
+          
+          // Action Buttons (only show for pending requests)
+          if (status == 'pending') ...[
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                // Approve Button
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => _showApproveDialog(volunteerId, volunteerName, requestId),
+                    icon: const Icon(Icons.check_circle, size: 18),
+                    label: const Text("Approve"),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green.shade600,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Reject Button
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => _showRejectDialog(volunteerId, volunteerName, requestId),
+                    icon: const Icon(Icons.cancel, size: 18),
+                    label: const Text("Reject"),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red.shade600,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // 📅 Format DateTime string for display (from API string)
+  String _formatDateTimeString(String dateTimeStr) {
+    try {
+      final dateTime = DateTime.parse(dateTimeStr);
+      final now = DateTime.now();
+      final difference = now.difference(dateTime);
+      
+      if (difference.inDays > 0) {
+        return "${difference.inDays}d ago";
+      } else if (difference.inHours > 0) {
+        return "${difference.inHours}h ago";
+      } else if (difference.inMinutes > 0) {
+        return "${difference.inMinutes}m ago";
+      } else {
+        return "Just now";
+      }
+    } catch (e) {
+      return "Recently";
+    }
+  }
+
+  // 🔍 Get current user's actual volunteer status from backend data
+  String? _getCurrentUserVolunteerStatus(RequestModel request) {
+    final currentUserId = authController.currentUserStore.value?.userId;
+    if (currentUserId == null) return null;
+    
+    // 🎯 PRIMARY: Use the userRequestStatus from RequestModel extension (this is the authoritative source)
+    final userStatus = request.userRequestStatus;
+    print("🔍 DEBUG: _getCurrentUserVolunteerStatus - userStatus from backend: '$userStatus'"); // Debug log
+    
+    if (userStatus.isNotEmpty && userStatus != 'not_requested') {
+      // The backend provides the actual status - use it directly!
+      print("🔍 DEBUG: Using backend status: '$userStatus'"); // Debug log
+      return userStatus;
+    }
+    
+    print("🔍 DEBUG: Backend status was '$userStatus', trying fallbacks..."); // Debug log
+    
+    // 🔄 FALLBACK 1: Check volunteer requests data if available (for request owners)
+    final volunteerRequests = requestController.pendingVolunteers;
+    for (final volunteerRequest in volunteerRequests) {
+      final volunteer = volunteerRequest['volunteer'];
+      if (volunteer != null && volunteer['userId'] == currentUserId) {
+        final status = volunteerRequest['status']?.toString();
+        print("🔍 DEBUG: Found status in volunteer requests: '$status'"); // Debug log
+        return status;
+      }
+    }
+    
+    // 🔄 FALLBACK 2: Check if user is in acceptedUser list (they're approved)
+    final isAcceptedVolunteer = request.acceptedUser.any(
+      (user) => user.userId == currentUserId
+    );
+    if (isAcceptedVolunteer) {
+      print("🔍 DEBUG: Found user in acceptedUser list - status: 'approved'"); // Debug log
+      return 'approved';
+    }
+    
+    // 🔄 FALLBACK 3: If we have volunteer message or hasVolunteered flag, likely pending
+    if (request.hasVolunteered || 
+        (request.volunteerMessage != null && request.volunteerMessage!.isNotEmpty)) {
+      print("🔍 DEBUG: hasVolunteered or volunteerMessage exists - status: 'pending'"); // Debug log
+      return 'pending';
+    }
+    
+    print("🔍 DEBUG: No status found, returning null"); // Debug log
+    return null;
+  }
+
+  // ✅ Show approve confirmation dialog
+  void _showApproveDialog(String volunteerId, String volunteerName, String requestId) {
+    Get.dialog(
+      AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.green.shade600),
+            const SizedBox(width: 8),
+            const Text("Approve Volunteer"),
+          ],
+        ),
+        content: Text("Are you sure you want to approve $volunteerName as a volunteer for this request?"),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Get.back();
+              await _approveVolunteer(volunteerId, requestId);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green.shade600,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text("Approve"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ❌ Show reject confirmation dialog
+  void _showRejectDialog(String volunteerId, String volunteerName, String requestId) {
+    Get.dialog(
+      AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(Icons.cancel, color: Colors.red.shade600),
+            const SizedBox(width: 8),
+            const Text("Reject Volunteer"),
+          ],
+        ),
+        content: Text("Are you sure you want to reject $volunteerName's volunteer request?"),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Get.back();
+              await _rejectVolunteer(volunteerId, requestId);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.shade600,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text("Reject"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ✅ Approve volunteer API call
+  Future<void> _approveVolunteer(String volunteerId, String requestId) async {
+    try {
+      Get.dialog(
+        const Center(child: CircularProgressIndicator()),
+        barrierDismissible: false,
+      );
+
+      await requestController.approveVolunteerRequest(requestId, volunteerId);
+      
+      Get.back(); // Close loading dialog
+      
+      Get.snackbar(
+        'Success',
+        'Volunteer approved successfully!',
+        backgroundColor: Colors.green.shade600,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 3),
+      );
+      
+      // Refresh the page data
+      await requestController.loadRequestDetails(requestId);
+      await requestController.loadPendingVolunteers(requestId);
+      
+    } catch (e) {
+      Get.back(); // Close loading dialog
+      Get.snackbar(
+        'Error',
+        'Failed to approve volunteer: $e',
+        backgroundColor: Colors.red.shade600,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 4),
+      );
+    }
+  }
+
+  // ❌ Reject volunteer API call
+  Future<void> _rejectVolunteer(String volunteerId, String requestId) async {
+    try {
+      Get.dialog(
+        const Center(child: CircularProgressIndicator()),
+        barrierDismissible: false,
+      );
+
+      await requestController.rejectVolunteerRequest(requestId, volunteerId);
+      
+      Get.back(); // Close loading dialog
+      
+      Get.snackbar(
+        'Success',
+        'Volunteer request rejected',
+        backgroundColor: Colors.orange.shade600,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 3),
+      );
+      
+      // Refresh the page data
+      await requestController.loadRequestDetails(requestId);
+      await requestController.loadPendingVolunteers(requestId);
+      
+    } catch (e) {
+      Get.back(); // Close loading dialog
+      Get.snackbar(
+        'Error',
+        'Failed to reject volunteer: $e',
+        backgroundColor: Colors.red.shade600,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 4),
+      );
+    }
   }
 }
 

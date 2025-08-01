@@ -637,8 +637,8 @@ class RequestService extends GetxController {
       log('✅ RequestService: Approving volunteer $volunteerUserId for request $requestId via Django API');
       
       final response = await _apiService.post(
-        '/api/requests/$requestId/approve/', 
-        data: {'volunteer_user_id': volunteerUserId}
+        '/api/requests/$requestId/approve-volunteer/', 
+        data: {'volunteer_id': volunteerUserId}
       );
       
       if (response.statusCode == 200) {
@@ -654,11 +654,36 @@ class RequestService extends GetxController {
     }
   }
 
+  /// Reject a volunteer request for a specific service request
+  /// ✅ NEW: Enterprise-grade reject volunteer functionality
+  Future<bool> rejectVolunteerRequest(String requestId, String volunteerUserId) async {
+    try {
+      log('❌ RequestService: Rejecting volunteer $volunteerUserId for request $requestId via Django API');
+      
+      final response = await _apiService.post(
+        '/api/requests/$requestId/reject-volunteer/', 
+        data: {'volunteer_id': volunteerUserId}
+      );
+      
+      if (response.statusCode == 200) {
+        log('✅ RequestService: Successfully rejected volunteer $volunteerUserId for request $requestId');
+        return true;
+      } else {
+        log('❌ RequestService: Failed to reject volunteer $volunteerUserId for request $requestId - Status: ${response.statusCode}');
+        return false;
+      }
+    } catch (e) {
+      log('💥 RequestService: Error rejecting volunteer $volunteerUserId for request $requestId - $e');
+      return false;
+    }
+  }
+
   /// Get volunteer requests for a specific request
   /// ✅ NEW: Retrieves pending volunteer requests for approval workflow
   Future<List<Map<String, dynamic>>> getVolunteerRequests(String requestId) async {
     try {
       log('📋 RequestService: Fetching volunteer requests for request $requestId via Django API');
+      print('📋 RequestService: Fetching volunteer requests for request $requestId via Django API'); // Force print
       
       final response = await _apiService.get('/api/requests/$requestId/volunteer-requests/');
       
@@ -667,26 +692,35 @@ class RequestService extends GetxController {
         final requests = data['volunteer_requests'] as List<dynamic>? ?? [];
         
         log('✅ RequestService: Found ${requests.length} volunteer requests for request $requestId');
+        print('✅ RequestService: Found ${requests.length} volunteer requests for request $requestId'); // Force print
+        log('📊 Raw response data: $data');
+        print('📊 Raw response data: $data'); // Force print
         
-        // Convert to list of maps with proper field mapping
-        return requests.map((request) {
+        // Convert to list of maps with proper field mapping for actual backend structure
+        final mappedRequests = requests.map((request) {
           final requestData = request as Map<String, dynamic>;
-          return {
+          final mapped = {
             'id': requestData['id'],
-            'user': requestData['user'],
-            'message': requestData['message_to_requester'],
+            'volunteer': requestData['volunteer'], // Backend uses 'volunteer' not 'user'
+            'message': requestData['message'] ?? '', // Backend uses 'message' not 'message_to_requester'
             'status': requestData['status'],
-            'requested_at': requestData['requested_at'],
-            'user_profile': requestData['user_profile'], // Additional user info
+            'applied_at': requestData['applied_at'], // Backend uses 'applied_at' not 'requested_at'
+            'estimated_arrival': requestData['estimated_arrival'],
           };
+          log('📝 Mapped volunteer request: $mapped');
+          return mapped;
         }).toList();
+        
+        return mappedRequests;
         
       } else {
         log('❌ RequestService: Failed to fetch volunteer requests for request $requestId - Status: ${response.statusCode}');
+        print('❌ RequestService: Failed to fetch volunteer requests for request $requestId - Status: ${response.statusCode}'); // Force print
         return [];
       }
     } catch (e) {
       log('💥 RequestService: Error fetching volunteer requests for request $requestId - $e');
+      print('💥 RequestService: Error fetching volunteer requests for request $requestId - $e'); // Force print
       return [];
     }
   }
