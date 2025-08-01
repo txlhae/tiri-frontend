@@ -32,6 +32,30 @@ class _RequestDetailsState extends State<RequestDetails> {
   // final FirebaseStorageService store = Get.find<FirebaseStorageService>(); // REMOVED: Migrating to Django
   late final RequestDetailsController detailsController;
 
+  /// Convert RequestStatus enum to user-friendly display string
+  /// 🎨 HELPER: Maps status enum to proper display names for UI
+  /// - Handles "inprogress" as "IN PROGRESS" 
+  /// - Maintains proper capitalization
+  /// - Works with StatusRow color scheme
+  String getStatusDisplayName(RequestStatus status) {
+    switch (status) {
+      case RequestStatus.pending:
+        return 'PENDING';
+      case RequestStatus.inprogress:
+        return 'IN PROGRESS';
+      case RequestStatus.accepted:
+        return 'ACCEPTED';
+      case RequestStatus.complete:
+        return 'COMPLETED';
+      case RequestStatus.incomplete:
+        return 'INCOMPLETE';
+      case RequestStatus.expired:
+        return 'EXPIRED';
+      case RequestStatus.cancelled:
+        return 'CANCELLED';
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -343,7 +367,7 @@ class _RequestDetailsState extends State<RequestDetails> {
               const SizedBox(height: 12),
               StatusRow(
                 label: "Status",
-                status: request.status.toString().split(".").last.toUpperCase(),
+                status: getStatusDisplayName(request.status),
               ),
               const SizedBox(height: 16),   
                 DetailsRow(
@@ -393,12 +417,7 @@ class _RequestDetailsState extends State<RequestDetails> {
               ],
             ),
           ),
-               if (((request.status == RequestStatus.accepted &&
-                request.acceptedUser.isNotEmpty && 
-                request.acceptedUser.isNotEmpty  ) ||
-            request.status == RequestStatus.incomplete ||
-            request.status == RequestStatus.inprogress || 
-            request.status == RequestStatus.complete) &&
+               if (request.acceptedUser.isNotEmpty &&
             (request.userId == currentUserId || request.acceptedUser.any((user) => user.userId == currentUserId)))
           Column(
             children: [
@@ -474,10 +493,11 @@ class _RequestDetailsState extends State<RequestDetails> {
                                 ],
                               )),
                     const SizedBox(height: 15),
-                    //completed and feedback button
-                    if ((request.status == RequestStatus.accepted || request.status == RequestStatus.incomplete ) &&
-                        authController.currentUserStore.value?.userId ==
-                            request.userId &&
+                    //completed and feedback button  
+                    if ((request.status == RequestStatus.accepted || 
+                         request.status == RequestStatus.inprogress || 
+                         request.status == RequestStatus.incomplete) &&
+                        authController.currentUserStore.value?.userId == request.userId &&
                         (request.requestedTime ?? request.timestamp).isBefore(DateTime.now()))
                       DeferPointer(
                         child: GestureDetector(
@@ -510,7 +530,9 @@ class _RequestDetailsState extends State<RequestDetails> {
                         ),
                       ),
                     //reminder notification button
-                    if ((request.status == RequestStatus.accepted || request.status == RequestStatus.incomplete) &&
+                    if ((request.status == RequestStatus.accepted || 
+                         request.status == RequestStatus.inprogress || 
+                         request.status == RequestStatus.incomplete) &&
                         request.acceptedUser.any((user) =>
                             user.userId ==
                                 authController.currentUserStore.value?.userId &&
@@ -861,7 +883,11 @@ class _RequestDetailsState extends State<RequestDetails> {
   }
 
   /// Builds the owner delete button for request owners
+  /// ✅ FIX: Only shows delete button before request time passes
   Widget _buildOwnerDeleteButton(RequestModel request) {
+    // Check if request time has passed
+    final bool timeHasPassed = (request.requestedTime ?? request.timestamp).isBefore(DateTime.now());
+    
     return Column(
       children: [
         // Owner information card
@@ -905,10 +931,12 @@ class _RequestDetailsState extends State<RequestDetails> {
           ),
         ),
         
-        // Delete Request button with loading state
-        Obx(() => SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
+        // ✅ FIX: Only show delete button if request time hasn't passed
+        if (!timeHasPassed) ...[
+          // Delete Request button with loading state
+          Obx(() => SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
             onPressed: requestController.isLoading.value ? null : () async {
               // Show confirmation dialog
               final bool? confirmed = await Get.dialog<bool>(
@@ -974,6 +1002,34 @@ class _RequestDetailsState extends State<RequestDetails> {
             ),
           ),
         )),
+        ] else ...[
+          // Show message when delete is not available due to timing
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.orange.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.orange.withOpacity(0.3)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.schedule, color: Colors.orange.shade700, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    "Request time has passed - deletion no longer available",
+                    style: TextStyle(
+                      color: Colors.orange.shade700,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -1032,7 +1088,8 @@ class _RequestDetailsState extends State<RequestDetails> {
 
   /// Builds the initial request state UI based on availability
   Widget _buildInitialRequestState(RequestModel request, bool canRequest) {
-    if (canRequest) {
+    // ✅ FIX: Add timing constraint - only show before request time passes
+    if (canRequest && (request.requestedTime ?? request.timestamp).isAfter(DateTime.now())) {
       // Show "Interested" button - user can volunteer
       return Column(
         children: [
@@ -1102,6 +1159,13 @@ class _RequestDetailsState extends State<RequestDetails> {
       );
     } else {
       // Show "Not Available" state with reason
+      String unavailableReason;
+      if (!canRequest) {
+        unavailableReason = "Request is full or you're not eligible to volunteer";
+      } else {
+        unavailableReason = "Request time has passed";
+      }
+      
       return Container(
         width: double.infinity,
         padding: const EdgeInsets.all(16),
@@ -1128,9 +1192,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    request.acceptedUser.length >= request.numberOfPeople
-                        ? "This request is already full"
-                        : "You cannot volunteer for this request",
+                    unavailableReason,
                     style: TextStyle(
                       color: Colors.grey.shade600,
                       fontSize: 14,
