@@ -29,8 +29,18 @@ class ApiConfig {
     'production': 'https://api.tiri.com',
   };
 
+  /// WebSocket URLs for different environments
+  static const Map<String, String> _webSocketUrls = {
+    'development': 'ws://192.168.0.229:8000',   // WebSocket for development
+    'staging': 'wss://staging-api.tiri.com',    // Secure WebSocket for staging
+    'production': 'wss://api.tiri.com',         // Secure WebSocket for production
+  };
+
   /// Get the base URL for current environment
   static String get baseUrl => _baseUrls[environment]!;
+
+  /// Get the WebSocket URL for current environment
+  static String get webSocketBaseUrl => _webSocketUrls[environment]!;
 
   // =============================================================================
   // API ENDPOINTS
@@ -41,6 +51,9 @@ class ApiConfig {
   
   /// Complete API base URL with version
   static String get apiBaseUrl => baseUrl;
+
+  /// Get WebSocket base URL for real-time connections
+  static String getWebSocketBaseUrl() => webSocketBaseUrl;
 
   /// Authentication endpoints
   static const String authRegister = '/api/auth/register/';
@@ -204,6 +217,7 @@ class ApiConfig {
         'environment': environment,
         'baseUrl': baseUrl,
         'apiBaseUrl': apiBaseUrl,
+        'webSocketBaseUrl': webSocketBaseUrl,
         'isDevelopment': isDevelopment,
         'isProduction': isProduction,
         'enableLogging': enableLogging,
@@ -220,6 +234,7 @@ class ApiConfig {
       print('Environment: $environment');
       print('Base URL: $baseUrl');
       print('API Base URL: $apiBaseUrl');
+      print('WebSocket URL: $webSocketBaseUrl');
       print('Logging Enabled: $enableLogging');
       print('Connect Timeout: ${connectTimeout.inSeconds}s');
       print('Receive Timeout: ${receiveTimeout.inSeconds}s');
