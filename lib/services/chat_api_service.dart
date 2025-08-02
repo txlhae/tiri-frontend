@@ -79,7 +79,10 @@ class ChatApiService {
       );
       
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final chatRoom = _mapChatRoomFromBackend(response.data as Map<String, dynamic>);
+        // Handle the nested chat_room structure from get_or_create endpoint
+        final responseData = response.data as Map<String, dynamic>;
+        final chatRoomData = responseData['chat_room'] as Map<String, dynamic>;
+        final chatRoom = _mapChatRoomFromBackend(chatRoomData);
         log('✅ Chat room ready: ${chatRoom.chatRoomId}', name: 'ChatAPI');
         return chatRoom;
       } else {
@@ -157,6 +160,12 @@ class ChatApiService {
             .toList();
         
         log('✅ Fetched ${messages.length} messages for room: $roomId', name: 'ChatAPI');
+        
+        // Log first message for debugging
+        if (messages.isNotEmpty) {
+          log('📄 First message: "${messages.first.message}" from ${messages.first.senderId}', name: 'ChatAPI');
+        }
+        
         return messages;
       } else {
         log('❌ Failed to fetch messages - Status: ${response.statusCode}', name: 'ChatAPI');
@@ -185,9 +194,24 @@ class ChatApiService {
     try {
       log('🔄 Sending message to room: $roomId', name: 'ChatAPI');
       
+      // Validate room ID is not empty
+      if (roomId.isEmpty) {
+        throw ArgumentError('Room ID cannot be empty');
+      }
+      
+      // Validate content is not empty
+      if (content.trim().isEmpty) {
+        throw ArgumentError('Message content cannot be empty');
+      }
+      
       final messageData = {
-        'message': content,
+        'room_id': roomId,
+        'content': content.trim(),
+        'message_type': 'text',
       };
+      
+      log('📤 Sending message data: $messageData', name: 'ChatAPI');
+      log('📍 Endpoint: /api/chat/rooms/$roomId/send_message/', name: 'ChatAPI');
       
       final response = await _apiService.post(
         '/api/chat/rooms/$roomId/send_message/',
@@ -309,8 +333,10 @@ class ChatApiService {
           return 'You don\'t have permission to access this chat.';
         case 404:
           return 'Chat room not found.';
+        case 405:
+          return 'Operation not allowed. Please try again.';
         case 429:
-          return 'Too many requests. Please wait a moment.';
+          return 'Too many requests. Please wait a moment before trying again.';
         case 500:
           return 'Server error. Please try again later.';
         default:
@@ -341,12 +367,20 @@ class ChatApiService {
 
   /// Map backend message JSON to ChatMessageModel
   static ChatMessageModel _mapMessageFromBackend(Map<String, dynamic> json) {
+    log('🔍 Mapping message JSON: $json', name: 'ChatAPI');
+    
+    final messageContent = json['content'] ?? json['message'] ?? '';
+    final senderId = json['sender']?.toString() ?? '';
+    final receiverId = json['receiver']?.toString() ?? '';
+    
+    log('📝 Message details: content="$messageContent", senderId="$senderId", receiverId="$receiverId"', name: 'ChatAPI');
+    
     return ChatMessageModel(
       messageId: json['id']?.toString() ?? '',
       chatRoomId: json['chat_room']?.toString() ?? '',
-      senderId: json['sender']?.toString() ?? '',
-      receiverId: json['receiver']?.toString() ?? '',
-      message: json['message'] ?? '',
+      senderId: senderId,
+      receiverId: receiverId,
+      message: messageContent,
       isSeen: json['is_read'] ?? false,
       timestamp: DateTime.parse(json['timestamp']),
       senderName: json['sender_name'],

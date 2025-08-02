@@ -37,6 +37,15 @@ class ChatController extends GetxController {
   /// Stream subscriptions for cleanup
   StreamSubscription<ChatMessageModel>? _messageSubscription;
   
+  /// Debounce timer for mark_read operations to prevent rate limiting
+  Timer? _markReadDebounceTimer;
+  static const Duration _markReadDebounceDelay = Duration(seconds: 2);
+  
+  /// Throttle timer for send message operations to prevent spam
+  Timer? _sendMessageThrottleTimer;
+  static const Duration _sendMessageThrottleDelay = Duration(milliseconds: 500);
+  bool _canSendMessage = true;
+  
   @override
   void onInit() {
     super.onInit();
@@ -56,6 +65,8 @@ class ChatController extends GetxController {
   void onClose() {
     // Clean up WebSocket connections and subscriptions
     _messageSubscription?.cancel();
+    _markReadDebounceTimer?.cancel();
+    _sendMessageThrottleTimer?.cancel();
     ChatWebSocketService.disconnect();
     super.onClose();
   }
@@ -74,6 +85,7 @@ class ChatController extends GetxController {
       errorMessage.value = '';
       
       log('🔄 Creating or getting chat room between $userA and $userB', name: 'ChatController');
+      log('📋 Service Request ID: $serviceRequestId', name: 'ChatController');
       
       final ChatRoomModel chatRoom;
       
@@ -86,9 +98,16 @@ class ChatController extends GetxController {
       }
       
       currentChatRoom.value = chatRoom;
-      log('✅ Chat room ready: ${chatRoom.chatRoomId}', name: 'ChatController');
+      final roomId = chatRoom.chatRoomId;
       
-      return chatRoom.chatRoomId;
+      log('✅ Chat room ready with ID: "$roomId" (length: ${roomId.length})', name: 'ChatController');
+      
+      // Validate that we got a proper room ID
+      if (roomId.isEmpty) {
+        throw Exception('Received empty room ID from server');
+      }
+      
+      return roomId;
       
     } catch (e) {
       final errorMsg = ChatApiService.getErrorMessage(e);
@@ -107,6 +126,7 @@ class ChatController extends GetxController {
   /// Send a new message to the chat room
   /// 
   /// This method sends the message via REST API for reliability and uses WebSocket for real-time delivery
+  /// Includes throttling to prevent rate limiting
   Future<void> sendMessage({
     required String chatRoomId,
     required String senderId,
@@ -118,14 +138,29 @@ class ChatController extends GetxController {
       return;
     }
     
+    // Check if we can send message (throttling)
+    if (!_canSendMessage) {
+      errorMessage.value = 'Please wait before sending another message';
+      return;
+    }
+    
     try {
       isSendingMessage.value = true;
       errorMessage.value = '';
+      _canSendMessage = false;
       
       log('🔄 Sending message to room: $chatRoomId', name: 'ChatController');
+      log('📍 Chat room ID validation: "${chatRoomId}" (length: ${chatRoomId.length})', name: 'ChatController');
+      
+      // Validate chat room ID
+      if (chatRoomId.isEmpty) {
+        throw ArgumentError('Chat room ID is empty');
+      }
       
       // Send message via REST API for reliability
       final sentMessage = await ChatApiService.sendMessage(chatRoomId, message.trim());
+      
+      log('📤 Message sent successfully: "${sentMessage.message}" with ID: ${sentMessage.messageId}', name: 'ChatController');
       
       // Add the message to local list with server response data
       messages.add(sentMessage);
@@ -141,10 +176,19 @@ class ChatController extends GetxController {
       
       log('✅ Message sent successfully: ${sentMessage.messageId}', name: 'ChatController');
       
+      // Reset throttle timer
+      _sendMessageThrottleTimer?.cancel();
+      _sendMessageThrottleTimer = Timer(_sendMessageThrottleDelay, () {
+        _canSendMessage = true;
+      });
+      
     } catch (e) {
       final errorMsg = ChatApiService.getErrorMessage(e);
       errorMessage.value = errorMsg;
       log('❌ Error sending message: $e', name: 'ChatController');
+      
+      // Reset throttle immediately on error
+      _canSendMessage = true;
       
       // Don't rethrow here as we want to show error message in UI
     } finally {
@@ -165,6 +209,16 @@ class ChatController extends GetxController {
     
     // Establish WebSocket connection for real-time updates
     _connectWebSocket(chatRoomId);
+  }
+
+  /// Mark messages as read when user enters the chat room
+  /// 
+  /// This method should be called once when user enters the chat room
+  void markRoomAsRead(String senderId) {
+    // Add a small delay to ensure messages are loaded first
+    Future.delayed(const Duration(milliseconds: 1000), () {
+      markMessagesAsSeen(senderId);
+    });
   }
 
   /// Connect to WebSocket for real-time messaging
@@ -232,8 +286,13 @@ class ChatController extends GetxController {
           messages.addAll(loadedMessages);
         }
         
-        // Sort by timestamp to maintain chronological order
+        // Sort by timestamp in ascending order (oldest first, newest last)
         messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+        
+        log('📝 Sample messages loaded:', name: 'ChatController');
+        for (int i = 0; i < messages.length && i < 3; i++) {
+          log('   Message ${i + 1}: "${messages[i].message}" at ${messages[i].timestamp}', name: 'ChatController');
+        }
         
         // Check if we should load more pages
         if (loadedMessages.length < 50) {
@@ -274,23 +333,31 @@ class ChatController extends GetxController {
 
   /// Mark messages as seen for a specific sender
   /// 
-  /// This method updates both backend and local UI state
+  /// This method updates both backend and local UI state with debouncing to prevent rate limiting
   void markMessagesAsSeen(String senderId) {
     if (currentChatRoom.value == null) return;
     
     final chatRoomId = currentChatRoom.value!.chatRoomId;
     
     // Update local UI immediately for better UX
+    bool hasUnreadMessages = false;
     for (int i = 0; i < messages.length; i++) {
       final message = messages[i];
       if (message.senderId == senderId && !message.isSeen) {
         final updatedMessage = message.copyWith(isSeen: true);
         messages[i] = updatedMessage;
+        hasUnreadMessages = true;
       }
     }
     
-    // Update backend asynchronously
-    _updateMessageSeenStatus(chatRoomId);
+    // Only make API call if there were actually unread messages
+    if (!hasUnreadMessages) return;
+    
+    // Cancel existing timer and start a new one for debouncing
+    _markReadDebounceTimer?.cancel();
+    _markReadDebounceTimer = Timer(_markReadDebounceDelay, () {
+      _updateMessageSeenStatus(chatRoomId);
+    });
   }
 
   /// Internal method to update message seen status on backend

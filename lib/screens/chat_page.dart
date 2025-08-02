@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'dart:async';
 import 'package:kind_clock/controllers/auth_controller.dart';
 import 'package:kind_clock/controllers/chat_controller.dart';
 import 'package:kind_clock/controllers/request_controller.dart';
@@ -30,6 +31,10 @@ class _ChatPageState extends State<ChatPage> {
   final AuthController authController = Get.find<AuthController>();
   final RequestController requestController = Get.find<RequestController>();
   final TextEditingController messageController = TextEditingController();
+  
+  // Debouncing for typing indicator
+  Timer? _typingDebounceTimer;
+  bool _isTyping = false;
 
   @override
   void initState() {
@@ -41,8 +46,10 @@ class _ChatPageState extends State<ChatPage> {
       });
     } else {
       chatController.listenToMessages(widget.chatRoomId);
+      
+      // Mark messages as read when user enters the chat room
+      chatController.markRoomAsRead(widget.receiverId);
     }
-     chatController.markMessagesAsSeen(widget.receiverId);
   }
 
   @override
@@ -50,6 +57,7 @@ class _ChatPageState extends State<ChatPage> {
     // Disconnect WebSocket when leaving chat page
     chatController.disconnectWebSocket();
     messageController.dispose();
+    _typingDebounceTimer?.cancel();
     super.dispose();
   }
 
@@ -66,12 +74,30 @@ class _ChatPageState extends State<ChatPage> {
     messageController.clear();
     
     // Stop typing indicator
-    chatController.sendTypingIndicator(false);
+    _setTypingIndicator(false);
+  }
+
+  void _setTypingIndicator(bool isTyping) {
+    if (_isTyping == isTyping) return; // Avoid unnecessary calls
+    
+    _isTyping = isTyping;
+    chatController.sendTypingIndicator(isTyping);
+    
+    // Auto-stop typing indicator after 3 seconds of inactivity
+    if (isTyping) {
+      _typingDebounceTimer?.cancel();
+      _typingDebounceTimer = Timer(const Duration(seconds: 3), () {
+        _setTypingIndicator(false);
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final currentUserId = authController.currentUserStore.value!.userId;
+    print('🔍 Current user ID at build: "$currentUserId" (${currentUserId.runtimeType})');
+    print('🔍 Widget receiver ID: "${widget.receiverId}" (${widget.receiverId.runtimeType})');
+    
     return Scaffold(
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(80), 
@@ -196,7 +222,6 @@ class _ChatPageState extends State<ChatPage> {
         }
         
         final messages = chatController.messages;
-        chatController.markMessagesAsSeen(widget.receiverId);
         
         if (messages.isEmpty && !chatController.isLoadingMessages.value) {
           return const Center(
@@ -220,11 +245,12 @@ class _ChatPageState extends State<ChatPage> {
         }
         
         return ListView.builder(
-          padding: const EdgeInsets.all(12),
+          reverse: true, // Show newest messages at bottom
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 4), // Reduced bottom padding
           itemCount: messages.length + (chatController.isLoadingMoreMessages.value ? 1 : 0),
           itemBuilder: (context, index) {
-            // Show loading indicator at the top when loading more messages
-            if (index == 0 && chatController.isLoadingMoreMessages.value) {
+            // Show loading indicator at the bottom when loading more messages
+            if (index == messages.length && chatController.isLoadingMoreMessages.value) {
               return const Padding(
                 padding: EdgeInsets.all(16),
                 child: Center(
@@ -233,69 +259,154 @@ class _ChatPageState extends State<ChatPage> {
               );
             }
             
-            final messageIndex = chatController.isLoadingMoreMessages.value ? index - 1 : index;
+            // Since we're using reverse: true, we need to adjust the index
+            final messageIndex = messages.length - 1 - index;
+            if (messageIndex < 0 || messageIndex >= messages.length) {
+              return const SizedBox.shrink();
+            }
+            
             final ChatMessageModel message = messages[messageIndex];
-            final isMe = message.senderId == currentUserId;
+            
+            // More robust user ID comparison with multiple fallbacks
+            final senderIdStr = message.senderId.toString().trim();
+            final currentUserIdStr = currentUserId.toString().trim();
+            
+            // Try multiple comparison methods
+            var isMe = false;
+            
+            // Method 1: Direct string comparison
+            if (senderIdStr == currentUserIdStr) {
+              isMe = true;
+            }
+            // Method 2: Check if one contains the other (in case of formatting differences)
+            else if (senderIdStr.contains(currentUserIdStr) || currentUserIdStr.contains(senderIdStr)) {
+              isMe = true;
+            }
+            // Method 3: Remove any quotes or extra characters and compare
+            else if (senderIdStr.replaceAll('"', '').replaceAll("'", '') == 
+                     currentUserIdStr.replaceAll('"', '').replaceAll("'", '')) {
+              isMe = true;
+            }
+            
+            // Additional debug info
+            if (!isMe) {
+              print('❌ IDs do not match:');
+              print('   Sender: "$senderIdStr"');
+              print('   Current: "$currentUserIdStr"');
+              print('   Length difference: ${senderIdStr.length - currentUserIdStr.length}');
+            } else {
+              print('✅ IDs match - message is from current user');
+            }
+            
+            // Debug logging
+            print('🔍 Message Debug:');
+            print('   Message senderId: "${message.senderId}" (${message.senderId.runtimeType})');
+            print('   Current userId: "$currentUserId" (${currentUserId.runtimeType})');
+            print('   isMe: $isMe');
+            print('   Message content: "${message.message}"');
+            print('   Sender ID length: ${message.senderId.length}');
+            print('   Current ID length: ${currentUserId.length}');
+            print('   Are they equal? ${message.senderId == currentUserId}');
+            print('   Trimmed comparison: "${message.senderId.trim()}" == "${currentUserId.trim()}" = ${message.senderId.trim() == currentUserId.trim()}');
+            print('---');
+            
+            // Debug logging to check user IDs
+            if (index < 3) { // Only log first few messages to avoid spam
+              print('🔍 Message ${index + 1}: senderId="${message.senderId}", currentUserId="$currentUserId", isMe=$isMe');
+            }
 
-            return Align(
-              alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-              child: Container(
-                margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                constraints: const BoxConstraints(maxWidth: 150),
-                decoration: BoxDecoration(
-                  color: isMe ?  Colors.blue : Colors.blueGrey.shade100,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      offset: const Offset(0, 1),
-                      blurRadius: 1,
+            return Container(
+              margin: const EdgeInsets.symmetric(vertical: 2, horizontal: 8), // Reduced vertical margin
+              child: Row(
+                mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+                children: [
+                  // For received messages, show sender avatar on the left
+                  if (!isMe) ...[
+                    CircleAvatar(
+                      radius: 16,
+                      backgroundColor: Colors.grey[300],
+                      child: widget.receiverProfilePic.isNotEmpty
+                          ? ClipOval(
+                              child: Image.network(
+                                widget.receiverProfilePic,
+                                fit: BoxFit.cover,
+                                width: 32,
+                                height: 32,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const Icon(Icons.person, size: 16, color: Colors.grey);
+                                },
+                              ),
+                            )
+                          : const Icon(Icons.person, size: 16, color: Colors.grey),
                     ),
+                    const SizedBox(width: 8),
                   ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        message.message,
-                        style:TextStyle(
-                          fontSize: 15,
-                          color: isMe ? Colors.white : Colors.black,
-                        ),
+                  
+                  // Message bubble
+                  Flexible(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+                      constraints: BoxConstraints(
+                        maxWidth: MediaQuery.of(context).size.width * 0.7,
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          DateFormat('h:mm a').format(message.timestamp),
-                          style: TextStyle(
-                            fontSize: 10,
-                            color:isMe ?Colors.white70: Colors.grey.shade800,
-                          ),
+                      decoration: BoxDecoration(
+                        color: isMe ? Colors.blue : Colors.grey.shade200,
+                        borderRadius: BorderRadius.only(
+                          topLeft: const Radius.circular(16),
+                          topRight: const Radius.circular(16),
+                          bottomLeft: Radius.circular(isMe ? 16 : 4),
+                          bottomRight: Radius.circular(isMe ? 4 : 16),
                         ),
-                        if (isMe) ...[
-                          const SizedBox(width: 4),
-                          Icon(
-                            message.isSeen
-                                ? Icons.done_all
-                                : Icons.check,
-                            size: 16,
-                            color: message.isSeen
-                                ? Colors.yellow
-                                : Colors.white70,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            offset: const Offset(0, 1),
+                            blurRadius: 2,
                           ),
                         ],
-                      ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Message content
+                          Text(
+                            message.message.isNotEmpty ? message.message : "No content",
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: isMe ? Colors.white : Colors.black87,
+                              height: 1.3,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          
+                          // Timestamp and read status
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              Text(
+                                DateFormat('h:mm a').format(message.timestamp),
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: isMe ? Colors.white70 : Colors.grey.shade600,
+                                ),
+                              ),
+                              if (isMe) ...[
+                                const SizedBox(width: 4),
+                                Icon(
+                                  message.isSeen ? Icons.done_all : Icons.check,
+                                  size: 14,
+                                  color: message.isSeen ? Colors.lightGreen : Colors.white70,
+                                ),
+                              ],
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             );
           },
@@ -304,7 +415,7 @@ class _ChatPageState extends State<ChatPage> {
     ),
     Container(
             padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                const EdgeInsets.symmetric(horizontal: 10, vertical: 6), // Reduced vertical padding
             color: Colors.grey.shade100,
             child: Row(
               children: [
@@ -316,18 +427,18 @@ class _ChatPageState extends State<ChatPage> {
                     child: TextField(
                     controller: messageController,
                     onChanged: (text) {
-                      // Send typing indicator via WebSocket
-                      if (text.isNotEmpty) {
-                        chatController.sendTypingIndicator(true);
+                      // Send typing indicator via WebSocket with debouncing
+                      if (text.trim().isNotEmpty) {
+                        _setTypingIndicator(true);
                       } else {
-                        chatController.sendTypingIndicator(false);
+                        _setTypingIndicator(false);
                       }
                     },
                     onSubmitted: (_) {
                       // Send message when user presses enter
                       sendMessage();
                       // Stop typing indicator
-                      chatController.sendTypingIndicator(false);
+                      _setTypingIndicator(false);
                     },
                     decoration: InputDecoration(
                       hintText: "Type a message...",
