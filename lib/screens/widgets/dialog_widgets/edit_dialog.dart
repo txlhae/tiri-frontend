@@ -36,16 +36,29 @@ class _EditDialogState extends State<EditDialog> {
   Widget build(BuildContext context) {
     String image = widget.user.imageUrl ?? '';
     log(authController.isloading.value.toString());
+    
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      insetPadding: EdgeInsets.symmetric(
+        horizontal: screenWidth < 600 ? 16 : 40,
+        vertical: 24,
+      ),
       child: authController.isloading.value
           ? const Center(child: CircularProgressIndicator())
-          : Padding(
-              padding:
-                  const EdgeInsets.symmetric(vertical: 20.0, horizontal: 25.0),
-              child: SizedBox(
-                height: MediaQuery.of(context).size.height * 0.5,
+          : Container(
+              width: double.infinity,
+              constraints: BoxConstraints(
+                maxWidth: screenWidth < 600 ? screenWidth - 32 : 400,
+                maxHeight: screenHeight * 0.8,
+              ),
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  vertical: 20.0, 
+                  horizontal: screenWidth < 400 ? 16.0 : 25.0,
+                ),
                 child: SingleChildScrollView(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -120,12 +133,15 @@ class _EditDialogState extends State<EditDialog> {
                       const SizedBox(
                         height: 5,
                       ),
-                      const Text(
+                      Text(
                         "Click to change profile picture",
-                        style: TextStyle(
+                        style: const TextStyle(
                             fontStyle: FontStyle.italic,
                             fontSize: 12,
                             color: Colors.black),
+                        textAlign: TextAlign.center,
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 2,
                       ),
                       const SizedBox(
                         height: 10,

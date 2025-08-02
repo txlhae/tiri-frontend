@@ -98,4 +98,9 @@ class Routes {
   static Future<String> get chatPageRoute async {
     return chatPage;
   }
+
+  static const myApplicationsPage = "/myApplications";
+  static Future<String> get myApplicationsPageRoute async {
+    return myApplicationsPage;
+  }
 }

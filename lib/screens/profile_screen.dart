@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
 import 'package:kind_clock/controllers/auth_controller.dart';
+import 'package:kind_clock/controllers/chat_controller.dart';
 import 'package:kind_clock/controllers/request_controller.dart';
 import 'package:kind_clock/infrastructure/routes.dart';
 import 'package:kind_clock/models/feedback_model.dart';
@@ -108,6 +109,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             },
                             child: SvgPicture.asset(
                               "assets/icons/edit_icon.svg",
+                            ),
+                          ),
+                        if (!isCurrentUser)
+                          GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () => _openChatWithUser(user),
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.9),
+                                borderRadius: BorderRadius.circular(20),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(
+                                Icons.chat_bubble_outline,
+                                color: Color.fromRGBO(3, 80, 135, 1),
+                                size: 24,
+                              ),
                             ),
                           ),
                       ],
@@ -310,5 +335,79 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       ],
     );
+  }
+
+  /// Open chat with the user being viewed
+  Future<void> _openChatWithUser(UserModel user) async {
+    try {
+      final currentUserId = authController.currentUserStore.value?.userId;
+      if (currentUserId == null) {
+        Get.snackbar(
+          'Error',
+          'Unable to get current user information',
+          backgroundColor: Colors.red.shade600,
+          colorText: Colors.white,
+        );
+        return;
+      }
+
+      // Show loading indicator
+      Get.dialog(
+        const Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+              SizedBox(height: 16),
+              Text(
+                'Opening chat...',
+                style: TextStyle(color: Colors.white),
+              ),
+            ],
+          ),
+        ),
+        barrierDismissible: false,
+      );
+
+      // Create or get chat room using existing ChatController
+      final chatController = Get.put(ChatController());
+      final roomId = await chatController.createOrGetChatRoom(
+        currentUserId,
+        user.userId,
+        // No serviceRequestId for direct messaging
+      );
+
+      // Close loading dialog
+      Get.back();
+
+      // Navigate to chat page
+      Get.toNamed(
+        Routes.chatPage,
+        arguments: {
+          'chatRoomId': roomId,
+          'receiverId': user.userId,
+          'receiverName': user.username,
+          'receiverProfilePic': user.imageUrl ?? " ",
+        },
+      );
+
+    } catch (e) {
+      // Close loading dialog if still open
+      if (Get.isDialogOpen ?? false) {
+        Get.back();
+      }
+      
+      Get.snackbar(
+        'Error',
+        'Failed to open chat. Please try again.',
+        backgroundColor: Colors.red.shade600,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 4),
+      );
+    }
   }
 }

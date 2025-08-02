@@ -162,30 +162,29 @@ class _IntrestedDialogState extends State<IntrestedDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       elevation: 8,
-      child: Theme(
-        data: Theme.of(context).copyWith(
-          textTheme: Theme.of(context).textTheme.copyWith(
-            bodyMedium: const TextStyle(color: Colors.black87),
-            bodyLarge: const TextStyle(color: Colors.black87),
-            bodySmall: const TextStyle(color: Colors.black87),
-          ),
+      insetPadding: EdgeInsets.symmetric(
+        horizontal: screenWidth < 600 ? 16 : 40,
+        vertical: 24,
+      ),
+      child: Container(
+        width: double.infinity,
+        constraints: BoxConstraints(
+          maxWidth: screenWidth < 600 ? screenWidth - 32 : 400,
+          maxHeight: screenHeight * 0.9,
         ),
-        child: Container(
-          width: MediaQuery.of(context).size.width * 0.9,
-          constraints: BoxConstraints(
-            maxWidth: 400,
-            maxHeight: MediaQuery.of(context).size.height * 0.85, // Limit max height to 85% of screen
-          ),
-          child: Column(
+        child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             // Header - Fixed at top
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.all(screenWidth < 400 ? 16 : 24),
               decoration: BoxDecoration(
                 color: Colors.blue.shade600,
                 borderRadius: const BorderRadius.only(
@@ -216,7 +215,7 @@ class _IntrestedDialogState extends State<IntrestedDialog> {
             // Scrollable Content Area
             Flexible(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
+                padding: EdgeInsets.all(screenWidth < 400 ? 16 : 24),
                 child: Form(
                   key: _formKey,
                   child: Column(
@@ -258,6 +257,8 @@ class _IntrestedDialogState extends State<IntrestedDialog> {
                                 fontSize: 16,
                                 color: Colors.black87,
                               ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 2,
                             ),
                             const SizedBox(height: 4),
                             Text(
@@ -266,6 +267,8 @@ class _IntrestedDialogState extends State<IntrestedDialog> {
                                 color: Colors.grey.shade600,
                                 fontSize: 14,
                               ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
                             ),
                             Text(
                               '📅 ${_formatDateTime(widget.request.requestedTime ?? widget.request.timestamp)}',
@@ -273,6 +276,8 @@ class _IntrestedDialogState extends State<IntrestedDialog> {
                                 color: Colors.grey.shade600,
                                 fontSize: 14,
                               ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
                             ),
                           ],
                         ),
@@ -290,12 +295,15 @@ class _IntrestedDialogState extends State<IntrestedDialog> {
                                    size: 20, 
                                    color: Colors.blue.shade600),
                               const SizedBox(width: 8),
-                              const Text(
-                                'Tell the requester about yourself',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 14,
-                                  color: Colors.black87,
+                              Expanded(
+                                child: Text(
+                                  'Tell the requester about yourself',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                    color: Colors.black87,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                               const Text(
@@ -359,16 +367,19 @@ class _IntrestedDialogState extends State<IntrestedDialog> {
                                    size: 20, 
                                    color: Colors.blue.shade600),
                               const SizedBox(width: 8),
-                              const Text(
-                                'When can you arrive?',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 14,
-                                  color: Colors.black87,
+                              Expanded(
+                                child: Text(
+                                  'When can you arrive?',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                    color: Colors.black87,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                               Text(
-                                ' (optional)',
+                                '(optional)',
                                 style: TextStyle(
                                   color: Colors.grey.shade600,
                                   fontSize: 12,
@@ -480,7 +491,6 @@ class _IntrestedDialogState extends State<IntrestedDialog> {
           ],
         ),
       ),
-    ),
     );
   }
 

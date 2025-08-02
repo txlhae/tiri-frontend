@@ -354,6 +354,8 @@ class _RequestDetailsState extends State<RequestDetails> {
                   color: Colors.black,
                   fontWeight: FontWeight.w700,
                 ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 2,
               ),
                 const SizedBox(height: 12),
               DetailsRow(
@@ -432,8 +434,9 @@ class _RequestDetailsState extends State<RequestDetails> {
               ],
             ),
           ),
+               // "Accepted By" section - Only show for volunteers, not requesters
                if (request.acceptedUser.isNotEmpty &&
-            (request.userId == currentUserId || request.acceptedUser.any((user) => user.userId == currentUserId)))
+            request.acceptedUser.any((user) => user.userId == currentUserId))
           Column(
             children: [
               DetailsCard(
@@ -1460,9 +1463,30 @@ class _RequestDetailsState extends State<RequestDetails> {
             ),
           ],
           
-          // Action Buttons (only show for pending requests)
+          // Action Buttons - Chat button for all statuses, Approve/Reject only for pending
+          const SizedBox(height: 16),
+          
+          // Chat Button (always available)
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => _openChatWithVolunteer(volunteerId, volunteerName, requestId),
+              icon: const Icon(Icons.chat_bubble_outline, size: 18),
+              label: const Text("Chat with Volunteer"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue.shade600,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ),
+          
+          // Approve/Reject Buttons (only for pending requests)
           if (status == 'pending') ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             Row(
               children: [
                 // Approve Button
@@ -1714,6 +1738,76 @@ class _RequestDetailsState extends State<RequestDetails> {
       Get.snackbar(
         'Error',
         'Failed to reject volunteer: $e',
+        backgroundColor: Colors.red.shade600,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 4),
+      );
+    }
+  }
+
+  // 💬 Open chat with volunteer
+  Future<void> _openChatWithVolunteer(String volunteerId, String volunteerName, String requestId) async {
+    try {
+      // Get current user ID
+      final currentUserId = authController.currentUserStore.value?.userId;
+      if (currentUserId == null) {
+        Get.snackbar(
+          'Error',
+          'Unable to get current user information',
+          backgroundColor: Colors.red.shade600,
+          colorText: Colors.white,
+        );
+        return;
+      }
+
+      // Show loading indicator
+      Get.dialog(
+        const Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Opening chat...', style: TextStyle(color: Colors.white)),
+            ],
+          ),
+        ),
+        barrierDismissible: false,
+      );
+
+      // Create or get chat room using existing ChatController
+      final chatController = Get.put(ChatController());
+      final roomId = await chatController.createOrGetChatRoom(
+        currentUserId,
+        volunteerId,
+        serviceRequestId: requestId,
+      );
+
+      // Close loading dialog
+      Get.back();
+
+      // Navigate to chat page
+      Get.toNamed(
+        Routes.chatPage,
+        arguments: {
+          'chatRoomId': roomId,
+          'receiverId': volunteerId,
+          'receiverName': volunteerName,
+          'receiverProfilePic': " ",
+        },
+      );
+
+    } catch (e) {
+      // Close loading dialog if still open
+      if (Get.isDialogOpen ?? false) {
+        Get.back();
+      }
+      
+      Get.snackbar(
+        'Error',
+        'Failed to open chat. Please try again.',
         backgroundColor: Colors.red.shade600,
         colorText: Colors.white,
         snackPosition: SnackPosition.BOTTOM,

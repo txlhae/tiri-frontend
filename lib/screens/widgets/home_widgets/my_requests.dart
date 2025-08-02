@@ -90,6 +90,8 @@ class MyRequests extends StatelessWidget {
                           fontWeight: FontWeight.bold,
                           color: Colors.black,
                         ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 2,
                       ),
                       const SizedBox(height: 5),
                       _buildRequestDetail(
@@ -133,11 +135,15 @@ class MyRequests extends StatelessWidget {
     return Row(
       children: [
         Text(label, style: const TextStyle(fontSize: 12, color: Colors.black)),
-        Text(
-          value,
-          style: const TextStyle(
-            color: Color.fromRGBO(22, 178, 217, 1),
-            fontWeight: FontWeight.bold,
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(
+              color: Color.fromRGBO(22, 178, 217, 1),
+              fontWeight: FontWeight.bold,
+            ),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
           ),
         ),
       ],

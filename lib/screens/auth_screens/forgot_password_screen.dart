@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
@@ -37,19 +38,82 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
    Future<void> checkEmailVerified() async {
-    // TODO: Implement with your backend auth service
-    // await auth.currentUser!.reload();
-    // if (auth.currentUser!.emailVerified) {
-    //   controller.completeUserRegistration();
-    // } else {
-    //   Get.snackbar("Not Verified", "Please verify your email first",
-    //       snackPosition: SnackPosition.TOP,
-    //       backgroundColor: Colors.red,
-    //       colorText: Colors.white);
-    // }
-    
-    // For now, simulate successful verification
-    controller.completeUserRegistration();
+    try {
+      log('🔍 ForgotPasswordScreen: Checking email verification status...');
+      
+      // Show loading indicator
+      Get.dialog(
+        const Center(
+          child: CircularProgressIndicator(),
+        ),
+        barrierDismissible: false,
+      );
+      
+      // Get current user's verification status from server
+      final authController = Get.find<AuthController>();
+      final currentUser = authController.currentUserStore.value;
+      
+      if (currentUser == null) {
+        Get.back(); // Close loading dialog
+        Get.snackbar(
+          "Authentication Required", 
+          "Please log in first to verify your email",
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: Colors.orange,
+          colorText: Colors.white,
+        );
+        Get.offAllNamed('/login');
+        return;
+      }
+      
+      // Refresh user profile to get latest verification status
+      await authController.refreshUserProfile();
+      final updatedUser = authController.currentUserStore.value;
+      
+      Get.back(); // Close loading dialog
+      
+      if (updatedUser != null && updatedUser.isVerified) {
+        log('✅ ForgotPasswordScreen: Email verification confirmed');
+        
+        // Show success message
+        Get.snackbar(
+          "Email Verified!", 
+          "Your email has been successfully verified",
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+          icon: const Icon(Icons.check_circle, color: Colors.white),
+        );
+        
+        // Complete registration and navigate to home
+        await controller.completeUserRegistration();
+        
+      } else {
+        log('❌ ForgotPasswordScreen: Email not yet verified');
+        
+        Get.snackbar(
+          "Not Verified", 
+          "Please check your email and click the verification link first",
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          icon: const Icon(Icons.email, color: Colors.white),
+          duration: const Duration(seconds: 4),
+        );
+      }
+      
+    } catch (e) {
+      Get.back(); // Close loading dialog if still open
+      log('❌ ForgotPasswordScreen: Error checking verification: $e');
+      
+      Get.snackbar(
+        "Verification Check Failed", 
+        "Unable to check verification status. Please try again.",
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
   }
 
   @override

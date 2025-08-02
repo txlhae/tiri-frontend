@@ -131,6 +131,8 @@ class _CommunityRequestsState extends State<CommunityRequests> {
                                           fontWeight: FontWeight.bold,
                                           color: Colors.black,
                                         ),
+                                        overflow: TextOverflow.ellipsis,
+                                        maxLines: 2,
                                       ),
                                       subtitle: Column(
                                         crossAxisAlignment:
@@ -178,11 +180,15 @@ class _CommunityRequestsState extends State<CommunityRequests> {
                                                   style: TextStyle(
                                                       fontSize: 12,
                                                       color: Colors.black)),
-                                              Text(
-                                                request.location ?? 'Not specified',
-                                                style: const TextStyle(
-                                                  color: Colors.black,
-                                                  fontWeight: FontWeight.bold,
+                                              Expanded(
+                                                child: Text(
+                                                  request.location ?? 'Not specified',
+                                                  style: const TextStyle(
+                                                    color: Colors.black,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                  overflow: TextOverflow.ellipsis,
+                                                  maxLines: 1,
                                                 ),
                                               ),
                                             ],

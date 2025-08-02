@@ -285,12 +285,28 @@ class ChatWebSocketService {
   /// Handle incoming chat messages
   static void _handleChatMessage(Map<String, dynamic> messageData) {
     try {
+      // Extract senderId from sender object or fallback to string
+      String senderId = '';
+      if (messageData['sender'] is Map<String, dynamic>) {
+        senderId = messageData['sender']['id']?.toString() ?? '';
+      } else {
+        senderId = messageData['sender_id']?.toString() ?? messageData['sender']?.toString() ?? '';
+      }
+      
+      // Extract receiverId from receiver object or fallback to string
+      String receiverId = '';
+      if (messageData['receiver'] is Map<String, dynamic>) {
+        receiverId = messageData['receiver']['id']?.toString() ?? '';
+      } else {
+        receiverId = messageData['receiver_id']?.toString() ?? messageData['receiver']?.toString() ?? '';
+      }
+      
       // Map WebSocket message format to ChatMessageModel
       final message = ChatMessageModel(
         messageId: messageData['id']?.toString() ?? '',
         chatRoomId: messageData['room_id']?.toString() ?? _currentRoomId ?? '',
-        senderId: messageData['sender_id']?.toString() ?? '',
-        receiverId: messageData['receiver_id']?.toString() ?? '',
+        senderId: senderId,
+        receiverId: receiverId,
         message: messageData['content'] ?? '',
         timestamp: messageData['timestamp'] != null 
             ? DateTime.parse(messageData['timestamp'])

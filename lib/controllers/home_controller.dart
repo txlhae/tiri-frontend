@@ -17,18 +17,23 @@ class HomeController extends GetxController
     searchController.addListener(() {
       hasSearchText.value = searchController.text.isNotEmpty;
     });
-    tabController = TabController(length: 2, vsync: this);
+    tabController = TabController(length: 3, vsync: this);
 
     tabController.addListener(() {
       searchController.clear(); // Clear search box on tab change
       hasSearchText.value = false;
       final requestController = Get.find<RequestController>();
       if (tabController.index == 0) {
+        // Community Posts tab
         requestController.communityRequests.clear();
         requestController.hasSearchedCommunity.value = false; // reset
-      } else {
+      } else if (tabController.index == 1) {
+        // My Posts tab
         requestController.myPostRequests.clear();
         requestController.hasSearchedMyPosts.value = false; // reset
+      } else if (tabController.index == 2) {
+        // My Applications tab - no special handling needed for now
+        // The MyApplicationsScreen handles its own data loading
       }
     });
 

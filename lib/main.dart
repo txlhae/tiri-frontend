@@ -3,9 +3,14 @@ import 'package:get/get.dart';
 import 'package:kind_clock/domain/core/di/app_binding.dart';
 import 'package:kind_clock/infrastructure/navigation.dart';
 import 'package:kind_clock/infrastructure/routes.dart';
+import 'package:kind_clock/services/deep_link_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize deep linking service early
+  await Get.putAsync(() async => DeepLinkService());
+  
   runApp(const MyApp());
 }
 

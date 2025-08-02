@@ -67,16 +67,22 @@ class ChatApiService {
   ) async {
     try {
       log('🔄 Getting or creating chat room for request: $requestId', name: 'ChatAPI');
+      log('👥 Participants: $userId1, $userId2', name: 'ChatAPI');
       
       final requestData = {
         'service_request_id': requestId,
         'participants': [userId1, userId2],
       };
       
+      log('📤 Sending request data: $requestData', name: 'ChatAPI');
+      
       final response = await _apiService.post(
         '/api/chat/rooms/get_or_create/',
         data: requestData,
       );
+      
+      log('📡 Response status: ${response.statusCode}', name: 'ChatAPI');
+      log('📡 Response data: ${response.data}', name: 'ChatAPI');
       
       if (response.statusCode == 200 || response.statusCode == 201) {
         // Handle the nested chat_room structure from get_or_create endpoint
@@ -87,6 +93,7 @@ class ChatApiService {
         return chatRoom;
       } else {
         log('❌ Failed to get/create chat room - Status: ${response.statusCode}', name: 'ChatAPI');
+        log('❌ Response body: ${response.data}', name: 'ChatAPI');
         throw DioException(
           requestOptions: response.requestOptions,
           response: response,
@@ -370,8 +377,22 @@ class ChatApiService {
     log('🔍 Mapping message JSON: $json', name: 'ChatAPI');
     
     final messageContent = json['content'] ?? json['message'] ?? '';
-    final senderId = json['sender']?.toString() ?? '';
-    final receiverId = json['receiver']?.toString() ?? '';
+    
+    // Extract senderId from sender object or fallback to string
+    String senderId = '';
+    if (json['sender'] is Map<String, dynamic>) {
+      senderId = json['sender']['id']?.toString() ?? '';
+    } else {
+      senderId = json['sender']?.toString() ?? '';
+    }
+    
+    // Extract receiverId from receiver object or fallback to string
+    String receiverId = '';
+    if (json['receiver'] is Map<String, dynamic>) {
+      receiverId = json['receiver']['id']?.toString() ?? '';
+    } else {
+      receiverId = json['receiver']?.toString() ?? '';
+    }
     
     log('📝 Message details: content="$messageContent", senderId="$senderId", receiverId="$receiverId"', name: 'ChatAPI');
     

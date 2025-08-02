@@ -478,13 +478,74 @@ class AuthController extends GetxController {
   /// Complete user registration (for email verification flow)
   Future<void> completeUserRegistration() async {
     try {
-      // TODO: Implement final registration steps if needed
-      log('completeUserRegistration called');
+      log('🎯 AuthController: Completing user registration...');
       
-      // For now, just refresh user profile
+      // Refresh user profile to get latest data from server
       await refreshUserProfile();
+      
+      final currentUser = currentUserStore.value;
+      if (currentUser != null && currentUser.isVerified) {
+        log('✅ AuthController: User is verified, completing registration');
+        
+        // Update login status
+        isLoggedIn.value = true;
+        
+        // Show welcome message
+        Get.snackbar(
+          'Welcome to TIRI!',
+          'Your account has been successfully verified and activated.',
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: move,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 3),
+          icon: const Icon(Icons.celebration, color: Colors.white),
+        );
+        
+        // Navigate to home page
+        log('🏠 AuthController: Navigating to home page');
+        await Future.delayed(const Duration(seconds: 1)); // Brief delay for UX
+        Get.offAllNamed(Routes.homePage);
+        
+      } else {
+        log('⚠️ AuthController: User verification status unclear');
+        
+        // User might not be verified yet, guide them appropriately
+        if (currentUser == null) {
+          // No user data, redirect to login
+          Get.snackbar(
+            'Authentication Required',
+            'Please log in to continue.',
+            snackPosition: SnackPosition.TOP,
+            backgroundColor: cancel,
+            colorText: Colors.white,
+          );
+          Get.offAllNamed(Routes.loginPage);
+        } else {
+          // User exists but not verified, show verification pending
+          Get.snackbar(
+            'Verification Pending',
+            'Please check your email and click the verification link.',
+            snackPosition: SnackPosition.TOP,
+            backgroundColor: Colors.orange,
+            colorText: Colors.white,
+            duration: const Duration(seconds: 4),
+          );
+        }
+      }
+      
     } catch (e) {
-      log('Error completing user registration: $e');
+      log('❌ AuthController: Error completing user registration: $e');
+      
+      Get.snackbar(
+        'Registration Error',
+        'Unable to complete registration. Please try logging in.',
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: cancel,
+        colorText: Colors.white,
+      );
+      
+      // Fallback to login page
+      Get.offAllNamed(Routes.loginPage);
     }
   }
 
@@ -590,10 +651,28 @@ class AuthController extends GetxController {
   /// Refresh user profile from server
   Future<void> refreshUserProfile() async {
     try {
-      // TODO: Implement user profile refresh from Django API
-      log('refreshUserProfile called');
+      log('🔄 AuthController: Refreshing user profile from server...');
+      
+      final updatedUser = await _authService.getCurrentUserProfile();
+      
+      if (updatedUser != null) {
+        log('✅ AuthController: User profile refreshed successfully');
+        log('   - User ID: ${updatedUser.userId}');
+        log('   - Email: ${updatedUser.email}');
+        log('   - Verified: ${updatedUser.isVerified}');
+        
+        // Update local state
+        currentUserStore.value = updatedUser;
+        
+        // Save to storage
+        await _saveUserToStorage(updatedUser);
+        
+      } else {
+        log('⚠️ AuthController: Failed to refresh user profile - no data returned');
+      }
+      
     } catch (e) {
-      log('Refresh user profile error: $e');
+      log('❌ AuthController: Refresh user profile error: $e');
     }
   }
 
@@ -634,32 +713,67 @@ class AuthController extends GetxController {
   Future<void> verifyEmail(String token, String uid) async {
     try {
       isLoading.value = true;
+      log('📧 AuthController: Starting email verification process...');
+      log('   - Token: ${token.substring(0, 10)}...');
+      log('   - UID: $uid');
       
       final result = await _authService.verifyEmail(token: token, uid: uid);
       
       if (result.isSuccess) {
+        log('✅ AuthController: Email verification successful');
+        
+        // Update user verification status locally
+        if (currentUserStore.value != null) {
+          final updatedUser = currentUserStore.value!.copyWith(isVerified: true);
+          currentUserStore.value = updatedUser;
+          await _saveUserToStorage(updatedUser);
+          log('✅ AuthController: User verification status updated locally');
+        }
+        
+        // Show success message
         Get.snackbar(
-          'Email Verified',
-          result.message,
+          'Email Verified!',
+          'Your email has been successfully verified. Welcome to TIRI!',
           snackPosition: SnackPosition.TOP,
           backgroundColor: move,
           colorText: Colors.white,
+          duration: const Duration(seconds: 4),
+          icon: const Icon(Icons.check_circle, color: Colors.white),
         );
         
-        // Refresh user profile to get updated verification status
+        // Auto-login and navigate to home if user is verified
+        log('🏠 AuthController: Navigating to home page after verification');
+        await Future.delayed(const Duration(seconds: 2)); // Allow user to see success message
+        Get.offAllNamed(Routes.homePage);
+        
+        // Refresh user profile to sync with server
         await refreshUserProfile();
         
       } else {
+        log('❌ AuthController: Email verification failed: ${result.message}');
+        
         Get.snackbar(
           'Verification Failed',
           result.message,
           snackPosition: SnackPosition.TOP,
           backgroundColor: cancel,
           colorText: Colors.white,
+          duration: const Duration(seconds: 4),
+          icon: const Icon(Icons.error, color: Colors.white),
         );
       }
     } catch (e) {
-      log('Email verification error: $e');
+      log('💥 AuthController: Email verification error: $e');
+      
+      Get.snackbar(
+        'Verification Error',
+        'An unexpected error occurred during verification. Please try again.',
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: cancel,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 4),
+        icon: const Icon(Icons.error, color: Colors.white),
+      );
     } finally {
       isLoading.value = false;
     }
