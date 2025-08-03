@@ -298,11 +298,19 @@ class _RequestDetailsState extends State<RequestDetails> {
                                    final chatController = Get.put(ChatController());
                                    
                                    try {
+                                     print('🔍 [CHAT POSTER] Starting chat creation...');
+                                     print('🔍 [CHAT POSTER] Current User ID: $currentUserId');
+                                     print('🔍 [CHAT POSTER] Request User ID: ${request.userId}');
+                                     print('🔍 [CHAT POSTER] Service Request ID: ${request.requestId}');
+                                     print('🔍 [CHAT POSTER] Request Owner: ${request.requester?.username}');
+                                     
                                      final roomId = await chatController.createOrGetChatRoom(
                                        currentUserId,
                                        request.userId,
                                        serviceRequestId: request.requestId,
                                      );
+                                     
+                                     print('✅ [CHAT POSTER] Chat room created successfully: $roomId');
                                      
                                      Get.toNamed(
                                        Routes.chatPage,
@@ -314,6 +322,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                                        },
                                      );
                                    } catch (e) {
+                                     print('❌ [CHAT POSTER] Error creating chat room: $e');
                                      Get.snackbar(
                                        'Error',
                                        'Failed to create chat room. Please try again.',
@@ -484,11 +493,18 @@ class _RequestDetailsState extends State<RequestDetails> {
                                                 final chatController = Get.put(ChatController());
                                                 
                                                 try {
+                                                  print('🔍 [CHAT ACCEPTED] Starting chat with accepted volunteer...');
+                                                  print('🔍 [CHAT ACCEPTED] Current User ID: $currentUserId');
+                                                  print('🔍 [CHAT ACCEPTED] Volunteer ID: ${user.userId}');
+                                                  print('🔍 [CHAT ACCEPTED] Service Request ID: ${request.requestId}');
+                                                  
                                                   final roomId = await chatController.createOrGetChatRoom(
                                                     currentUserId,
                                                     user.userId,
                                                     serviceRequestId: request.requestId,
                                                   );
+                                                  
+                                                  print('✅ [CHAT ACCEPTED] Chat room created: $roomId');
                                                   
                                                   Get.toNamed(
                                                     Routes.chatPage,
@@ -500,6 +516,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                                                     },
                                                   );
                                                 } catch (e) {
+                                                  print('❌ [CHAT ACCEPTED] Error: $e');
                                                   Get.snackbar(
                                                     'Error',
                                                     'Failed to create chat room. Please try again.',
@@ -1753,6 +1770,7 @@ class _RequestDetailsState extends State<RequestDetails> {
       // Get current user ID
       final currentUserId = authController.currentUserStore.value?.userId;
       if (currentUserId == null) {
+        print('❌ [CHAT VOLUNTEER] No current user ID available');
         Get.snackbar(
           'Error',
           'Unable to get current user information',
@@ -1761,6 +1779,13 @@ class _RequestDetailsState extends State<RequestDetails> {
         );
         return;
       }
+
+      print('🔍 [CHAT VOLUNTEER] Starting chat creation...');
+      print('🔍 [CHAT VOLUNTEER] Current User ID (Requester): $currentUserId');
+      print('🔍 [CHAT VOLUNTEER] Volunteer ID: $volunteerId');
+      print('🔍 [CHAT VOLUNTEER] Volunteer Name: $volunteerName');
+      print('🔍 [CHAT VOLUNTEER] Service Request ID: $requestId');
+      print('🔍 [CHAT VOLUNTEER] User Role: REQUEST OWNER (requester)');
 
       // Show loading indicator
       Get.dialog(
@@ -1779,16 +1804,25 @@ class _RequestDetailsState extends State<RequestDetails> {
 
       // Create or get chat room using existing ChatController
       final chatController = Get.put(ChatController());
+      print('🔍 [CHAT VOLUNTEER] About to call createOrGetChatRoom...');
+      print('🔍 [CHAT VOLUNTEER] Parameters: userA=$currentUserId, userB=$volunteerId, serviceRequestId=$requestId');
+      
       final roomId = await chatController.createOrGetChatRoom(
         currentUserId,
         volunteerId,
         serviceRequestId: requestId,
       );
 
+      print('✅ [CHAT VOLUNTEER] Chat room created successfully: $roomId');
+      print('🔍 [CHAT VOLUNTEER] Room ID length: ${roomId.length}');
+
       // Close loading dialog
       Get.back();
 
       // Navigate to chat page
+      print('🔍 [CHAT VOLUNTEER] Navigating to chat page...');
+      print('🔍 [CHAT VOLUNTEER] Chat arguments: roomId=$roomId, receiverId=$volunteerId, receiverName=$volunteerName');
+      
       Get.toNamed(
         Routes.chatPage,
         arguments: {
@@ -1799,7 +1833,13 @@ class _RequestDetailsState extends State<RequestDetails> {
         },
       );
 
+      print('✅ [CHAT VOLUNTEER] Successfully navigated to chat page');
+
     } catch (e) {
+      print('❌ [CHAT VOLUNTEER] Error in _openChatWithVolunteer: $e');
+      print('❌ [CHAT VOLUNTEER] Error type: ${e.runtimeType}');
+      print('❌ [CHAT VOLUNTEER] Stack trace: ${StackTrace.current}');
+      
       // Close loading dialog if still open
       if (Get.isDialogOpen ?? false) {
         Get.back();

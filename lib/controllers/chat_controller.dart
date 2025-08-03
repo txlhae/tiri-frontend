@@ -87,13 +87,22 @@ class ChatController extends GetxController {
       log('🔄 Creating or getting chat room between $userA and $userB', name: 'ChatController');
       log('📋 Service Request ID: $serviceRequestId', name: 'ChatController');
       
+      // Enhanced logging for debugging
+      print('🔍 [CHAT CONTROLLER] === Chat Room Creation Debug ===');
+      print('🔍 [CHAT CONTROLLER] User A: $userA');
+      print('🔍 [CHAT CONTROLLER] User B: $userB');
+      print('🔍 [CHAT CONTROLLER] Service Request ID: $serviceRequestId');
+      print('🔍 [CHAT CONTROLLER] Has service request: ${serviceRequestId != null}');
+      
       final ChatRoomModel chatRoom;
       
       if (serviceRequestId != null) {
         // For service request chats, use the specialized endpoint
+        print('🔍 [CHAT CONTROLLER] Using service request endpoint (getOrCreateChatRoom)');
         chatRoom = await ChatApiService.getOrCreateChatRoom(serviceRequestId, userA, userB);
       } else {
         // For general chats, create a simple room
+        print('🔍 [CHAT CONTROLLER] Using general chat endpoint (createChatRoom)');
         chatRoom = await ChatApiService.createChatRoom(userA, userB);
       }
       
@@ -102,17 +111,32 @@ class ChatController extends GetxController {
       
       log('✅ Chat room ready with ID: "$roomId" (length: ${roomId.length})', name: 'ChatController');
       
+      // Enhanced logging
+      print('🔍 [CHAT CONTROLLER] Chat room created successfully');
+      print('🔍 [CHAT CONTROLLER] Room ID: $roomId');
+      print('🔍 [CHAT CONTROLLER] Room ID length: ${roomId.length}');
+      print('🔍 [CHAT CONTROLLER] Participants: ${chatRoom.participantIds}');
+      print('🔍 [CHAT CONTROLLER] Service Request ID: ${chatRoom.serviceRequestId}');
+      
       // Validate that we got a proper room ID
       if (roomId.isEmpty) {
+        print('❌ [CHAT CONTROLLER] Empty room ID received from server');
         throw Exception('Received empty room ID from server');
       }
       
+      print('✅ [CHAT CONTROLLER] Returning room ID: $roomId');
       return roomId;
       
     } catch (e) {
       final errorMsg = ChatApiService.getErrorMessage(e);
       errorMessage.value = errorMsg;
       log('❌ Error creating/getting chat room: $e', name: 'ChatController');
+      
+      // Enhanced error logging
+      print('❌ [CHAT CONTROLLER] Error in createOrGetChatRoom: $e');
+      print('❌ [CHAT CONTROLLER] Error type: ${e.runtimeType}');
+      print('❌ [CHAT CONTROLLER] Error message for UI: $errorMsg');
+      
       rethrow;
     } finally {
       isLoading.value = false;
