@@ -5,6 +5,7 @@ import 'dart:async';
 import 'package:kind_clock/controllers/auth_controller.dart';
 import 'package:kind_clock/controllers/chat_controller.dart';
 import 'package:kind_clock/controllers/request_controller.dart';
+import 'package:kind_clock/models/chat_message_model.dart';
 import 'package:kind_clock/screens/widgets/custom_widgets/custom_back_button.dart';
 
 class ChatPage extends StatefulWidget {

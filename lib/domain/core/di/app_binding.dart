@@ -1,5 +1,6 @@
 ﻿import 'package:get/get.dart';
 import 'package:kind_clock/controllers/auth_controller.dart';
+import 'package:kind_clock/controllers/chat_controller.dart';
 import 'package:kind_clock/controllers/email_sent_controller.dart';
 import 'package:kind_clock/controllers/home_controller.dart';
 import 'package:kind_clock/controllers/image_controller.dart';
@@ -23,6 +24,7 @@ class AppBinding extends Bindings {
     
     // PHASE 3: All controllers with Django integration
     Get.put<AuthController>(AuthController());
+    Get.put<ChatController>(ChatController());
     Get.put<SplashController>(SplashController());
     Get.put<EmailSentController>(EmailSentController());
     Get.put<HomeController>(HomeController());

@@ -5,6 +5,7 @@ import '../models/chat_message_model.dart';
 import '../models/chatroom_model.dart';
 import '../services/chat_api_service.dart';
 import '../services/chat_websocket_service.dart';
+import '../controllers/auth_controller.dart';
 
 class ChatController extends GetxController {
   // =============================================================================
@@ -46,6 +47,9 @@ class ChatController extends GetxController {
   static const Duration _sendMessageThrottleDelay = Duration(milliseconds: 500);
   bool _canSendMessage = true;
   
+  /// Connection monitoring timer
+  Timer? _connectionMonitorTimer;
+  
   @override
   void onInit() {
     super.onInit();
@@ -67,6 +71,7 @@ class ChatController extends GetxController {
     _messageSubscription?.cancel();
     _markReadDebounceTimer?.cancel();
     _sendMessageThrottleTimer?.cancel();
+    _connectionMonitorTimer?.cancel();
     ChatWebSocketService.disconnect();
     super.onClose();
   }
@@ -162,7 +167,7 @@ class ChatController extends GetxController {
       return;
     }
     
-    // Check if we can send message (throttling)
+    // Check throttling
     if (!_canSendMessage) {
       errorMessage.value = 'Please wait before sending another message';
       return;
@@ -173,32 +178,17 @@ class ChatController extends GetxController {
       errorMessage.value = '';
       _canSendMessage = false;
       
-      log('🔄 Sending message to room: $chatRoomId', name: 'ChatController');
-      log('📍 Chat room ID validation: "${chatRoomId}" (length: ${chatRoomId.length})', name: 'ChatController');
-      
-      // Validate chat room ID
-      if (chatRoomId.isEmpty) {
-        throw ArgumentError('Chat room ID is empty');
-      }
+      print('� Sending message to room: $chatRoomId');
+      print('� WebSocket connected: ${ChatWebSocketService.isConnected}');
       
       // Send message via REST API for reliability
       final sentMessage = await ChatApiService.sendMessage(chatRoomId, message.trim());
       
-      log('📤 Message sent successfully: "${sentMessage.message}" with ID: ${sentMessage.messageId}', name: 'ChatController');
-      
-      // Add the message to local list with server response data
+      // Add the message to local list immediately
       messages.add(sentMessage);
-      
-      // Sort messages by timestamp to maintain order
       messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
       
-      // Also send via WebSocket for real-time delivery (if connected)
-      if (ChatWebSocketService.isConnected) {
-        ChatWebSocketService.sendMessage(message.trim());
-        log('📤 Message also sent via WebSocket for real-time delivery', name: 'ChatController');
-      }
-      
-      log('✅ Message sent successfully: ${sentMessage.messageId}', name: 'ChatController');
+      print('✅ Message sent successfully: ${sentMessage.messageId}');
       
       // Reset throttle timer
       _sendMessageThrottleTimer?.cancel();
@@ -209,12 +199,8 @@ class ChatController extends GetxController {
     } catch (e) {
       final errorMsg = ChatApiService.getErrorMessage(e);
       errorMessage.value = errorMsg;
-      log('❌ Error sending message: $e', name: 'ChatController');
-      
-      // Reset throttle immediately on error
+      print('❌ Error sending message: $e');
       _canSendMessage = true;
-      
-      // Don't rethrow here as we want to show error message in UI
     } finally {
       isSendingMessage.value = false;
     }
@@ -224,6 +210,8 @@ class ChatController extends GetxController {
   /// 
   /// This method loads initial messages via REST API and establishes WebSocket connection for real-time updates
   void listenToMessages(String chatRoomId) {
+    print('🚨 DEBUG: listenToMessages called with roomId: $chatRoomId');
+    
     // Reset pagination
     currentPage.value = 1;
     hasMoreMessages.value = true;
@@ -231,8 +219,24 @@ class ChatController extends GetxController {
     // Load initial messages via REST API
     _loadMessages(chatRoomId, refresh: true);
     
-    // Establish WebSocket connection for real-time updates
-    _connectWebSocket(chatRoomId);
+    // Connect WebSocket and wait for it to be ready
+    _connectWebSocket(chatRoomId).then((_) {
+      // Only set up stream listener after connection is established
+      if (ChatWebSocketService.isConnected) {
+        print('🎧 Setting up WebSocket message listener for room: $chatRoomId');
+        
+        _messageSubscription = ChatWebSocketService.messageStream.listen(
+          (message) {
+            messages.add(message);
+            messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+            print('📥 Added message from WebSocket: ${message.messageId}');
+          },
+          onError: (error) {
+            print('❌ WebSocket message stream error: $error');
+          },
+        );
+      }
+    });
   }
 
   /// Mark messages as read when user enters the chat room
@@ -248,38 +252,52 @@ class ChatController extends GetxController {
   /// Connect to WebSocket for real-time messaging
   Future<void> _connectWebSocket(String chatRoomId) async {
     try {
-      // Get current user ID from AuthController
-      final authController = Get.find<dynamic>();
-      final currentUserId = authController.currentUserStore?.value?.userId ?? '';
+      print('🚨 About to find AuthController');
+      final authController = Get.find<AuthController>();
+      final currentUserId = authController.currentUserStore.value?.userId ?? '';
       
       if (currentUserId.isEmpty) {
-        log('⚠️ Cannot connect WebSocket - no user ID available', name: 'ChatController');
+        print('⚠️ Cannot connect WebSocket - no user ID available');
         return;
       }
       
-      log('🔌 Connecting WebSocket for room: $chatRoomId', name: 'ChatController');
+      print('🔌 Connecting WebSocket for room: $chatRoomId');
       
+      // Wait for WebSocket connection to be fully ready
       await ChatWebSocketService.connect(chatRoomId, currentUserId);
+      
+      // Only update connection state after successful connection
       isWebSocketConnected.value = ChatWebSocketService.isConnected;
       
       if (ChatWebSocketService.isConnected) {
         webSocketConnectionState.value = 'connected';
-        log('✅ WebSocket connected for real-time messaging', name: 'ChatController');
+        print('✅ WebSocket connected and ready for messaging');
+        
+        // Start connection monitoring
+        _startConnectionMonitoring();
       } else {
         webSocketConnectionState.value = 'error';
-        log('❌ WebSocket connection failed', name: 'ChatController');
+        print('❌ WebSocket connection failed');
       }
       
     } catch (e) {
-      log('❌ Error connecting WebSocket: $e', name: 'ChatController');
+      print('❌ Error connecting WebSocket: $e');
       webSocketConnectionState.value = 'error';
-      // Don't show error to user as REST API still works
+      isWebSocketConnected.value = false;
     }
   }
 
   /// Internal method to load messages with pagination support
   Future<void> _loadMessages(String chatRoomId, {bool refresh = false}) async {
-    if (!hasMoreMessages.value && !refresh) return;
+    print('🚨 _loadMessages called with: $chatRoomId, refresh: $refresh');
+    print('🚨 Checking hasMoreMessages: ${hasMoreMessages.value}');
+    
+    if (!hasMoreMessages.value && !refresh) {
+      print('🚨 Early return - no more messages');
+      return;
+    }
+    
+    print('🚨 Continuing with message loading...');
     
     try {
       if (refresh) {
@@ -462,10 +480,23 @@ class ChatController extends GetxController {
       return 'Online';
     } else if (webSocketConnectionState.value == 'connecting') {
       return 'Connecting...';
-    } else if (webSocketConnectionState.value == 'reconnecting') {
-      return 'Reconnecting...';
+    } else if (webSocketConnectionState.value == 'error') {
+      return 'Connection Error';
     } else {
       return 'Offline';
     }
+  }
+  
+  /// Start connection monitoring
+  void _startConnectionMonitoring() {
+    _connectionMonitorTimer?.cancel();
+    _connectionMonitorTimer = Timer.periodic(Duration(seconds: 5), (timer) {
+      final actualConnectionStatus = ChatWebSocketService.isConnected;
+      if (isWebSocketConnected.value != actualConnectionStatus) {
+        print('🔄 Connection status changed: $actualConnectionStatus');
+        isWebSocketConnected.value = actualConnectionStatus;
+        webSocketConnectionState.value = actualConnectionStatus ? 'connected' : 'disconnected';
+      }
+    });
   }
 }
