@@ -56,10 +56,8 @@ class ChatController extends GetxController {
     
     // Listen to WebSocket messages
     _messageSubscription = ChatWebSocketService.messageStream.listen((message) {
-      // Add incoming messages to the local list
-      messages.add(message);
-      // Sort by timestamp to maintain order
-      messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      // Add incoming messages to the local list with deduplication
+      addMessageSafely(message);
       
       log('📥 Received real-time message: ${message.messageId}', name: 'ChatController');
     });
@@ -69,6 +67,7 @@ class ChatController extends GetxController {
   void onClose() {
     // Clean up WebSocket connections and subscriptions
     _messageSubscription?.cancel();
+    _messageSubscription = null; // Ensure it's nullified
     _markReadDebounceTimer?.cancel();
     _sendMessageThrottleTimer?.cancel();
     _connectionMonitorTimer?.cancel();
@@ -152,6 +151,19 @@ class ChatController extends GetxController {
   // MESSAGE MANAGEMENT
   // =============================================================================
 
+  /// Add message with deduplication to prevent duplicate messages
+  /// 
+  /// This method ensures that messages with the same messageId are not added twice
+  void addMessageSafely(ChatMessageModel message) {
+    if (!messages.any((m) => m.messageId == message.messageId)) {
+      messages.add(message);
+      messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      log('✅ Message added safely: ${message.messageId}', name: 'ChatController');
+    } else {
+      log('⚠️ Duplicate message prevented: ${message.messageId}', name: 'ChatController');
+    }
+  }
+
   /// Send a new message to the chat room
   /// 
   /// This method sends the message via REST API for reliability and uses WebSocket for real-time delivery
@@ -184,9 +196,8 @@ class ChatController extends GetxController {
       // Send message via REST API for reliability
       final sentMessage = await ChatApiService.sendMessage(chatRoomId, message.trim());
       
-      // Add the message to local list immediately
-      messages.add(sentMessage);
-      messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+      // Add the message to local list immediately with deduplication
+      addMessageSafely(sentMessage);
       
       print('✅ Message sent successfully: ${sentMessage.messageId}');
       
@@ -225,10 +236,12 @@ class ChatController extends GetxController {
       if (ChatWebSocketService.isConnected) {
         print('🎧 Setting up WebSocket message listener for room: $chatRoomId');
         
+        // Cancel existing subscription first to prevent duplicates
+        _messageSubscription?.cancel();
+        
         _messageSubscription = ChatWebSocketService.messageStream.listen(
           (message) {
-            messages.add(message);
-            messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+            addMessageSafely(message);
             print('📥 Added message from WebSocket: ${message.messageId}');
           },
           onError: (error) {
@@ -315,7 +328,7 @@ class ChatController extends GetxController {
       final loadedMessages = await ChatApiService.getMessages(
         chatRoomId,
         page: currentPage.value,
-        pageSize: 50,
+        pageSize: 15,
       );
       
       if (loadedMessages.isEmpty) {
@@ -324,12 +337,14 @@ class ChatController extends GetxController {
       } else {
         if (refresh) {
           messages.assignAll(loadedMessages);
+          // Sort messages by timestamp to ensure correct chronological order
+          messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
         } else {
-          messages.addAll(loadedMessages);
+          // Use safe addition for pagination to prevent duplicates with real-time messages
+          for (final message in loadedMessages) {
+            addMessageSafely(message);
+          }
         }
-        
-        // Sort by timestamp in ascending order (oldest first, newest last)
-        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
         
         log('📝 Sample messages loaded:', name: 'ChatController');
         for (int i = 0; i < messages.length && i < 3; i++) {
@@ -337,7 +352,7 @@ class ChatController extends GetxController {
         }
         
         // Check if we should load more pages
-        if (loadedMessages.length < 50) {
+        if (loadedMessages.length < 15) {
           hasMoreMessages.value = false;
         }
         
@@ -423,6 +438,10 @@ class ChatController extends GetxController {
 
   /// Clear all chat data
   void clearChatData() {
+    // Cancel any existing subscriptions first
+    _messageSubscription?.cancel();
+    _messageSubscription = null;
+    
     messages.clear();
     currentChatRoom.value = null;
     errorMessage.value = '';

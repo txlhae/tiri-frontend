@@ -309,6 +309,17 @@ class ChatWebSocketService {
   static void _handleChatMessage(Map<String, dynamic> messageData) {
     log('🚀 ENTERING _handleChatMessage with data: ${messageData.keys}', name: 'WebSocket');
     
+    // Add debug logging BEFORE processing
+    log('📥 Full WebSocket payload: ${json.encode(messageData)}', name: 'WebSocket');
+    log('📥 Message object exists: ${messageData['message'] != null}', name: 'WebSocket');
+    
+    // Verify nested message object exists
+    final messagePayload = messageData['message'];
+    if (messagePayload == null) {
+      log('❌ WebSocket message missing nested message object', name: 'WebSocket');
+      return;
+    }
+    
     try {
       // Verify stream controller is initialized and ready
       log('🔧 Stream controller state check:', name: 'WebSocket');
@@ -318,18 +329,28 @@ class ChatWebSocketService {
       
       // Extract senderId from sender object or fallback to string
       String senderId = '';
-      if (messageData['sender'] is Map<String, dynamic>) {
+      if (messagePayload['sender'] is Map<String, dynamic>) {
+        senderId = messagePayload['sender']['id']?.toString() ?? '';
+      } else if (messageData['sender'] is Map<String, dynamic>) {
         senderId = messageData['sender']['id']?.toString() ?? '';
       } else {
-        senderId = messageData['sender_id']?.toString() ?? messageData['sender']?.toString() ?? '';
+        senderId = messagePayload['sender_id']?.toString() ?? 
+                   messageData['sender_id']?.toString() ?? 
+                   messagePayload['sender']?.toString() ?? 
+                   messageData['sender']?.toString() ?? '';
       }
       
       // Extract receiverId from receiver object or fallback to string
       String receiverId = '';
-      if (messageData['receiver'] is Map<String, dynamic>) {
+      if (messagePayload['receiver'] is Map<String, dynamic>) {
+        receiverId = messagePayload['receiver']['id']?.toString() ?? '';
+      } else if (messageData['receiver'] is Map<String, dynamic>) {
         receiverId = messageData['receiver']['id']?.toString() ?? '';
       } else {
-        receiverId = messageData['receiver_id']?.toString() ?? messageData['receiver']?.toString() ?? '';
+        receiverId = messagePayload['receiver_id']?.toString() ?? 
+                     messageData['receiver_id']?.toString() ?? 
+                     messagePayload['receiver']?.toString() ?? 
+                     messageData['receiver']?.toString() ?? '';
       }
       
       log('🔍 Extracted IDs:', name: 'WebSocket');
@@ -339,17 +360,17 @@ class ChatWebSocketService {
       
       // Map WebSocket message format to ChatMessageModel
       final message = ChatMessageModel(
-        messageId: messageData['id']?.toString() ?? '',
-        chatRoomId: messageData['room_id']?.toString() ?? _currentRoomId ?? '',
+        messageId: messagePayload['id']?.toString() ?? '',
+        chatRoomId: messagePayload['room_id']?.toString() ?? _currentRoomId ?? '',
         senderId: senderId,
         receiverId: receiverId,
-        message: messageData['content'] ?? '',
-        timestamp: messageData['timestamp'] != null 
-            ? DateTime.parse(messageData['timestamp'])
+        message: messagePayload['content'] ?? '',
+        timestamp: messagePayload['timestamp'] != null 
+            ? DateTime.parse(messagePayload['timestamp'])
             : DateTime.now(),
-        isSeen: messageData['is_read'] ?? false,
-        senderName: messageData['sender_name'],
-        senderProfilePic: messageData['sender_profile_pic'],
+        isSeen: messagePayload['is_read'] ?? false,
+        senderName: messagePayload['sender_name'],
+        senderProfilePic: messagePayload['sender_profile_pic'],
       );
       
       log('✅ ChatMessageModel created:', name: 'WebSocket');
