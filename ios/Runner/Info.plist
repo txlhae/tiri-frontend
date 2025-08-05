@@ -58,12 +58,18 @@
 		</dict>
 		<dict>
 			<key>CFBundleURLName</key>
-			<string>tiri.web.verification</string>
+			<string>tiri.https.verification</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>https</string>
 			</array>
 		</dict>
+	</array>
+	<!-- Associated Domains for Universal Links -->
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:tiri.app</string>
+		<string>applinks:192.168.0.229</string>
 	</array>
 </dict>
 </plist>

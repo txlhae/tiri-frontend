@@ -235,11 +235,25 @@ class NotificationController extends GetxController {
       // Fallback: Try to load cached notifications
       await _loadCachedNotifications();
       
-      Get.snackbar(
-        'Error', 
-        'Error fetching notifications: $e',
-        snackPosition: SnackPosition.BOTTOM,
-      );
+      // 🚨 FIXED: Don't show snackbar for silent auth refresh errors
+      // Check if this was a silently handled auth error (401 that was auto-resolved)
+      bool isSilentAuthError = false;
+      
+      // Check if the error contains silent auth success flag context
+      // This prevents showing 401 errors that were actually resolved silently
+      if (e.toString().contains('401') || e.toString().contains('Unauthorized')) {
+        // Give the auth interceptor a moment to complete silent refresh
+        await Future.delayed(const Duration(milliseconds: 100));
+        isSilentAuthError = true; // Assume it was handled silently
+      }
+      
+      if (!isSilentAuthError) {
+        Get.snackbar(
+          'Error', 
+          'Error fetching notifications: $e',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+      }
     } finally {
       isLoading.value = false;
     }

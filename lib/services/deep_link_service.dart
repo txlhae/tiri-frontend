@@ -1,5 +1,6 @@
-/// Deep Link Service for Email Verification and App Navigation
+/// Enhanced Deep Link Service for Email Verification and App Navigation
 /// Handles incoming deep links from email verification and other sources
+/// Supports token extraction and automatic authentication
 library deep_link_service;
 
 import 'dart:async';
@@ -28,7 +29,7 @@ class DeepLinkService extends GetxService {
   /// Initialize deep linking and set up listeners
   Future<void> _initializeDeepLinking() async {
     try {
-      log('🔗 DeepLinkService: Initializing deep linking...');
+      log('🔗 DeepLinkService: Initializing enhanced deep linking...');
       
       // Check for initial link if app was launched via deep link
       final initialLink = await _appLinks.getInitialLink();
@@ -48,7 +49,7 @@ class DeepLinkService extends GetxService {
         },
       );
       
-      log('✅ DeepLinkService: Deep linking initialized successfully');
+      log('✅ DeepLinkService: Enhanced deep linking initialized successfully');
       
     } catch (e) {
       log('❌ DeepLinkService: Failed to initialize deep linking: $e');
@@ -85,14 +86,30 @@ class DeepLinkService extends GetxService {
         'Unable to process the link. Please try again.',
         snackPosition: SnackPosition.TOP,
         duration: const Duration(seconds: 3),
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
       );
     }
   }
 
   /// Check if the link is an email verification link
   bool _isEmailVerificationLink(Uri uri) {
-    return (uri.scheme == 'tiri' && uri.host == 'verify') ||
-           (uri.scheme == 'https' && uri.host == 'tiri.app' && uri.path.startsWith('/verify'));
+    // TIRI scheme: tiri://verify or tiri://verified
+    if (uri.scheme == 'tiri' && (uri.host == 'verify' || uri.host == 'verified')) {
+      return true;
+    }
+    
+    // HTTPS scheme: https://domain/api/auth/verify-email/...
+    if (uri.scheme == 'https' && uri.path.contains('/api/auth/verify-email')) {
+      return true;
+    }
+    
+    // Universal link: https://tiri.app/verify/...
+    if (uri.scheme == 'https' && uri.host == 'tiri.app' && uri.path.startsWith('/verify')) {
+      return true;
+    }
+    
+    return false;
   }
 
   /// Check if the link is a password reset link
@@ -102,83 +119,57 @@ class DeepLinkService extends GetxService {
   }
 
   // =============================================================================
-  // EMAIL VERIFICATION HANDLER
+  // EMAIL VERIFICATION HANDLER (ENHANCED)
   // =============================================================================
   
-  /// Handle email verification deep links
+  /// Handle email verification deep links with enhanced JWT token workflow
   Future<void> _handleEmailVerificationLink(Uri uri) async {
     try {
-      log('📧 DeepLinkService: Processing email verification link');
+      log('📧 DeepLinkService: Processing email verification link with enhanced JWT workflow');
+      log('   - Link: ${uri.toString()}');
       
-      // Extract verification parameters
-      final token = uri.queryParameters['token'];
-      final uid = uri.queryParameters['uid'];
-      final email = uri.queryParameters['email']; // Optional for better UX
+      // Show processing indicator
+      _showProcessingDialog('Verifying your email and checking status...');
       
-      // Validate required parameters
-      if (token == null || uid == null) {
-        log('❌ DeepLinkService: Missing required verification parameters');
-        Get.snackbar(
-          'Invalid Link',
-          'The verification link is missing required information.',
-          snackPosition: SnackPosition.TOP,
-          backgroundColor: Get.theme.colorScheme.error,
-          colorText: Get.theme.colorScheme.onError,
-          duration: const Duration(seconds: 4),
+      // Check if user is authenticated first
+      final authController = Get.find<AuthController>();
+      if (!authController.isAuthenticated) {
+        _closeProcessingDialog();
+        _showErrorSnackbar(
+          'Authentication Required', 
+          'Please log in to check your verification status.'
         );
+        
+        // Navigate to login
+        Get.offAllNamed(Routes.loginPage);
         return;
       }
       
-      log('✅ DeepLinkService: Valid verification parameters found');
-      log('   - Token: ${token.substring(0, 10)}...');
-      log('   - UID: $uid');
-      if (email != null) log('   - Email: $email');
+      log('🔍 DeepLinkService: User is authenticated, calling enhanced verification status API...');
       
-      // Show processing indicator
-      Get.dialog(
-        const Center(
-          child: Card(
-            child: Padding(
-              padding: EdgeInsets.all(20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Verifying your email...'),
-                ],
-              ),
-            ),
-          ),
-        ),
-        barrierDismissible: false,
-      );
+      // Call enhanced verification status API (with JWT token support)
+      final success = await authController.checkVerificationStatus();
       
-      // Get auth controller and perform verification
-      final authController = Get.find<AuthController>();
-      await authController.verifyEmail(token, uid);
+      _closeProcessingDialog();
       
-      // Close processing dialog
-      if (Get.isDialogOpen == true) {
-        Get.back();
+      if (success) {
+        log('✅ DeepLinkService: Email verification and auto-login successful');
+        // Success is handled by AuthController - it will save tokens, navigate and show messages
+      } else {
+        log('❌ DeepLinkService: Verification check failed, expired, or user not verified');
+        // Failure cases are handled by AuthController with appropriate navigation
       }
       
     } catch (e) {
-      log('❌ DeepLinkService: Error processing email verification: $e');
-      
-      // Close processing dialog if open
-      if (Get.isDialogOpen == true) {
-        Get.back();
-      }
-      
-      Get.snackbar(
-        'Verification Failed',
-        'Unable to verify your email. Please try again.',
-        snackPosition: SnackPosition.TOP,
-        backgroundColor: Get.theme.colorScheme.error,
-        colorText: Get.theme.colorScheme.onError,
-        duration: const Duration(seconds: 4),
+      log('❌ DeepLinkService: Error processing enhanced email verification: $e');
+      _closeProcessingDialog();
+      _showErrorSnackbar(
+        'Verification Failed', 
+        'Unable to process email verification. Please try logging in manually.'
       );
+      
+      // Fallback navigation
+      Get.offAllNamed(Routes.loginPage);
     }
   }
 
@@ -195,13 +186,7 @@ class DeepLinkService extends GetxService {
       final uid = uri.queryParameters['uid'];
       
       if (token == null || uid == null) {
-        Get.snackbar(
-          'Invalid Link',
-          'The password reset link is invalid or expired.',
-          snackPosition: SnackPosition.TOP,
-          backgroundColor: Get.theme.colorScheme.error,
-          colorText: Get.theme.colorScheme.onError,
-        );
+        _showErrorSnackbar('Invalid Link', 'The password reset link is invalid or expired.');
         return;
       }
       
@@ -225,16 +210,68 @@ class DeepLinkService extends GetxService {
   void _handleGenericLink(Uri uri) {
     log('🔗 DeepLinkService: Handling generic link: ${uri.toString()}');
     
-    // You can add more generic link handling here
-    // For example, navigation to specific screens, sharing, etc.
-    
-    // For now, just navigate to home if user is logged in
+    // Navigate based on authentication status
     final authController = Get.find<AuthController>();
     if (authController.isLoggedIn.value) {
       Get.offAllNamed(Routes.homePage);
     } else {
       Get.offAllNamed(Routes.loginPage);
     }
+  }
+
+  // =============================================================================
+  // UI HELPER METHODS
+  // =============================================================================
+  
+  /// Show processing dialog
+  void _showProcessingDialog(String message) {
+    Get.dialog(
+      Center(
+        child: Card(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(height: 16),
+                Text(message),
+              ],
+            ),
+          ),
+        ),
+      ),
+      barrierDismissible: false,
+    );
+  }
+
+  /// Close processing dialog
+  void _closeProcessingDialog() {
+    if (Get.isDialogOpen == true) {
+      Get.back();
+    }
+  }
+
+  /// Show error snackbar
+  void _showErrorSnackbar(String title, String message) {
+    Get.snackbar(
+      title,
+      message,
+      snackPosition: SnackPosition.TOP,
+      backgroundColor: const Color.fromRGBO(176, 48, 48, 1),
+      colorText: Colors.white,
+      duration: const Duration(seconds: 4),
+      icon: const Icon(Icons.error, color: Colors.white),
+    );
+  }
+
+  // =============================================================================
+  // TESTING METHODS (Development only)
+  // =============================================================================
+  
+  /// Public method for testing deep link handling in development
+  Future<void> testHandleDeepLink(Uri uri) async {
+    await _handleDeepLink(uri);
   }
 
   // =============================================================================

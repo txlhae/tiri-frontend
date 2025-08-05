@@ -76,7 +76,7 @@ class ApiService {
       headers: ApiConfig.defaultHeaders,
     ));
 
-    // Add interceptors
+    // Add interceptors - AUTH INTERCEPTOR MUST BE FIRST for silent token refresh
     _dio.interceptors.add(_createAuthInterceptor());
     _dio.interceptors.add(_createRetryInterceptor());
     
@@ -146,6 +146,8 @@ class ApiService {
             
             try {
               final response = await _dio.fetch(options);
+              // 🚨 FLAG: Mark this as a successful silent auth refresh
+              response.extra['silent_auth_success'] = true;
               handler.resolve(response);
               return;
             } catch (retryError) {

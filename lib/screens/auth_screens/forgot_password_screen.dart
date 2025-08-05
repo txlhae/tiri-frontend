@@ -49,58 +49,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         barrierDismissible: false,
       );
       
-      // Get current user's verification status from server
+      // Use the new verification check method
       final authController = Get.find<AuthController>();
-      final currentUser = authController.currentUserStore.value;
+      await authController.checkVerificationStatus();
       
-      if (currentUser == null) {
-        Get.back(); // Close loading dialog
-        Get.snackbar(
-          "Authentication Required", 
-          "Please log in first to verify your email",
-          snackPosition: SnackPosition.TOP,
-          backgroundColor: Colors.orange,
-          colorText: Colors.white,
-        );
-        Get.offAllNamed('/login');
-        return;
-      }
+      // Close loading dialog
+      Get.back();
       
-      // Refresh user profile to get latest verification status
-      await authController.refreshUserProfile();
-      final updatedUser = authController.currentUserStore.value;
-      
-      Get.back(); // Close loading dialog
-      
-      if (updatedUser != null && updatedUser.isVerified) {
-        log('✅ ForgotPasswordScreen: Email verification confirmed');
-        
-        // Show success message
-        Get.snackbar(
-          "Email Verified!", 
-          "Your email has been successfully verified",
-          snackPosition: SnackPosition.TOP,
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
-          icon: const Icon(Icons.check_circle, color: Colors.white),
-        );
-        
-        // Complete registration and navigate to home
-        await controller.completeUserRegistration();
-        
-      } else {
-        log('❌ ForgotPasswordScreen: Email not yet verified');
-        
-        Get.snackbar(
-          "Not Verified", 
-          "Please check your email and click the verification link first",
-          snackPosition: SnackPosition.TOP,
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-          icon: const Icon(Icons.email, color: Colors.white),
-          duration: const Duration(seconds: 4),
-        );
-      }
+      // The AuthController handles navigation and messages
+      // No need to do anything else here
       
     } catch (e) {
       Get.back(); // Close loading dialog if still open

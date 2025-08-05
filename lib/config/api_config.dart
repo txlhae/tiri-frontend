@@ -61,6 +61,7 @@ class ApiConfig {
   static const String authLogout = '/api/auth/logout/';
   static const String authTokenRefresh = '/api/auth/token/refresh/';
   static const String authVerifyEmail = '/api/auth/verify-email/';
+  static const String authVerificationStatus = '/api/auth/verification-status/';
   static const String authPasswordReset = '/auth/password-reset/';
 
   /// Profile endpoints

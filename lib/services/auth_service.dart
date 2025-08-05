@@ -310,25 +310,32 @@ class AuthService {
     }
   }
 
-  /// Verify user's email address
+  /// Verify user's email address (enhanced for mobile deep links)
   /// 
   /// Parameters:
   /// - [token]: Email verification token
   /// - [uid]: User ID (base64 encoded)
+  /// - [isMobile]: Whether this is a mobile verification request
   /// 
-  /// Returns: AuthResult with verification status
+  /// Returns: AuthResult with verification status and optional tokens
   Future<AuthResult> verifyEmail({
     required String token,
     required String uid,
+    bool isMobile = false,
   }) async {
     try {
       if (ApiConfig.enableLogging) {
-        log('Attempting email verification', name: 'AUTH');
+        log('Attempting email verification (mobile: $isMobile)', name: 'AUTH');
       }
 
+      // Use mobile endpoint if this is from a mobile deep link
+      final endpoint = isMobile 
+          ? '${ApiConfig.authVerifyEmail}$uid/$token/?mobile=true'
+          : ApiConfig.authVerifyEmail;
+
       final response = await _apiService.post(
-        ApiConfig.authVerifyEmail,
-        data: {
+        endpoint,
+        data: isMobile ? {} : {
           'token': token,
           'uid': uid,
         },
@@ -339,6 +346,27 @@ class AuthService {
         
         if (ApiConfig.enableLogging) {
           log('Email verification successful', name: 'AUTH');
+        }
+
+        // Handle mobile response with tokens
+        if (isMobile && data['access_token'] != null && data['refresh_token'] != null) {
+          // Save tokens from mobile verification
+          await _apiService.saveTokens(
+            data['access_token'],
+            data['refresh_token'],
+          );
+
+          // Update user data if provided
+          if (data['user'] != null) {
+            final user = UserModel.fromJson(data['user']);
+            await _saveUserToStorage(user);
+            _currentUser = user;
+            
+            return AuthResult.success(
+              user: user,
+              message: data['message'] ?? 'Email verified successfully - you are now logged in',
+            );
+          }
         }
         
         return AuthResult.success(
@@ -355,6 +383,84 @@ class AuthService {
       return AuthResult.failure(
         message: _extractErrorMessage(e),
       );
+    }
+  }
+
+  /// Check current user's verification status with enhanced auto-login support
+  /// 
+  /// Returns: Map with verification status, auto_login flag, and JWT tokens
+  Future<Map<String, dynamic>> checkVerificationStatus() async {
+    try {
+      if (!isAuthenticated) {
+        throw Exception('User not authenticated');
+      }
+
+      if (ApiConfig.enableLogging) {
+        log('Checking verification status with enhanced auto-login support', name: 'AUTH');
+      }
+
+      final response = await _apiService.get(ApiConfig.authVerificationStatus);
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        
+        if (ApiConfig.enableLogging) {
+          log('Enhanced verification status response: ${data.toString()}', name: 'AUTH');
+        }
+        
+        // Handle auto-login with direct JWT tokens (new format)
+        if (data['auto_login'] == true) {
+          // Check for direct access_token and refresh_token in response
+          if (data['access_token'] != null && data['refresh_token'] != null) {
+            // Save JWT tokens directly from response
+            await _apiService.saveTokens(
+              data['access_token'],
+              data['refresh_token'],
+            );
+            
+            if (ApiConfig.enableLogging) {
+              log('Auto-login JWT tokens saved successfully', name: 'AUTH');
+              log('   - Access token: ${data['access_token'].toString().substring(0, 20)}...', name: 'AUTH');
+              log('   - Refresh token: ${data['refresh_token'].toString().substring(0, 20)}...', name: 'AUTH');
+            }
+            
+            // Update user data if provided
+            if (data['user'] != null) {
+              final user = UserModel.fromJson(data['user']);
+              await _saveUserToStorage(user);
+              _currentUser = user;
+              
+              if (ApiConfig.enableLogging) {
+                log('User data updated from verification response: ${user.email}', name: 'AUTH');
+              }
+            }
+          } else {
+            log('Warning: auto_login=true but no JWT tokens in response', name: 'AUTH');
+          }
+        }
+        
+        return {
+          'is_verified': data['is_verified'] ?? false,
+          'auto_login': data['auto_login'] ?? false,
+          'message': data['message'] ?? 'Status retrieved successfully',
+          'access_token': data['access_token'],
+          'refresh_token': data['refresh_token'],
+          'user': data['user'],
+        };
+      }
+      
+      throw Exception('Failed to check verification status - HTTP ${response.statusCode}');
+      
+    } catch (e) {
+      log('Verification status check error: $e', name: 'AUTH');
+      return {
+        'is_verified': false,
+        'auto_login': false,
+        'message': _extractErrorMessage(e),
+        'access_token': null,
+        'refresh_token': null,
+        'user': null,
+      };
     }
   }
 

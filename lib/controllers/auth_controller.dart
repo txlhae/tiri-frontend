@@ -717,7 +717,7 @@ class AuthController extends GetxController {
       log('   - Token: ${token.substring(0, 10)}...');
       log('   - UID: $uid');
       
-      final result = await _authService.verifyEmail(token: token, uid: uid);
+      final result = await _authService.verifyEmail(token: token, uid: uid, isMobile: true);
       
       if (result.isSuccess) {
         log('✅ AuthController: Email verification successful');
@@ -776,6 +776,139 @@ class AuthController extends GetxController {
       );
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  /// Check verification status manually (for "I have verified" button and deep links)
+  /// Enhanced to handle direct JWT tokens in API response
+  Future<bool> checkVerificationStatus() async {
+    try {
+      log('🔍 AuthController: Checking verification status with enhanced JWT token support...');
+      
+      final statusResult = await _authService.checkVerificationStatus();
+      
+      final isVerified = statusResult['is_verified'] == true;
+      final autoLogin = statusResult['auto_login'] == true;
+      final message = statusResult['message'] ?? '';
+      final accessToken = statusResult['access_token'];
+      final refreshToken = statusResult['refresh_token'];
+      
+      log('📊 AuthController: Enhanced status result:');
+      log('   - verified: $isVerified');
+      log('   - auto_login: $autoLogin');
+      log('   - has_access_token: ${accessToken != null}');
+      log('   - has_refresh_token: ${refreshToken != null}');
+      
+      if (isVerified && autoLogin) {
+        log('✅ AuthController: Auto-login enabled - user verified within time window');
+        
+        // Verify that JWT tokens were received and saved
+        if (accessToken != null && refreshToken != null) {
+          log('🔑 AuthController: JWT tokens received in response and saved to storage');
+          
+          // Update local user state
+          if (currentUserStore.value != null) {
+            final updatedUser = currentUserStore.value!.copyWith(isVerified: true);
+            currentUserStore.value = updatedUser;
+            await _saveUserToStorage(updatedUser);
+          }
+          
+          // Update user data if provided in response
+          if (statusResult['user'] != null) {
+            final user = UserModel.fromJson(statusResult['user']);
+            currentUserStore.value = user;
+            await _saveUserToStorage(user);
+            log('👤 AuthController: User data updated from API response');
+          }
+          
+          // Mark as logged in (tokens already saved by AuthService)
+          isLoggedIn.value = true;
+          
+          // Show success and navigate to home
+          Get.snackbar(
+            'Welcome Back!',
+            'Email verified successfully. You are now logged in.',
+            snackPosition: SnackPosition.TOP,
+            backgroundColor: move,
+            colorText: Colors.white,
+            duration: const Duration(seconds: 3),
+            icon: const Icon(Icons.check_circle, color: Colors.white),
+          );
+          
+          // Navigate to home page
+          await Future.delayed(const Duration(seconds: 1));
+          Get.offAllNamed(Routes.homePage);
+          
+          return true;
+        } else {
+          log('⚠️ AuthController: auto_login=true but no JWT tokens received');
+          Get.snackbar(
+            'Authentication Error',
+            'Verification successful but login tokens missing. Please try logging in manually.',
+            snackPosition: SnackPosition.TOP,
+            backgroundColor: Colors.orange,
+            colorText: Colors.white,
+            duration: const Duration(seconds: 4),
+          );
+          
+          // Navigate to login as fallback
+          await Future.delayed(const Duration(seconds: 1));
+          Get.offAllNamed(Routes.loginPage);
+          return false;
+        }
+        
+      } else if (isVerified && !autoLogin) {
+        log('⚠️ AuthController: Verification expired - user must login manually');
+        
+        // Clear current session
+        await logout();
+        
+        // Show verification expired message and navigate to login
+        Get.snackbar(
+          'Verification Expired',
+          'Your email verification window has expired. Please log in manually.',
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: Colors.orange,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 4),
+          icon: const Icon(Icons.schedule, color: Colors.white),
+        );
+        
+        // Navigate to login
+        await Future.delayed(const Duration(seconds: 1));
+        Get.offAllNamed(Routes.loginPage);
+        
+        return false;
+        
+      } else {
+        log('❌ AuthController: User not yet verified');
+        
+        Get.snackbar(
+          'Not Verified',
+          message.isNotEmpty ? message : 'Please check your email and click the verification link first.',
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 4),
+          icon: const Icon(Icons.email, color: Colors.white),
+        );
+        
+        return false;
+      }
+    } catch (e) {
+      log('❌ AuthController: Enhanced verification check failed: $e');
+      
+      Get.snackbar(
+        'Verification Check Failed',
+        'Unable to check verification status. Please try again.',
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: cancel,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 4),
+        icon: const Icon(Icons.error, color: Colors.white),
+      );
+      
+      return false;
     }
   }
 

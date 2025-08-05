@@ -39,13 +39,14 @@ class CustomFormField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GetBuilder<AuthController>(builder: (controller) {
+    // For non-password fields, use regular StatelessWidget
+    if (!haveObscure) {
       return TextFormField(
         readOnly: iconSuffix != null ? true : false,
         style: const TextStyle(color: Colors.black),
         maxLines: isdescription != null ? 5 : 1,
         maxLength: isphone != null ? 10 : null,
-        obscureText: haveObscure ? controller.isObscure.value : false,
+        obscureText: false,
         keyboardType:
             keyboardType ?? (isphone != null ? TextInputType.phone : null),
         decoration: InputDecoration(
@@ -64,8 +65,48 @@ class CustomFormField extends StatelessWidget {
           prefixText: isphone == true && selectedCountry != null
           ? '+${selectedCountry!.phoneCode} '
           : null,
-         suffixIcon: haveObscure
-              ? IconButton(
+          suffixIcon: IconButton(
+                  onPressed: onTapped,
+                  icon: SvgPicture.asset(iconSuffix ?? '')),
+        ),
+        controller: textController,
+        inputFormatters: inputFormatters,
+        validator: validator,
+        onTap: onTapped,
+        onChanged: onChanged,
+      );
+    }
+    
+    // For password fields, use Obx for reactivity
+    return Obx(() {
+      // Get the AuthController - it should exist by the time password fields are shown
+      final controller = Get.find<AuthController>();
+      
+      return TextFormField(
+        readOnly: iconSuffix != null ? true : false,
+        style: const TextStyle(color: Colors.black),
+        maxLines: isdescription != null ? 5 : 1,
+        maxLength: isphone != null ? 10 : null,
+        obscureText: controller.isObscure.value,
+        keyboardType:
+            keyboardType ?? (isphone != null ? TextInputType.phone : null),
+        decoration: InputDecoration(
+          counterText: '',
+          fillColor: Colors.white,
+          filled: true,
+          enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(width: 0.5)),
+          border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(width: 0.5)),
+          hintText: hintText,
+          hintStyle: const TextStyle(color: Colors.grey),
+          alignLabelWithHint: true,
+          prefixText: isphone == true && selectedCountry != null
+          ? '+${selectedCountry!.phoneCode} '
+          : null,
+          suffixIcon: IconButton(
                   onPressed: controller.toggleObscure,
                   icon: Icon(
                     controller.isObscure.value
@@ -73,10 +114,7 @@ class CustomFormField extends StatelessWidget {
                         : Icons.visibility,
                     color: Colors.grey,
                   ),
-                )
-              : IconButton(
-                  onPressed: onTapped,
-                  icon: SvgPicture.asset(iconSuffix ?? '')),
+                ),
         ),
         controller: textController,
         inputFormatters: inputFormatters,
