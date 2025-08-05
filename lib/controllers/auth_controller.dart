@@ -11,7 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:kind_clock/infrastructure/routes.dart';
 import 'package:kind_clock/models/user_model.dart';
-import 'package:kind_clock/screens/auth_screens/forgot_password_screen.dart';
+import 'package:kind_clock/screens/auth_screens/email_verification_screen.dart';
 import 'package:kind_clock/services/auth_service.dart';
 import 'package:kind_clock/services/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -295,17 +295,21 @@ class AuthController extends GetxController {
       if (result.isSuccess) {
         log('✅ Registration successful');
         
+        // ✅ SET AUTHENTICATION STATE - CRITICAL FIX!
+        isLoggedIn.value = true;
+        currentUserStore.value = result.user;
+        
         Get.snackbar(
-          'Registration Successful',
-          'Please verify your email before proceeding',
+          'Registration Successful!',
+          'An email has been sent to verify your account',
           snackPosition: SnackPosition.TOP,
           backgroundColor: move,
           colorText: Colors.white,
-          duration: const Duration(seconds: 4),
+          duration: const Duration(seconds: 3),
         );
         
-        // Navigate to email verification screen
-        Get.to(() => const ForgotPasswordScreen(isFromRegister: true));
+        // ✅ NAVIGATE TO VERIFICATION SCREEN - NOT HOME PAGE!
+        Get.offAll(() => const EmailVerificationScreen());
         
         // Clear form
         _clearRegisterForm();
