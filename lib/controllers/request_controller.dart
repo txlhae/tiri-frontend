@@ -33,6 +33,24 @@ import 'package:kind_clock/services/request_service.dart';
 enum FilterOption { recentPosts, urgentRequired, location }
 
 class RequestController extends GetxController {
+  // My Volunteered Requests (for My Helps page)
+  final RxList<RequestModel> myVolunteeredRequests = <RequestModel>[].obs;
+
+  /// Load requests where the current user is a volunteer (My Helps)
+  Future<void> loadMyVolunteeredRequests() async {
+    try {
+      isLoading.value = true;
+      debugLog('🔄 RequestController: Loading my volunteered requests...');
+      final volunteeredRequests = await requestService.fetchMyVolunteeredRequests();
+      myVolunteeredRequests.assignAll(volunteeredRequests);
+      debugLog('✅ RequestController: Loaded {volunteeredRequests.length} volunteered requests');
+    } catch (e) {
+      debugLog('❌ RequestController: Error loading my volunteered requests - $e');
+      myVolunteeredRequests.clear();
+    } finally {
+      isLoading.value = false;
+    }
+  }
   
   // =============================================================================
   // 🚨 DEBUG: Enhanced debugging properties

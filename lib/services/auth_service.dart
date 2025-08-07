@@ -18,6 +18,23 @@ import 'api_service.dart';
 /// - User profile management
 /// - Token management
 class AuthService {
+  /// Map backend user JSON (snake_case) to Flutter UserModel camelCase
+  Map<String, dynamic> _mapUserSnakeToCamel(Map<String, dynamic> user) {
+    return {
+      'userId': user['userId'] ?? user['user_id'],
+      'email': user['email'],
+      'username': user['username'],
+      'imageUrl': user['imageUrl'] ?? user['image_url'],
+      'referralUserId': user['referralUserId'] ?? user['referral_user_id'],
+      'phoneNumber': user['phoneNumber'] ?? user['phone_number'],
+      'country': user['country'],
+      'referralCode': user['referralCode'] ?? user['referral_code'],
+      'rating': user['rating'],
+      'hours': user['hours'],
+      'createdAt': user['createdAt'],
+      'isVerified': user['isVerified'] ?? user['is_verified'],
+    };
+  }
   // =============================================================================
   // SINGLETON PATTERN
   // =============================================================================
@@ -135,8 +152,8 @@ class AuthService {
         final tokens = data['tokens'];
         
         if (userData != null && tokens != null) {
-          // Create user model
-          final user = UserModel.fromJson(userData);
+          // Create user model with field mapping
+          final user = UserModel.fromJson(_mapUserSnakeToCamel(userData));
           
           // Save tokens
           await _apiService.saveTokens(
@@ -203,8 +220,8 @@ class AuthService {
         final tokens = data['tokens'];
         
         if (userData != null && tokens != null) {
-          // Create user model
-          final user = UserModel.fromJson(userData);
+          // Create user model with field mapping
+          final user = UserModel.fromJson(_mapUserSnakeToCamel(userData));
           
           // Save tokens
           await _apiService.saveTokens(

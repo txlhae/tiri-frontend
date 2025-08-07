@@ -412,14 +412,49 @@ class AuthController extends GetxController {
         return currentUserStore.value;
       }
       
-      // TODO: Implement Django API call to fetch user by ID
-      // For now, return null - will implement when backend endpoint is ready
-      log('fetchUser called for userId: $userId');
-      return null;
+      log('👤 AuthController: Fetching user $userId from Django API');
+      
+      final response = await _apiService.get('/api/profile/users/$userId/');
+      
+      if (response.statusCode == 200 && response.data != null) {
+        // Apply user field mapping for Django compatibility
+        final userData = response.data as Map<String, dynamic>;
+        final flutterUserData = _mapDjangoUserToFlutter(userData);
+        final UserModel user = UserModel.fromJson(flutterUserData);
+        
+        log('✅ AuthController: Fetched user $userId successfully');
+        return user;
+      } else {
+        log('❌ AuthController: Failed to fetch user $userId - Status: ${response.statusCode}');
+        return null;
+      }
     } catch (e) {
-      log('Error fetching user: $e');
+      log('💥 AuthController: Error fetching user $userId - $e');
       return null;
     }
+  }
+
+  /// Map Django user object to Flutter UserModel format
+  Map<String, dynamic> _mapDjangoUserToFlutter(dynamic djangoUser) {
+    if (djangoUser is! Map) return {};
+    
+    final userMap = djangoUser as Map<String, dynamic>;
+    return {
+      'userId': userMap['id']?.toString() ?? '',
+      'username': userMap['username'] ?? userMap['full_name'] ?? 'Unknown',
+      'email': userMap['email']?.toString() ?? '',
+      'imageUrl': userMap['profile_image_url'] ?? userMap['profile_image'],
+      'referralUserId': userMap['referral_user_id']?.toString(),
+      'phoneNumber': userMap['phone_number']?.toString(),
+      'country': userMap['country'] ?? userMap['location_display'],
+      'referralCode': userMap['referral_code'] ?? userMap['full_name'],
+      'rating': (userMap['average_rating'] as num?)?.toDouble(),
+      'hours': userMap['total_hours_helped'] as int?,
+      'createdAt': userMap['created_at'] != null 
+          ? DateTime.parse(userMap['created_at']) 
+          : null,
+      'isVerified': userMap['is_verified'] ?? false,
+    };
   }
 
   /// Fetch user by referral code

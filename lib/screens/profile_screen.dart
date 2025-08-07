@@ -1,5 +1,5 @@
+// File: lib/screens/profile_screen.dart
 import 'dart:developer';
-import 'package:dotted_border/dotted_border.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
@@ -36,7 +36,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final initialUser = widget.user ?? currentUser;
     shownUser.value = initialUser;
 
-    //  Fetch fresh data for other users
+    // Fetch fresh data for other users
     if (widget.user != null && widget.user!.userId != currentUser.userId) {
       authController.fetchUser(widget.user!.userId).then((freshUser) {
         if (freshUser != null) {
@@ -58,9 +58,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final isCurrentUser =
           user.userId == authController.currentUserStore.value!.userId;
 
+      // Referral code section: improved readability and design alignment
+
       return Scaffold(
         resizeToAvoidBottomInset: false,
         body: Container(
+          height: MediaQuery.of(context).size.height,
           decoration: const BoxDecoration(
             gradient: LinearGradient(
               colors: [
@@ -89,90 +92,226 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   height: 250,
                 ),
               ),
-              Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10.0, vertical: 30.0),
-                    child: Row(
+              SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: MediaQuery.of(context).size.height,
+                  ),
+                  child: IntrinsicHeight(
+                    child: Column(
                       children: [
-                        CustomBackButton(controller: authController),
-                        const Spacer(),
-                        if (isCurrentUser)
-                          GestureDetector(
-                            behavior: HitTestBehavior.opaque,
-                            onTap: () async {
-                              log("Edit");
-                              Get.dialog(EditDialog(
-                                  user:
-                                      authController.currentUserStore.value!));
-                            },
-                            child: SvgPicture.asset(
-                              "assets/icons/edit_icon.svg",
-                            ),
-                          ),
-                        if (!isCurrentUser)
-                          GestureDetector(
-                            behavior: HitTestBehavior.opaque,
-                            onTap: () => _openChatWithUser(user),
-                            child: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.9),
-                                borderRadius: BorderRadius.circular(20),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10.0, vertical: 30.0),
+                          child: Row(
+                            children: [
+                              CustomBackButton(controller: authController),
+                              const Spacer(),
+                              if (isCurrentUser)
+                                GestureDetector(
+                                  behavior: HitTestBehavior.opaque,
+                                  onTap: () async {
+                                    log("Edit");
+                                    Get.dialog(EditDialog(
+                                        user: authController.currentUserStore.value!));
+                                  },
+                                  child: SvgPicture.asset(
+                                    "assets/icons/edit_icon.svg",
                                   ),
-                                ],
-                              ),
-                              child: const Icon(
-                                Icons.chat_bubble_outline,
-                                color: Color.fromRGBO(3, 80, 135, 1),
-                                size: 24,
-                              ),
+                                ),
+                              if (!isCurrentUser)
+                                GestureDetector(
+                                  behavior: HitTestBehavior.opaque,
+                                  onTap: () => _openChatWithUser(user),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.9),
+                                      borderRadius: BorderRadius.circular(20),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.1),
+                                          blurRadius: 4,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: const Icon(
+                                      Icons.chat_bubble_outline,
+                                      color: Color.fromRGBO(3, 80, 135, 1),
+                                      size: 24,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        buildAvatar(user.imageUrl, context),
+                        const SizedBox(height: 20),
+                        // Username display fix: prefer name/fullName if available, else username
+                        // ...existing code...
+                        const SizedBox(height: 5),
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 300),
+                          child: buildStatsRow(user.hours, user.rating,
+                              key: ValueKey("${user.hours}_${user.rating}")),
+                        ),
+                        const SizedBox(height: 15),
+                        // CURRENT USER LAYOUT
+                        if (isCurrentUser) ...[
+                          // Referral Code Section (improved design)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 30.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Your Referral Code",
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                Container(
+                                  width: double.infinity,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    border: Border.all(
+                                      color: Theme.of(context).colorScheme.primary,
+                                      width: 2,
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.04),
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        user.referralCode?.toString() ?? 'null',
+                                        style: TextStyle(
+                                          fontSize: 22,
+                                          fontWeight: FontWeight.bold,
+                                          color: Theme.of(context).colorScheme.primary,
+                                          letterSpacing: 2.5,
+                                        ),
+                                      ),
+                                      GestureDetector(
+                                        onTap: () async {
+                                          await Clipboard.setData(ClipboardData(text: user.referralCode?.toString() ?? 'null'));
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: const Text(
+                                                'Referral code copied to clipboard!',
+                                                style: TextStyle(color: Colors.white),
+                                              ),
+                                              backgroundColor: Theme.of(context).colorScheme.primary,
+                                              duration: const Duration(seconds: 2),
+                                              behavior: SnackBarBehavior.floating,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(8),
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                                          decoration: BoxDecoration(
+                                            color: Theme.of(context).colorScheme.primary,
+                                            borderRadius: BorderRadius.circular(6),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black.withOpacity(0.08),
+                                                blurRadius: 2,
+                                                offset: const Offset(0, 1),
+                                              ),
+                                            ],
+                                          ),
+                                          child: const Text(
+                                            'Copy',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 15,
+                                              letterSpacing: 1.2,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+                              ],
                             ),
                           ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  buildAvatar(user.imageUrl, context),
-                  const SizedBox(height: 20),
-                  isCurrentUser
-                      ? Text(
-                          "Hi, ${user.username}!",
-                          style: const TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.w600),
-                        )
-                      : Text(
-                          "${user.username} ",
-                          style: const TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.w600),
-                        ),
-                  const SizedBox(height: 5),
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 300),
-                    child: buildStatsRow(user.hours, user.rating,
-                        key: ValueKey("${user.hours}_${user.rating}")),
-                  ),
-                  const SizedBox(height: 15),
-                  if (isCurrentUser)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 30.0),
-                      child: Column(
-                        children: [
+                          // Profile Menu Navigation (only for current user)
                           Padding(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 30.0),
+                            padding: const EdgeInsets.symmetric(horizontal: 30.0),
+                            child: Column(
+                              children: [
+                                ProfileNavButton(
+                                  icon: 'assets/icons/help_icon.svg',
+                                  buttonText: 'My Helps',
+                                  navDestination: Routes.myHelpsPage,
+                                  haveDialog: false,
+                                ),
+                                const SizedBox(height: 12),
+                                ProfileNavButton(
+                                  icon: 'assets/icons/feedback_icon.svg',
+                                  buttonText: 'Feedbacks',
+                                  navDestination: Routes.feedbackPage,
+                                  haveDialog: false,
+                                ),
+                                const SizedBox(height: 12),
+                                ProfileNavButton(
+                                  icon: 'assets/icons/contact_icon.svg',
+                                  buttonText: 'Contact us',
+                                  navDestination: Routes.contactUsPage,
+                                  haveDialog: false,
+                                ),
+                                const SizedBox(height: 12),
+                                ProfileNavButton(
+                                  icon: 'assets/icons/logout_icon.svg',
+                                  buttonText: 'Logout',
+                                  navDestination: '',
+                                  haveDialog: true,
+                                  dialog: LogoutDialog(
+                                    questionText: 'Are you sure you want to logout?',
+                                    submitText: 'Logout',
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                ProfileNavButton(
+                                  icon: 'assets/icons/delete_icon.svg',
+                                  buttonText: 'Delete account',
+                                  navDestination: '',
+                                  haveDialog: true,
+                                  dialog: DeleteDialog(),
+                                ),
+                                // Removed final SizedBox(height: 20) to avoid extra white space
+                              ],
+                            ),
+                          ),
+                        ] else ...[
+                          // OTHER USER LAYOUT - only show feedback section
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 30.0),
                             child: Container(
                               decoration: BoxDecoration(
                                 border: Border.all(color: Colors.grey, width: 1),
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              padding: EdgeInsets.all(16),
+                              padding: const EdgeInsets.all(16),
                               child: Column(
                                 children: [
                                   const Text(
@@ -215,7 +354,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                               ),
                                               const SizedBox(height: 5),
                                               Text(
-                                                "Rating: ${feedback.rating} ? | Hours: ${feedback.hours}",
+                                                "Rating: ${feedback.rating} ⭐ | Hours: ${feedback.hours}",
                                                 style: const TextStyle(
                                                   fontSize: 13,
                                                   color: Colors.black87,
@@ -252,12 +391,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                             ),
                           ),
+                          // Removed final SizedBox(height: 20) to avoid extra white space
                         ],
-                      ),
+                      ],
                     ),
-                  const SizedBox(height: 20),
-                  // Add any additional widgets here if needed
-                ],
+                  ),
+                ),
               ),
             ],
           ),

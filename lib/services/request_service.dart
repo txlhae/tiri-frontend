@@ -26,6 +26,53 @@ import 'package:kind_clock/services/api_service.dart';
 /// - Real-time data from Django backend
 /// - Django-to-Flutter JSON transformation
 class RequestService extends GetxController {
+  /// Fetch requests where the current user is a volunteer (My Helps)
+  Future<List<RequestModel>> fetchMyVolunteeredRequests() async {
+    try {
+      log('🔍 [MyHelps] fetchMyVolunteeredRequests called');
+      // Defensive: Check for auth token if possible
+      // If you have an AuthService or token check, add it here
+      // Example: if (!AuthService.isLoggedIn) { log('❌ Not logged in'); return []; }
+
+      final response = await _apiService.get('/api/requests/?view=my_volunteering');
+      log('🔍 [MyHelps] API called: /api/requests/?view=my_volunteering, status: ${response.statusCode}');
+      if (response.statusCode == 401) {
+        log('❌ [MyHelps] Unauthorized! User is not authenticated.');
+        return [];
+      }
+      if (response.statusCode == 200 && response.data != null) {
+        final dynamic responseData = response.data;
+        final List<dynamic> requestsJson = responseData is Map ?
+          (responseData['results'] ?? responseData['data'] ?? []) :
+          (responseData is List ? responseData : []);
+        log('📥 [MyHelps] Raw Django my volunteered requests count: ${requestsJson.length}');
+        final List<RequestModel> requests = requestsJson
+            .map((djangoJson) {
+              try {
+                final flutterJson = _mapDjangoToFlutter(djangoJson as Map<String, dynamic>);
+                return RequestModelExtension.fromJsonWithRequester(flutterJson);
+              } catch (e) {
+                log('❌ [MyHelps] Error mapping request: $e');
+                return null;
+              }
+            })
+            .whereType<RequestModel>()
+            .toList();
+        log('✅ [MyHelps] Mapped ${requests.length} my volunteered requests');
+        if (requests.isEmpty) {
+          log('⚠️ [MyHelps] No volunteered requests found for user.');
+        }
+        return requests;
+      } else {
+        log('❌ [MyHelps] Failed to fetch my volunteered requests - Status: ${response.statusCode}, Data: ${response.data}');
+        return [];
+      }
+    } catch (e, stack) {
+      log('💥 [MyHelps] Error fetching my volunteered requests - $e');
+      log('💥 [MyHelps] Stack trace: $stack');
+      return [];
+    }
+  }
   
   // =============================================================================
   // DEPENDENCIES
