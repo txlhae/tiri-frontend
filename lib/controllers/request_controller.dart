@@ -26,8 +26,10 @@ import 'package:intl/intl.dart';
 import 'package:kind_clock/controllers/auth_controller.dart';
 import 'package:kind_clock/infrastructure/routes.dart';
 import 'package:kind_clock/models/category_model.dart';
+import 'package:kind_clock/models/feedback_model.dart';
 import 'package:kind_clock/models/request_model.dart';
 import 'package:kind_clock/models/user_model.dart';
+import 'package:kind_clock/services/api_service.dart';
 import 'package:kind_clock/services/request_service.dart';
 
 enum FilterOption { recentPosts, urgentRequired, location }
@@ -75,6 +77,7 @@ class RequestController extends GetxController {
   // =============================================================================
   
   final RxList<Map<String, dynamic>> profileFeedbackList = <Map<String, dynamic>>[].obs;
+  final RxMap<String, dynamic> feedbackStats = <String, dynamic>{}.obs;
   final isHelper = false.obs;
   final isViewer = false.obs;
   final isLoading = false.obs;
@@ -1489,12 +1492,103 @@ class RequestController extends GetxController {
     debugLog("🔍 showFilterDialog called");
   }
 
+  /// Fetch profile feedback from Django API
+  /// Transforms Django response to match frontend expected format
   Future<void> fetchProfileFeedback(String userId) async {
     try {
-      debugLog("👤 fetchProfileFeedback: $userId");
+      isFeedbackLoading.value = true;
+      debugLog("👤 fetchProfileFeedback: Starting to fetch feedback for user $userId");
+      
+      // Clear existing data before loading new
       profileFeedbackList.clear();
+      feedbackStats.value = {};
+      
+      // Get ApiService singleton instance
+      final apiService = Get.find<ApiService>();
+      
+      // Call Django feedback API
+      final response = await apiService.get('/api/feedback/');
+      
+      if (response.statusCode == 200 && response.data != null) {
+        final responseData = response.data as Map<String, dynamic>;
+        debugLog("📥 fetchProfileFeedback: Raw API response: $responseData");
+        
+        // Extract feedback array from Django response
+        final List<dynamic> feedbackArray = responseData['feedback'] ?? [];
+        final Map<String, dynamic>? stats = responseData['stats'];
+        
+        debugLog("📊 fetchProfileFeedback: Found ${feedbackArray.length} feedback items");
+        if (stats != null) {
+          debugLog("📊 fetchProfileFeedback: Stats - Total: ${stats['total_feedback']}, Hours: ${stats['total_hours']}, Rating: ${stats['average_rating']}");
+          // Store stats for UI display
+          feedbackStats.value = stats;
+        }
+        
+        // Transform Django response to expected frontend format
+        final List<Map<String, dynamic>> transformedFeedback = [];
+        
+        for (final item in feedbackArray) {
+          try {
+            final feedbackData = item as Map<String, dynamic>;
+            
+            // Create FeedbackModel from Django response
+            final feedback = FeedbackModel(
+              feedbackId: feedbackData['id']?.toString() ?? '',
+              userId: feedbackData['from_user']?['id']?.toString() ?? '',
+              requestId: feedbackData['request']?['id']?.toString() ?? '',
+              review: feedbackData['review'] ?? '',
+              rating: (feedbackData['rating'] as num?)?.toDouble() ?? 0.0,
+              hours: (feedbackData['hours'] as num?)?.toInt() ?? 0,
+              timestamp: feedbackData['timestamp'] != null 
+                ? DateTime.parse(feedbackData['timestamp'])
+                : DateTime.now(),
+            );
+            
+            // Extract rich user data from backend
+            final fromUser = feedbackData['from_user'] ?? {};
+            
+            // Transform to expected frontend format with rich user data
+            final transformedItem = {
+              'feedback': feedback,
+              'username': fromUser['username'] ?? 'Unknown User',
+              'firstName': fromUser['first_name'] ?? '',
+              'lastName': fromUser['last_name'] ?? '',
+              'imageUrl': fromUser['profile_picture'],
+              'totalHoursHelped': fromUser['total_hours_helped'] ?? 0,
+              'averageRating': fromUser['average_rating'] ?? 0.0,
+              'ratingCount': fromUser['rating_count'] ?? 0,
+              'reputationDisplay': fromUser['reputation_display'] ?? '',
+              'title': feedbackData['request']?['title'] ?? 'Untitled Request',
+              'requestDescription': feedbackData['request']?['description'] ?? '',
+            };
+            
+            transformedFeedback.add(transformedItem);
+            
+            debugLog("✅ fetchProfileFeedback: Transformed feedback from ${transformedItem['username']} - Rating: ${feedback.rating}");
+            
+          } catch (itemError) {
+            debugLog("⚠️ fetchProfileFeedback: Error transforming feedback item: $itemError");
+            debugLog("⚠️ fetchProfileFeedback: Problematic item: $item");
+          }
+        }
+        
+        // Update reactive state with transformed data
+        profileFeedbackList.assignAll(transformedFeedback);
+        
+        debugLog("✅ fetchProfileFeedback: Successfully loaded ${transformedFeedback.length} feedback items");
+        
+      } else {
+        debugLog("❌ fetchProfileFeedback: API returned status ${response.statusCode}");
+        debugLog("❌ fetchProfileFeedback: Response data: ${response.data}");
+        Get.snackbar('Error', 'Failed to load feedback');
+      }
+      
     } catch (e) {
       debugLog("❌ fetchProfileFeedback error: $e");
+      Get.snackbar('Error', 'Failed to load feedback');
+      profileFeedbackList.clear();
+    } finally {
+      isFeedbackLoading.value = false;
     }
   }
 
