@@ -33,6 +33,11 @@ class AuthService {
       'hours': user['hours'],
       'createdAt': user['createdAt'],
       'isVerified': user['isVerified'] ?? user['is_verified'],
+      // Approval system fields
+      'isApproved': user['isApproved'] ?? user['is_approved'],
+      'approvalStatus': user['approvalStatus'] ?? user['approval_status'],
+      'rejectionReason': user['rejectionReason'] ?? user['rejection_reason'],
+      'approvalExpiresAt': user['approvalExpiresAt'] ?? user['approval_expires_at'],
     };
   }
   // =============================================================================
@@ -256,33 +261,6 @@ class AuthService {
     }
   }
 
-  Future<Map<String, dynamic>?> verifyReferralCode(String referralCode) async {
-    try {
-      log('Calling Django API to verify referral code: $referralCode', name: 'AUTH');
-      
-      // Use the ApiService instance to call Django backend
-      final response = await _apiService.post(
-        '/api/auth/verify-referral/',
-        data: {
-          'referral_code': referralCode,
-        },
-      );
-
-      log('Django API response status: ${response.statusCode}', name: 'AUTH');
-      log('Django API response data: ${response.data}', name: 'AUTH');
-
-      if (response.statusCode == 200 && response.data != null) {
-        log('Referral code verified successfully', name: 'AUTH');
-        return response.data as Map<String, dynamic>;
-      }
-      
-      log('Referral code verification failed - status: ${response.statusCode}', name: 'AUTH');
-      return null;
-    } catch (e) {
-      log('Error verifying referral code: $e', name: 'AUTH');
-      return null;
-    }
-  }
 
   /// Logout current user and clear all data
   Future<AuthResult> logout() async {
@@ -603,6 +581,260 @@ class AuthService {
   }
 
   // =============================================================================
+  // APPROVAL METHODS
+  // =============================================================================
+
+  /// Validate referral code (updated to use new backend endpoint)
+  /// 
+  /// Parameters:
+  /// - [code]: Referral code to validate
+  /// 
+  /// Returns: Map with validation result and referrer info
+  Future<Map<String, dynamic>?> validateReferralCode(String code) async {
+    try {
+      if (ApiConfig.enableLogging) {
+        log('Validating referral code: $code', name: 'AUTH');
+      }
+
+      final response = await _apiService.post(
+        '/api/auth/validate-referral/',
+        data: {'referral_code': code.trim()},
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        
+        if (ApiConfig.enableLogging) {
+          log('Referral validation successful: ${data.toString()}', name: 'AUTH');
+        }
+        
+        return {
+          'valid': data['valid'] ?? false,
+          'referrer_name': data['referrer_name'],
+          'referrer_email': data['referrer_email'],
+          'referrer': data['referrer'],
+        };
+      }
+      
+      return null;
+      
+    } catch (e) {
+      log('Referral validation error: $e', name: 'AUTH');
+      return null;
+    }
+  }
+
+  /// Get pending approval requests (for referrers)
+  /// 
+  /// Returns: List of approval requests
+  Future<List<Map<String, dynamic>>> getPendingApprovals() async {
+    try {
+      if (!isAuthenticated) {
+        throw Exception('User not authenticated');
+      }
+
+      if (ApiConfig.enableLogging) {
+        log('Fetching pending approvals', name: 'AUTH');
+      }
+
+      final response = await _apiService.get('/api/auth/approvals/pending/');
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        final approvals = data['approvals'] as List<dynamic>? ?? [];
+        
+        if (ApiConfig.enableLogging) {
+          log('Fetched ${approvals.length} pending approvals', name: 'AUTH');
+        }
+        
+        return approvals.cast<Map<String, dynamic>>();
+      }
+      
+      throw Exception('Failed to fetch pending approvals - HTTP ${response.statusCode}');
+      
+    } catch (e) {
+      log('Get pending approvals error: $e', name: 'AUTH');
+      throw e;
+    }
+  }
+
+  /// Approve a user registration request
+  /// 
+  /// Parameters:
+  /// - [approvalId]: ID of the approval request
+  /// 
+  /// Returns: AuthResult with approval status
+  Future<AuthResult> approveUser(String approvalId) async {
+    try {
+      if (!isAuthenticated) {
+        throw Exception('User not authenticated');
+      }
+
+      if (ApiConfig.enableLogging) {
+        log('Approving user with approval ID: $approvalId', name: 'AUTH');
+      }
+
+      final response = await _apiService.post(
+        '/api/auth/approvals/$approvalId/approve/',
+        data: {},
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        
+        if (ApiConfig.enableLogging) {
+          log('User approval successful', name: 'AUTH');
+        }
+        
+        return AuthResult.success(
+          message: data['message'] ?? 'User approved successfully',
+        );
+      }
+      
+      return AuthResult.failure(
+        message: 'Failed to approve user - HTTP ${response.statusCode}',
+      );
+      
+    } catch (e) {
+      log('Approve user error: $e', name: 'AUTH');
+      return AuthResult.failure(
+        message: _extractErrorMessage(e),
+      );
+    }
+  }
+
+  /// Reject a user registration request
+  /// 
+  /// Parameters:
+  /// - [approvalId]: ID of the approval request
+  /// - [reason]: Optional rejection reason
+  /// 
+  /// Returns: AuthResult with rejection status
+  Future<AuthResult> rejectUser(String approvalId, [String? reason]) async {
+    try {
+      if (!isAuthenticated) {
+        throw Exception('User not authenticated');
+      }
+
+      if (ApiConfig.enableLogging) {
+        log('Rejecting user with approval ID: $approvalId', name: 'AUTH');
+      }
+
+      final response = await _apiService.post(
+        '/api/auth/approvals/$approvalId/reject/',
+        data: {
+          if (reason != null && reason.isNotEmpty) 'rejection_reason': reason,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        
+        if (ApiConfig.enableLogging) {
+          log('User rejection successful', name: 'AUTH');
+        }
+        
+        return AuthResult.success(
+          message: data['message'] ?? 'User rejected successfully',
+        );
+      }
+      
+      return AuthResult.failure(
+        message: 'Failed to reject user - HTTP ${response.statusCode}',
+      );
+      
+    } catch (e) {
+      log('Reject user error: $e', name: 'AUTH');
+      return AuthResult.failure(
+        message: _extractErrorMessage(e),
+      );
+    }
+  }
+
+  /// Get approval history (for referrers)
+  /// 
+  /// Returns: List of approval history
+  Future<List<Map<String, dynamic>>> getApprovalHistory() async {
+    try {
+      if (!isAuthenticated) {
+        throw Exception('User not authenticated');
+      }
+
+      if (ApiConfig.enableLogging) {
+        log('Fetching approval history', name: 'AUTH');
+      }
+
+      final response = await _apiService.get('/api/auth/approvals/history/');
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        final history = data['history'] as List<dynamic>? ?? [];
+        
+        if (ApiConfig.enableLogging) {
+          log('Fetched ${history.length} approval history items', name: 'AUTH');
+        }
+        
+        return history.cast<Map<String, dynamic>>();
+      }
+      
+      throw Exception('Failed to fetch approval history - HTTP ${response.statusCode}');
+      
+    } catch (e) {
+      log('Get approval history error: $e', name: 'AUTH');
+      throw e;
+    }
+  }
+
+  /// Check current user's approval status (for polling)
+  /// 
+  /// Returns: Map with approval status info
+  Future<Map<String, dynamic>> checkApprovalStatus() async {
+    try {
+      if (!isAuthenticated) {
+        throw Exception('User not authenticated');
+      }
+
+      if (ApiConfig.enableLogging) {
+        log('Checking approval status', name: 'AUTH');
+      }
+
+      final response = await _apiService.get('/api/auth/verification-status/');
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        
+        if (ApiConfig.enableLogging) {
+          log('Approval status check response: ${data.toString()}', name: 'AUTH');
+        }
+        
+        return {
+          'status': data['approval_status'] ?? 'pending',
+          'is_approved': data['is_approved'] ?? false,
+          'is_verified': data['is_verified'] ?? false,
+          'rejection_reason': data['rejection_reason'],
+          'expires_at': data['expires_at'],
+          'can_login': data['can_login'] ?? false,
+          'message': data['message'] ?? 'Status retrieved successfully',
+        };
+      }
+      
+      throw Exception('Failed to check approval status - HTTP ${response.statusCode}');
+      
+    } catch (e) {
+      log('Check approval status error: $e', name: 'AUTH');
+      return {
+        'status': 'error',
+        'is_approved': false,
+        'is_verified': false,
+        'rejection_reason': null,
+        'expires_at': null,
+        'can_login': false,
+        'message': _extractErrorMessage(e),
+      };
+    }
+  }
+
+  // =============================================================================
   // STORAGE METHODS
   // =============================================================================
   
@@ -696,6 +928,9 @@ class AuthService {
   
   /// Check if current user is verified
   bool get isUserVerified => _currentUser?.isVerified ?? false;
+
+  /// Check if current user is approved
+  bool get isUserApproved => _currentUser?.isApproved ?? false;
 }
 
 // =============================================================================
@@ -752,32 +987,4 @@ class AuthResult {
   /// Parameters:
   /// - [referralCode]: The referral code to verify
   /// 
-  /// Returns: Map with validation result and referrer info
-/// Verify referral code with Django backend
-  /// 
-  /// Parameters:
-  /// - [referralCode]: The referral code to verify
-  /// 
-  /// Returns: Map with validation result and referrer info
-  Future<Map<String, dynamic>?> verifyReferralCode(String referralCode) async {
-    try {
-      // Use the singleton instance of ApiService
-      final response = await ApiService.instance.post(
-        '/auth/verify-referral/',
-        data: {
-          'referral_code': referralCode,
-        },
-      );
-
-      if (response.statusCode == 200 && response.data != null) {
-        log('Referral code verified successfully', name: 'AUTH');
-        return response.data as Map<String, dynamic>;
-      }
-      
-      return null;
-    } catch (e) {
-      log('Error verifying referral code: $e', name: 'AUTH');
-      return null;
-    }
-  }
 }

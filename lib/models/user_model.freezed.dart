@@ -31,7 +31,13 @@ mixin _$UserModel {
   double? get rating => throw _privateConstructorUsedError;
   int? get hours => throw _privateConstructorUsedError;
   DateTime? get createdAt => throw _privateConstructorUsedError;
-  bool get isVerified => throw _privateConstructorUsedError;
+  bool get isVerified =>
+      throw _privateConstructorUsedError; // Approval system fields
+  bool get isApproved => throw _privateConstructorUsedError;
+  String? get approvalStatus =>
+      throw _privateConstructorUsedError; // 'pending', 'approved', 'rejected', 'expired'
+  String? get rejectionReason => throw _privateConstructorUsedError;
+  DateTime? get approvalExpiresAt => throw _privateConstructorUsedError;
 
   /// Serializes this UserModel to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -60,7 +66,11 @@ abstract class $UserModelCopyWith<$Res> {
       double? rating,
       int? hours,
       DateTime? createdAt,
-      bool isVerified});
+      bool isVerified,
+      bool isApproved,
+      String? approvalStatus,
+      String? rejectionReason,
+      DateTime? approvalExpiresAt});
 }
 
 /// @nodoc
@@ -90,6 +100,10 @@ class _$UserModelCopyWithImpl<$Res, $Val extends UserModel>
     Object? hours = freezed,
     Object? createdAt = freezed,
     Object? isVerified = null,
+    Object? isApproved = null,
+    Object? approvalStatus = freezed,
+    Object? rejectionReason = freezed,
+    Object? approvalExpiresAt = freezed,
   }) {
     return _then(_value.copyWith(
       userId: null == userId
@@ -140,6 +154,22 @@ class _$UserModelCopyWithImpl<$Res, $Val extends UserModel>
           ? _value.isVerified
           : isVerified // ignore: cast_nullable_to_non_nullable
               as bool,
+      isApproved: null == isApproved
+          ? _value.isApproved
+          : isApproved // ignore: cast_nullable_to_non_nullable
+              as bool,
+      approvalStatus: freezed == approvalStatus
+          ? _value.approvalStatus
+          : approvalStatus // ignore: cast_nullable_to_non_nullable
+              as String?,
+      rejectionReason: freezed == rejectionReason
+          ? _value.rejectionReason
+          : rejectionReason // ignore: cast_nullable_to_non_nullable
+              as String?,
+      approvalExpiresAt: freezed == approvalExpiresAt
+          ? _value.approvalExpiresAt
+          : approvalExpiresAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
     ) as $Val);
   }
 }
@@ -164,7 +194,11 @@ abstract class _$$UserModelImplCopyWith<$Res>
       double? rating,
       int? hours,
       DateTime? createdAt,
-      bool isVerified});
+      bool isVerified,
+      bool isApproved,
+      String? approvalStatus,
+      String? rejectionReason,
+      DateTime? approvalExpiresAt});
 }
 
 /// @nodoc
@@ -192,6 +226,10 @@ class __$$UserModelImplCopyWithImpl<$Res>
     Object? hours = freezed,
     Object? createdAt = freezed,
     Object? isVerified = null,
+    Object? isApproved = null,
+    Object? approvalStatus = freezed,
+    Object? rejectionReason = freezed,
+    Object? approvalExpiresAt = freezed,
   }) {
     return _then(_$UserModelImpl(
       userId: null == userId
@@ -242,6 +280,22 @@ class __$$UserModelImplCopyWithImpl<$Res>
           ? _value.isVerified
           : isVerified // ignore: cast_nullable_to_non_nullable
               as bool,
+      isApproved: null == isApproved
+          ? _value.isApproved
+          : isApproved // ignore: cast_nullable_to_non_nullable
+              as bool,
+      approvalStatus: freezed == approvalStatus
+          ? _value.approvalStatus
+          : approvalStatus // ignore: cast_nullable_to_non_nullable
+              as String?,
+      rejectionReason: freezed == rejectionReason
+          ? _value.rejectionReason
+          : rejectionReason // ignore: cast_nullable_to_non_nullable
+              as String?,
+      approvalExpiresAt: freezed == approvalExpiresAt
+          ? _value.approvalExpiresAt
+          : approvalExpiresAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
     ));
   }
 }
@@ -261,7 +315,11 @@ class _$UserModelImpl implements _UserModel {
       this.rating,
       this.hours,
       this.createdAt = null,
-      this.isVerified = false});
+      this.isVerified = false,
+      this.isApproved = false,
+      this.approvalStatus,
+      this.rejectionReason,
+      this.approvalExpiresAt = null});
 
   factory _$UserModelImpl.fromJson(Map<String, dynamic> json) =>
       _$$UserModelImplFromJson(json);
@@ -292,10 +350,22 @@ class _$UserModelImpl implements _UserModel {
   @override
   @JsonKey()
   final bool isVerified;
+// Approval system fields
+  @override
+  @JsonKey()
+  final bool isApproved;
+  @override
+  final String? approvalStatus;
+// 'pending', 'approved', 'rejected', 'expired'
+  @override
+  final String? rejectionReason;
+  @override
+  @JsonKey()
+  final DateTime? approvalExpiresAt;
 
   @override
   String toString() {
-    return 'UserModel(userId: $userId, email: $email, username: $username, imageUrl: $imageUrl, referralUserId: $referralUserId, phoneNumber: $phoneNumber, country: $country, referralCode: $referralCode, rating: $rating, hours: $hours, createdAt: $createdAt, isVerified: $isVerified)';
+    return 'UserModel(userId: $userId, email: $email, username: $username, imageUrl: $imageUrl, referralUserId: $referralUserId, phoneNumber: $phoneNumber, country: $country, referralCode: $referralCode, rating: $rating, hours: $hours, createdAt: $createdAt, isVerified: $isVerified, isApproved: $isApproved, approvalStatus: $approvalStatus, rejectionReason: $rejectionReason, approvalExpiresAt: $approvalExpiresAt)';
   }
 
   @override
@@ -321,7 +391,15 @@ class _$UserModelImpl implements _UserModel {
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
             (identical(other.isVerified, isVerified) ||
-                other.isVerified == isVerified));
+                other.isVerified == isVerified) &&
+            (identical(other.isApproved, isApproved) ||
+                other.isApproved == isApproved) &&
+            (identical(other.approvalStatus, approvalStatus) ||
+                other.approvalStatus == approvalStatus) &&
+            (identical(other.rejectionReason, rejectionReason) ||
+                other.rejectionReason == rejectionReason) &&
+            (identical(other.approvalExpiresAt, approvalExpiresAt) ||
+                other.approvalExpiresAt == approvalExpiresAt));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -339,7 +417,11 @@ class _$UserModelImpl implements _UserModel {
       rating,
       hours,
       createdAt,
-      isVerified);
+      isVerified,
+      isApproved,
+      approvalStatus,
+      rejectionReason,
+      approvalExpiresAt);
 
   /// Create a copy of UserModel
   /// with the given fields replaced by the non-null parameter values.
@@ -370,7 +452,11 @@ abstract class _UserModel implements UserModel {
       final double? rating,
       final int? hours,
       final DateTime? createdAt,
-      final bool isVerified}) = _$UserModelImpl;
+      final bool isVerified,
+      final bool isApproved,
+      final String? approvalStatus,
+      final String? rejectionReason,
+      final DateTime? approvalExpiresAt}) = _$UserModelImpl;
 
   factory _UserModel.fromJson(Map<String, dynamic> json) =
       _$UserModelImpl.fromJson;
@@ -398,7 +484,15 @@ abstract class _UserModel implements UserModel {
   @override
   DateTime? get createdAt;
   @override
-  bool get isVerified;
+  bool get isVerified; // Approval system fields
+  @override
+  bool get isApproved;
+  @override
+  String? get approvalStatus; // 'pending', 'approved', 'rejected', 'expired'
+  @override
+  String? get rejectionReason;
+  @override
+  DateTime? get approvalExpiresAt;
 
   /// Create a copy of UserModel
   /// with the given fields replaced by the non-null parameter values.

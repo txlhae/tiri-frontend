@@ -266,6 +266,68 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   haveDialog: false,
                                 ),
                                 const SizedBox(height: 12),
+                                // Approval Dashboard - only show for users with referral capability
+                                Obx(() {
+                                  if (authController.pendingApprovalsCount.value > 0) {
+                                    // Show with badge if there are pending approvals
+                                    return Column(
+                                      children: [
+                                        Stack(
+                                          children: [
+                                            ProfileNavButton(
+                                              icon: 'assets/icons/star_icon.svg',
+                                              buttonText: 'Manage Approvals',
+                                              navDestination: Routes.approvalDashboardPage,
+                                              haveDialog: false,
+                                            ),
+                                            // Notification badge
+                                            Positioned(
+                                              right: 20,
+                                              top: 15,
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(
+                                                  horizontal: 8,
+                                                  vertical: 4,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.red,
+                                                  borderRadius: BorderRadius.circular(12),
+                                                ),
+                                                child: Text(
+                                                  '${authController.pendingApprovalsCount.value}',
+                                                  style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 12),
+                                      ],
+                                    );
+                                  } else {
+                                    // Check if user has ever had approvals (has referral code)
+                                    final currentUser = authController.currentUserStore.value;
+                                    if (currentUser?.referralCode != null && 
+                                        currentUser!.referralCode!.isNotEmpty) {
+                                      return Column(
+                                        children: [
+                                          ProfileNavButton(
+                                            icon: 'assets/icons/star_icon.svg',
+                                            buttonText: 'Manage Approvals',
+                                            navDestination: Routes.approvalDashboardPage,
+                                            haveDialog: false,
+                                          ),
+                                          const SizedBox(height: 12),
+                                        ],
+                                      );
+                                    }
+                                  }
+                                  return Container(); // Don't show if no referral capability
+                                }),
                                 ProfileNavButton(
                                   icon: 'assets/icons/feedback_icon.svg',
                                   buttonText: 'Feedbacks',

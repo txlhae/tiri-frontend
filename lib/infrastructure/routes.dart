@@ -103,4 +103,28 @@ class Routes {
   static Future<String> get myApplicationsPageRoute async {
     return myApplicationsPage;
   }
+
+  // =============================================================================
+  // APPROVAL SYSTEM ROUTES
+  // =============================================================================
+
+  static const pendingApprovalPage = "/pendingApproval";
+  static Future<String> get pendingApprovalPageRoute async {
+    return pendingApprovalPage;
+  }
+
+  static const rejectionScreen = "/rejection";
+  static Future<String> get rejectionScreenRoute async {
+    return rejectionScreen;
+  }
+
+  static const expiredScreen = "/expired";
+  static Future<String> get expiredScreenRoute async {
+    return expiredScreen;
+  }
+
+  static const approvalDashboardPage = "/approvalDashboard";
+  static Future<String> get approvalDashboardPageRoute async {
+    return approvalDashboardPage;
+  }
 }

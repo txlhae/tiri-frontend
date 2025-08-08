@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:kind_clock/infrastructure/routes.dart';
 import 'package:kind_clock/models/user_model.dart';
+import 'package:kind_clock/models/approval_request_model.dart';
 import 'package:kind_clock/screens/auth_screens/email_verification_screen.dart';
 import 'package:kind_clock/services/auth_service.dart';
 import 'package:kind_clock/services/api_service.dart';
@@ -113,6 +114,19 @@ class AuthController extends GetxController {
   
   final referredUser = ''.obs;
   final referredUid = ''.obs;
+
+  // =============================================================================
+  // APPROVAL SYSTEM STATE
+  // =============================================================================
+  
+  /// Approval-related state
+  final RxList<ApprovalRequest> pendingApprovals = <ApprovalRequest>[].obs;
+  final RxList<ApprovalRequest> approvalHistory = <ApprovalRequest>[].obs;
+  final RxInt pendingApprovalsCount = 0.obs;
+  final RxBool hasNewApprovals = false.obs;
+  final RxString approvalStatus = 'pending'.obs; // for current user
+  final RxString rejectionReason = ''.obs; // for current user
+  final Rx<DateTime?> approvalExpiresAt = Rx<DateTime?>(null); // for current user
 
   // =============================================================================
   // BACKWARD COMPATIBILITY GETTERS
@@ -220,18 +234,96 @@ class AuthController extends GetxController {
         // Save to storage
         await _saveUserToStorage(result.user!);
         
-        // Show success message
+        // ✅ APPROVAL SYSTEM: Check user status and route appropriately
+        final user = result.user!;
+        
+        if (!user.isVerified) {
+          log('🚨 User not verified - redirecting to email verification');
+          Get.snackbar(
+            'Email Verification Required',
+            'Please verify your email address to continue',
+            snackPosition: SnackPosition.TOP,
+            backgroundColor: Colors.orange,
+            colorText: Colors.white,
+            duration: const Duration(seconds: 3),
+          );
+          Get.offAllNamed(Routes.verifyPendingPage);
+          return;
+        }
+        
+        if (!user.isApproved) {
+          log('🚨 User not approved - checking approval status');
+          
+          // Check current approval status
+          final statusResult = await _authService.checkApprovalStatus();
+          final status = statusResult['status'] ?? 'pending';
+          
+          switch (status) {
+            case 'pending':
+              log('📋 User approval still pending');
+              Get.snackbar(
+                'Approval Pending',
+                'Your registration is still waiting for approval from your referrer',
+                snackPosition: SnackPosition.TOP,
+                backgroundColor: Colors.orange,
+                colorText: Colors.white,
+                duration: const Duration(seconds: 3),
+              );
+              Get.offAllNamed(Routes.pendingApprovalPage);
+              return;
+              
+            case 'rejected':
+              log('❌ User registration was rejected');
+              rejectionReason.value = statusResult['rejection_reason'] ?? '';
+              Get.snackbar(
+                'Registration Rejected',
+                'Your registration was not approved by the referrer',
+                snackPosition: SnackPosition.TOP,
+                backgroundColor: cancel,
+                colorText: Colors.white,
+                duration: const Duration(seconds: 3),
+              );
+              Get.offAllNamed(Routes.rejectionScreen);
+              return;
+              
+            case 'expired':
+              log('⏰ User approval request expired');
+              Get.snackbar(
+                'Approval Expired',
+                'Your approval request has expired after 7 days',
+                snackPosition: SnackPosition.TOP,
+                backgroundColor: Colors.orange,
+                colorText: Colors.white,
+                duration: const Duration(seconds: 3),
+              );
+              Get.offAllNamed(Routes.expiredScreen);
+              return;
+              
+            default:
+              log('⚠️ Unknown approval status: $status');
+              Get.snackbar(
+                'Account Status Unknown',
+                'Please contact support for assistance',
+                snackPosition: SnackPosition.TOP,
+                backgroundColor: cancel,
+                colorText: Colors.white,
+                duration: const Duration(seconds: 3),
+              );
+              return;
+          }
+        }
+        
+        // ✅ User is both verified and approved - proceed to home
+        log('🏠 User fully approved - navigating to home page');
         Get.snackbar(
           'Welcome Back!',
-          'Hello ${result.user!.username}',
+          'Hello ${user.username}',
           snackPosition: SnackPosition.TOP,
           backgroundColor: move,
           colorText: Colors.white,
           duration: const Duration(seconds: 3),
         );
         
-        // 🚨 TEMPORARY FIX: Always go to home page
-        log('🏠 Navigating to home page...');
         Get.offAllNamed(Routes.homePage);
         
         // Clear form
@@ -240,7 +332,66 @@ class AuthController extends GetxController {
       } else {
         log('❌ Login failed: ${result.message}');
         
-        // Show error message
+        // ✅ APPROVAL SYSTEM: Handle backend login errors with specific routing
+        final message = result.message.toLowerCase();
+        
+        if (message.contains('pending approval') || message.contains('pending_approval')) {
+          log('📋 Backend reports pending approval');
+          Get.snackbar(
+            'Approval Pending',
+            'Your registration is waiting for approval from your referrer',
+            snackPosition: SnackPosition.TOP,
+            backgroundColor: Colors.orange,
+            colorText: Colors.white,
+            duration: const Duration(seconds: 4),
+          );
+          Get.toNamed(Routes.pendingApprovalPage);
+          return;
+        }
+        
+        if (message.contains('rejected') || message.contains('not approved')) {
+          log('❌ Backend reports user rejected');
+          Get.snackbar(
+            'Registration Rejected',
+            'Your registration was not approved by the referrer',
+            snackPosition: SnackPosition.TOP,
+            backgroundColor: cancel,
+            colorText: Colors.white,
+            duration: const Duration(seconds: 4),
+          );
+          Get.toNamed(Routes.rejectionScreen);
+          return;
+        }
+        
+        if (message.contains('expired')) {
+          log('⏰ Backend reports approval expired');
+          Get.snackbar(
+            'Approval Expired',
+            'Your approval request has expired after 7 days',
+            snackPosition: SnackPosition.TOP,
+            backgroundColor: Colors.orange,
+            colorText: Colors.white,
+            duration: const Duration(seconds: 4),
+          );
+          Get.toNamed(Routes.expiredScreen);
+          return;
+        }
+        
+        if (message.contains('verify') || message.contains('verification')) {
+          log('📧 Backend reports email not verified');
+          Get.snackbar(
+            'Email Verification Required',
+            'Please verify your email address first',
+            snackPosition: SnackPosition.TOP,
+            backgroundColor: Colors.orange,
+            colorText: Colors.white,
+            duration: const Duration(seconds: 4),
+          );
+          Get.toNamed(Routes.verifyPendingPage);
+          return;
+        }
+        
+        // Generic error message for other failures
         Get.snackbar(
           'Login Failed',
           result.message,
@@ -295,7 +446,7 @@ class AuthController extends GetxController {
       if (result.isSuccess) {
         log('✅ Registration successful');
         
-        // ✅ SET AUTHENTICATION STATE - CRITICAL FIX!
+        // ✅ SET AUTHENTICATION STATE
         isLoggedIn.value = true;
         currentUserStore.value = result.user;
         
@@ -308,8 +459,15 @@ class AuthController extends GetxController {
           duration: const Duration(seconds: 3),
         );
         
-        // ✅ NAVIGATE TO VERIFICATION SCREEN - NOT HOME PAGE!
-        Get.offAll(() => const EmailVerificationScreen());
+        // ✅ APPROVAL SYSTEM: Route based on referral usage
+        if (referralCodeController.value.text.trim().isNotEmpty) {
+          log('🔄 Registration with referral code - will need approval after email verification');
+          // User will go to pending approval after email verification
+          Get.offAll(() => const EmailVerificationScreen());
+        } else {
+          log('🔄 Direct registration without referral - proceeding to email verification only');
+          Get.offAll(() => const EmailVerificationScreen());
+        }
         
         // Clear form
         _clearRegisterForm();
@@ -457,7 +615,7 @@ class AuthController extends GetxController {
     };
   }
 
-  /// Fetch user by referral code
+  /// Fetch user by referral code (Updated for approval system)
   Future<UserModel?> fetchUserByReferralCode(String code) async {
     try {
       log('fetchUserByReferralCode called for code: $code');
@@ -471,7 +629,7 @@ class AuthController extends GetxController {
       
       // Call Django API to verify referral code via AuthService
       log('Calling Django API to verify referral code: $code');
-      final result = await _authService.verifyReferralCode(code);
+      final result = await _authService.validateReferralCode(code);
       log('Django API response: ${result.toString()}');
       
       if (result != null && result['valid'] == true) {
@@ -482,19 +640,32 @@ class AuthController extends GetxController {
         
         // Store referrer information for registration
         referredUid.value = code;
-        if (result['referrer'] != null) {
+        
+        // Handle different response formats from backend
+        String referrerName = 'Unknown Referrer';
+        String referrerEmail = '';
+        
+        if (result['referrer_name'] != null) {
+          referrerName = result['referrer_name'];
+        } else if (result['referrer'] != null) {
           final referrer = result['referrer'] as Map<String, dynamic>;
-          referredUser.value = referrer['name'] ?? 'Unknown Referrer';
-          log('Referrer found: ${referrer['name']} (${referrer['email']})');
+          referrerName = referrer['name'] ?? 'Unknown Referrer';
+          referrerEmail = referrer['email'] ?? '';
         }
+        
+        if (result['referrer_email'] != null) {
+          referrerEmail = result['referrer_email'];
+        }
+        
+        referredUser.value = referrerName;
+        log('Referrer found: $referrerName ($referrerEmail)');
         
         // Create a minimal UserModel for backward compatibility with the dialog
         // The dialog expects a UserModel object to determine success
-        final referrerMap = result['referrer'] as Map<String, dynamic>?;
         return UserModel(
           userId: code, // Use code as temporary ID for validation success
-          username: referrerMap?['name'] ?? 'Unknown Referrer',
-          email: referrerMap?['email'] ?? '',
+          username: referrerName,
+          email: referrerEmail,
           imageUrl: '',
           phoneNumber: '',
           country: '',
@@ -524,26 +695,106 @@ class AuthController extends GetxController {
       
       final currentUser = currentUserStore.value;
       if (currentUser != null && currentUser.isVerified) {
-        log('✅ AuthController: User is verified, completing registration');
+        log('✅ AuthController: User is verified, checking approval status...');
         
-        // Update login status
-        isLoggedIn.value = true;
-        
-        // Show welcome message
-        Get.snackbar(
-          'Welcome to TIRI!',
-          'Your account has been successfully verified and activated.',
-          snackPosition: SnackPosition.TOP,
-          backgroundColor: move,
-          colorText: Colors.white,
-          duration: const Duration(seconds: 3),
-          icon: const Icon(Icons.celebration, color: Colors.white),
-        );
-        
-        // Navigate to home page
-        log('🏠 AuthController: Navigating to home page');
-        await Future.delayed(const Duration(seconds: 1)); // Brief delay for UX
-        Get.offAllNamed(Routes.homePage);
+        // ✅ APPROVAL SYSTEM: Check if user also needs approval
+        if (!currentUser.isApproved) {
+          log('📋 User is verified but needs approval - checking status');
+          
+          // Check current approval status from backend
+          final statusResult = await _authService.checkApprovalStatus();
+          final status = statusResult['status'] ?? 'pending';
+          
+          switch (status) {
+            case 'approved':
+              log('🎉 User is now approved - completing registration');
+              
+              // Update user model with approval status
+              final updatedUser = currentUser.copyWith(
+                isApproved: true,
+                approvalStatus: 'approved',
+              );
+              currentUserStore.value = updatedUser;
+              await _saveUserToStorage(updatedUser);
+              
+              // Welcome message
+              Get.snackbar(
+                'Welcome to TIRI!',
+                'Your account has been verified and approved. Welcome to the community!',
+                snackPosition: SnackPosition.TOP,
+                backgroundColor: move,
+                colorText: Colors.white,
+                duration: const Duration(seconds: 4),
+                icon: const Icon(Icons.celebration, color: Colors.white),
+              );
+              
+              // Navigate to home
+              await Future.delayed(const Duration(seconds: 1));
+              Get.offAllNamed(Routes.homePage);
+              return;
+              
+            case 'pending':
+              log('⏳ Email verified but approval still pending');
+              Get.snackbar(
+                'Email Verified!',
+                'Your email is verified. Now waiting for approval from your referrer.',
+                snackPosition: SnackPosition.TOP,
+                backgroundColor: Colors.orange,
+                colorText: Colors.white,
+                duration: const Duration(seconds: 4),
+              );
+              Get.offAllNamed(Routes.pendingApprovalPage);
+              return;
+              
+            case 'rejected':
+              log('❌ Email verified but registration was rejected');
+              rejectionReason.value = statusResult['rejection_reason'] ?? '';
+              Get.snackbar(
+                'Registration Rejected',
+                'Your email is verified, but your registration was not approved.',
+                snackPosition: SnackPosition.TOP,
+                backgroundColor: cancel,
+                colorText: Colors.white,
+                duration: const Duration(seconds: 4),
+              );
+              Get.offAllNamed(Routes.rejectionScreen);
+              return;
+              
+            case 'expired':
+              log('⏰ Email verified but approval request expired');
+              Get.snackbar(
+                'Approval Expired',
+                'Your email is verified, but the approval request has expired.',
+                snackPosition: SnackPosition.TOP,
+                backgroundColor: Colors.orange,
+                colorText: Colors.white,
+                duration: const Duration(seconds: 4),
+              );
+              Get.offAllNamed(Routes.expiredScreen);
+              return;
+          }
+        } else {
+          log('✅ User is both verified and approved - completing registration');
+          
+          // Update login status
+          isLoggedIn.value = true;
+          
+          // Show welcome message
+          Get.snackbar(
+            'Welcome to TIRI!',
+            'Your account has been successfully verified and activated.',
+            snackPosition: SnackPosition.TOP,
+            backgroundColor: move,
+            colorText: Colors.white,
+            duration: const Duration(seconds: 3),
+            icon: const Icon(Icons.celebration, color: Colors.white),
+          );
+          
+          // Navigate to home page
+          log('🏠 AuthController: Navigating to home page');
+          await Future.delayed(const Duration(seconds: 1)); // Brief delay for UX
+          Get.offAllNamed(Routes.homePage);
+        }
         
       } else {
         log('⚠️ AuthController: User verification status unclear');
@@ -713,6 +964,278 @@ class AuthController extends GetxController {
     } catch (e) {
       log('❌ AuthController: Refresh user profile error: $e');
     }
+  }
+
+  // =============================================================================
+  // APPROVAL SYSTEM METHODS
+  // =============================================================================
+
+  /// Fetch pending approval requests (for referrers)
+  Future<void> fetchPendingApprovals() async {
+    try {
+      log('🔄 AuthController: Fetching pending approvals...');
+      
+      final approvals = await _authService.getPendingApprovals();
+      
+      // Convert to ApprovalRequest objects
+      pendingApprovals.clear();
+      for (final approval in approvals) {
+        pendingApprovals.add(ApprovalRequest.fromJson({
+          'id': approval['id'],
+          'newUserEmail': approval['new_user_email'],
+          'newUserName': approval['new_user_name'],
+          'newUserCountry': approval['new_user_country'],
+          'newUserPhone': approval['new_user_phone'],
+          'referralCodeUsed': approval['referral_code_used'],
+          'status': approval['status'],
+          'requestedAt': approval['requested_at'],
+          'expiresAt': approval['expires_at'],
+          'newUserProfileImage': approval['new_user_profile_image'],
+        }));
+      }
+      
+      pendingApprovalsCount.value = pendingApprovals.length;
+      log('✅ AuthController: Fetched ${pendingApprovals.length} pending approvals');
+      
+    } catch (e) {
+      log('❌ AuthController: Error fetching pending approvals: $e');
+      Get.snackbar(
+        'Error',
+        'Failed to load pending approvals',
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: cancel,
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  /// Fetch approval history (for referrers)
+  Future<void> fetchApprovalHistory() async {
+    try {
+      log('🔄 AuthController: Fetching approval history...');
+      
+      final history = await _authService.getApprovalHistory();
+      
+      // Convert to ApprovalRequest objects
+      approvalHistory.clear();
+      for (final item in history) {
+        approvalHistory.add(ApprovalRequest.fromJson({
+          'id': item['id'],
+          'newUserEmail': item['new_user_email'],
+          'newUserName': item['new_user_name'],
+          'newUserCountry': item['new_user_country'],
+          'newUserPhone': item['new_user_phone'],
+          'referralCodeUsed': item['referral_code_used'],
+          'status': item['status'],
+          'requestedAt': item['requested_at'],
+          'expiresAt': item['expires_at'],
+          'newUserProfileImage': item['new_user_profile_image'],
+          'rejectionReason': item['rejection_reason'],
+          'decidedAt': item['decided_at'],
+        }));
+      }
+      
+      log('✅ AuthController: Fetched ${approvalHistory.length} approval history items');
+      
+    } catch (e) {
+      log('❌ AuthController: Error fetching approval history: $e');
+      Get.snackbar(
+        'Error',
+        'Failed to load approval history',
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: cancel,
+        colorText: Colors.white,
+      );
+    }
+  }
+
+  /// Approve a user registration
+  Future<void> approveUser(String approvalId) async {
+    try {
+      isLoading.value = true;
+      log('👍 AuthController: Approving user with ID: $approvalId');
+      
+      final result = await _authService.approveUser(approvalId);
+      
+      if (result.isSuccess) {
+        Get.snackbar(
+          'User Approved',
+          result.message,
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: move,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 3),
+        );
+        
+        // Refresh pending approvals list
+        await fetchPendingApprovals();
+        
+      } else {
+        Get.snackbar(
+          'Approval Failed',
+          result.message,
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: cancel,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 4),
+        );
+      }
+    } catch (e) {
+      log('❌ AuthController: Error approving user: $e');
+      Get.snackbar(
+        'Error',
+        'Failed to approve user',
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: cancel,
+        colorText: Colors.white,
+      );
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  /// Reject a user registration
+  Future<void> rejectUser(String approvalId, [String? reason]) async {
+    try {
+      isLoading.value = true;
+      log('👎 AuthController: Rejecting user with ID: $approvalId');
+      
+      final result = await _authService.rejectUser(approvalId, reason);
+      
+      if (result.isSuccess) {
+        Get.snackbar(
+          'User Rejected',
+          result.message,
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: move,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 3),
+        );
+        
+        // Refresh pending approvals list
+        await fetchPendingApprovals();
+        
+      } else {
+        Get.snackbar(
+          'Rejection Failed',
+          result.message,
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: cancel,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 4),
+        );
+      }
+    } catch (e) {
+      log('❌ AuthController: Error rejecting user: $e');
+      Get.snackbar(
+        'Error',
+        'Failed to reject user',
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: cancel,
+        colorText: Colors.white,
+      );
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  /// Check approval status for current user (for polling)
+  Future<void> checkApprovalStatus() async {
+    try {
+      log('🔍 AuthController: Checking approval status for current user...');
+      
+      final result = await _authService.checkApprovalStatus();
+      
+      approvalStatus.value = result['status'] ?? 'pending';
+      rejectionReason.value = result['rejection_reason'] ?? '';
+      
+      if (result['expires_at'] != null) {
+        approvalExpiresAt.value = DateTime.parse(result['expires_at']);
+      }
+      
+      // Update user model with latest approval info
+      if (currentUserStore.value != null) {
+        final updatedUser = currentUserStore.value!.copyWith(
+          isApproved: result['is_approved'] ?? false,
+          approvalStatus: result['status'],
+          rejectionReason: result['rejection_reason'],
+          approvalExpiresAt: result['expires_at'] != null 
+              ? DateTime.parse(result['expires_at']) 
+              : null,
+        );
+        
+        currentUserStore.value = updatedUser;
+        await _saveUserToStorage(updatedUser);
+      }
+      
+      log('✅ AuthController: Approval status updated - ${approvalStatus.value}');
+      
+    } catch (e) {
+      log('❌ AuthController: Error checking approval status: $e');
+    }
+  }
+
+  /// Handle approval status change (called when status updates)
+  void handleApprovalStatusChange(String newStatus) {
+    approvalStatus.value = newStatus;
+    
+    switch (newStatus) {
+      case 'approved':
+        Get.snackbar(
+          'Approved! 🎉',
+          'Your registration has been approved. Welcome to TIRI!',
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: move,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 4),
+          icon: const Icon(Icons.celebration, color: Colors.white),
+        );
+        // Navigate to home
+        Get.offAllNamed(Routes.homePage);
+        break;
+        
+      case 'rejected':
+        Get.snackbar(
+          'Registration Rejected',
+          rejectionReason.value.isNotEmpty 
+              ? 'Reason: ${rejectionReason.value}' 
+              : 'Your registration was not approved.',
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: cancel,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 5),
+        );
+        break;
+        
+      case 'expired':
+        Get.snackbar(
+          'Request Expired',
+          'Your approval request has expired. Please contact support.',
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: Colors.orange,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 4),
+        );
+        break;
+    }
+  }
+
+  /// Start polling approval status (for users waiting for approval)
+  void startApprovalStatusPolling() {
+    log('📡 AuthController: Starting approval status polling...');
+    // TODO: Implement periodic status checking (every 30 seconds)
+    // This can use a Timer.periodic or similar mechanism
+  }
+
+  /// Stop polling approval status
+  void stopApprovalStatusPolling() {
+    log('🛑 AuthController: Stopping approval status polling...');
+    // TODO: Cancel periodic timer
+  }
+
+  /// Refresh approvals (pull-to-refresh)
+  Future<void> refreshApprovals() async {
+    await fetchPendingApprovals();
   }
 
   // =============================================================================

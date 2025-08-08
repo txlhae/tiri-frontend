@@ -22,6 +22,12 @@ _$UserModelImpl _$$UserModelImplFromJson(Map<String, dynamic> json) =>
           ? null
           : DateTime.parse(json['createdAt'] as String),
       isVerified: json['isVerified'] as bool? ?? false,
+      isApproved: json['isApproved'] as bool? ?? false,
+      approvalStatus: json['approvalStatus'] as String?,
+      rejectionReason: json['rejectionReason'] as String?,
+      approvalExpiresAt: json['approvalExpiresAt'] == null
+          ? null
+          : DateTime.parse(json['approvalExpiresAt'] as String),
     );
 
 Map<String, dynamic> _$$UserModelImplToJson(_$UserModelImpl instance) =>
@@ -38,4 +44,8 @@ Map<String, dynamic> _$$UserModelImplToJson(_$UserModelImpl instance) =>
       'hours': instance.hours,
       'createdAt': instance.createdAt?.toIso8601String(),
       'isVerified': instance.isVerified,
+      'isApproved': instance.isApproved,
+      'approvalStatus': instance.approvalStatus,
+      'rejectionReason': instance.rejectionReason,
+      'approvalExpiresAt': instance.approvalExpiresAt?.toIso8601String(),
     };

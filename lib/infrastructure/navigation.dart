@@ -19,6 +19,11 @@ import 'package:kind_clock/screens/auth_screens/register_screen.dart';
 import 'package:kind_clock/screens/request_details.dart';
 import 'package:kind_clock/screens/auth_screens/splash_screen.dart';
 import 'package:kind_clock/screens/my_helps.dart';
+import 'package:kind_clock/screens/auth_screens/pending_approval_screen.dart';
+import 'package:kind_clock/screens/auth_screens/rejection_screen.dart';
+import 'package:kind_clock/screens/auth_screens/expired_screen.dart';
+import 'package:kind_clock/screens/my_applications_screen.dart';
+import 'package:kind_clock/screens/approval_dashboard_screen.dart';
 
 class Navigation {
   static List<GetPage> routes = [
@@ -109,6 +114,31 @@ class Navigation {
     );
   },
 ),
+    GetPage(
+      name: Routes.myApplicationsPage,
+      page: () => const MyApplicationsScreen(),
+    ),
+
+    // =============================================================================
+    // APPROVAL SYSTEM ROUTES
+    // =============================================================================
+
+    GetPage(
+      name: Routes.pendingApprovalPage,
+      page: () => const PendingApprovalScreen(),
+    ),
+    GetPage(
+      name: Routes.rejectionScreen,
+      page: () => const RejectionScreen(),
+    ),
+    GetPage(
+      name: Routes.expiredScreen,
+      page: () => const ExpiredScreen(),
+    ),
+    GetPage(
+      name: Routes.approvalDashboardPage,
+      page: () => const ApprovalDashboardScreen(),
+    ),
 
   ];
 }

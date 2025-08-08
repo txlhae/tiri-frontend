@@ -6,6 +6,7 @@ part of 'chatroom_model.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
+
 Map<String, dynamic> _$ChatRoomModelToJson(ChatRoomModel instance) =>
     <String, dynamic>{
       'chatRoomId': instance.chatRoomId,
