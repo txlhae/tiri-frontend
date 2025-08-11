@@ -46,7 +46,7 @@ class AuthController extends GetxController {
   // UI CONSTANTS
   // =============================================================================
   
-  static const Color move = Color.fromRGBO(111, 168, 67, 1);
+  static const Color move = Color.fromRGBO(0, 140, 170, 1);  // TIRI Blue
   static const Color cancel = Color.fromRGBO(176, 48, 48, 1);
 
   // =============================================================================
@@ -132,6 +132,12 @@ class AuthController extends GetxController {
   final RxString approvalStatus = 'pending'.obs; // for current user
   final RxString rejectionReason = ''.obs; // for current user
   final Rx<DateTime?> approvalExpiresAt = Rx<DateTime?>(null); // for current user
+  
+  // Error state management for approvals
+  final RxBool pendingApprovalsError = false.obs;
+  final RxString pendingApprovalsErrorMessage = ''.obs;
+  final RxBool approvalHistoryError = false.obs;
+  final RxString approvalHistoryErrorMessage = ''.obs;
 
   // =============================================================================
   // BACKWARD COMPATIBILITY GETTERS
@@ -1003,6 +1009,10 @@ class AuthController extends GetxController {
     try {
       log('🔄 AuthController: Fetching pending approvals...');
       
+      // Clear error state
+      pendingApprovalsError.value = false;
+      pendingApprovalsErrorMessage.value = '';
+      
       final approvals = await _authService.getPendingApprovals();
       
       // Convert to ApprovalRequest objects
@@ -1019,6 +1029,8 @@ class AuthController extends GetxController {
           'requestedAt': approval['requested_at'],
           'expiresAt': approval['expires_at'],
           'newUserProfileImage': approval['new_user_profile_image'],
+          'rejectionReason': approval['rejection_reason'],  // Add this even if null
+          'decidedAt': approval['decided_at'],  // Add this even if null
         }));
       }
       
@@ -1027,12 +1039,23 @@ class AuthController extends GetxController {
       
     } catch (e) {
       log('❌ AuthController: Error fetching pending approvals: $e');
+      
+      // Set error state
+      pendingApprovalsError.value = true;
+      pendingApprovalsErrorMessage.value = 'Failed to load pending approvals. Please check your connection and try again.';
+      
+      // Clear the list to show error state
+      pendingApprovals.clear();
+      pendingApprovalsCount.value = 0;
+      
+      // Show error snackbar
       Get.snackbar(
         'Error',
         'Failed to load pending approvals',
         snackPosition: SnackPosition.TOP,
         backgroundColor: cancel,
         colorText: Colors.white,
+        duration: const Duration(seconds: 4),
       );
     }
   }
@@ -1041,6 +1064,10 @@ class AuthController extends GetxController {
   Future<void> fetchApprovalHistory() async {
     try {
       log('🔄 AuthController: Fetching approval history...');
+      
+      // Clear error state
+      approvalHistoryError.value = false;
+      approvalHistoryErrorMessage.value = '';
       
       final history = await _authService.getApprovalHistory();
       
@@ -1067,12 +1094,21 @@ class AuthController extends GetxController {
       
     } catch (e) {
       log('❌ AuthController: Error fetching approval history: $e');
+      
+      // Set error state
+      approvalHistoryError.value = true;
+      approvalHistoryErrorMessage.value = 'Failed to load approval history. Please check your connection and try again.';
+      
+      // Clear the list to show error state
+      approvalHistory.clear();
+      
       Get.snackbar(
         'Error',
         'Failed to load approval history',
         snackPosition: SnackPosition.TOP,
         backgroundColor: cancel,
         colorText: Colors.white,
+        duration: const Duration(seconds: 4),
       );
     }
   }

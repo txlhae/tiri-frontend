@@ -635,15 +635,45 @@ class AuthService {
   /// Returns: List of approval requests
   Future<List<Map<String, dynamic>>> getPendingApprovals() async {
     try {
-      if (!isAuthenticated) {
+      // 🚨 DEBUG: Log authentication status
+      log('🔍 DEBUG: Checking authentication status...', name: 'AUTH');
+      log('🔍 DEBUG: isAuthenticated = $isAuthenticated', name: 'AUTH');
+      log('🔍 DEBUG: _apiService.isAuthenticated = ${_apiService.isAuthenticated}', name: 'AUTH');
+      log('🔍 DEBUG: _currentUser = ${_currentUser?.email ?? 'null'}', name: 'AUTH');
+      print('🔍 DEBUG: isAuthenticated = $isAuthenticated');
+      print('🔍 DEBUG: _apiService.isAuthenticated = ${_apiService.isAuthenticated}');
+      print('🔍 DEBUG: _currentUser = ${_currentUser?.email ?? 'null'}');
+      
+      // 🚨 FIX: Use API service authentication for approval requests
+      // The API service has tokens even if user data isn't loaded yet
+      if (!_apiService.isAuthenticated) {
+        log('❌ DEBUG: API Service not authenticated - throwing exception', name: 'AUTH');
+        print('❌ DEBUG: API Service not authenticated - throwing exception');
         throw Exception('User not authenticated');
+      }
+      
+      // Log the bypass for debugging
+      if (!isAuthenticated) {
+        log('⚠️ DEBUG: Full isAuthenticated=false but _apiService.isAuthenticated=true, proceeding with API call', name: 'AUTH');
+        print('⚠️ DEBUG: Full isAuthenticated=false but _apiService.isAuthenticated=true, proceeding with API call');
       }
 
       if (ApiConfig.enableLogging) {
         log('Fetching pending approvals', name: 'AUTH');
       }
 
-      final response = await _apiService.get('/api/auth/approvals/pending/');
+      // 🚨 DEBUG: Force log the exact URL being called
+      final endpoint = '/api/auth/approvals/pending/';
+      log('🔍 DEBUG: About to call endpoint: $endpoint', name: 'AUTH');
+      print('🔍 DEBUG: About to call endpoint: $endpoint');
+
+      final response = await _apiService.get(endpoint);
+
+      // 🚨 DEBUG: Log the response details
+      log('🔍 DEBUG: Response status: ${response.statusCode}', name: 'AUTH');
+      log('🔍 DEBUG: Response data: ${response.data}', name: 'AUTH');
+      print('🔍 DEBUG: Response status: ${response.statusCode}');
+      print('🔍 DEBUG: Response data: ${response.data}');
 
       if (response.statusCode == 200) {
         final data = response.data;
@@ -672,7 +702,8 @@ class AuthService {
   /// Returns: AuthResult with approval status
   Future<AuthResult> approveUser(String approvalId) async {
     try {
-      if (!isAuthenticated) {
+      // Use API service authentication check for consistency
+      if (!_apiService.isAuthenticated) {
         throw Exception('User not authenticated');
       }
 
@@ -718,7 +749,8 @@ class AuthService {
   /// Returns: AuthResult with rejection status
   Future<AuthResult> rejectUser(String approvalId, [String? reason]) async {
     try {
-      if (!isAuthenticated) {
+      // Use API service authentication check for consistency
+      if (!_apiService.isAuthenticated) {
         throw Exception('User not authenticated');
       }
 
@@ -762,8 +794,21 @@ class AuthService {
   /// Returns: List of approval history
   Future<List<Map<String, dynamic>>> getApprovalHistory() async {
     try {
-      if (!isAuthenticated) {
+      // 🚨 DEBUG: Log authentication status
+      log('🔍 DEBUG: getApprovalHistory - isAuthenticated = $isAuthenticated', name: 'AUTH');
+      print('🔍 DEBUG: getApprovalHistory - isAuthenticated = $isAuthenticated');
+      
+      // 🚨 FIX: Use API service authentication for approval requests
+      if (!_apiService.isAuthenticated) {
+        log('❌ DEBUG: getApprovalHistory - API Service not authenticated', name: 'AUTH');
+        print('❌ DEBUG: getApprovalHistory - API Service not authenticated');
         throw Exception('User not authenticated');
+      }
+      
+      // Log the bypass for debugging
+      if (!isAuthenticated) {
+        log('⚠️ DEBUG: getApprovalHistory - Full isAuthenticated=false but proceeding', name: 'AUTH');
+        print('⚠️ DEBUG: getApprovalHistory - Full isAuthenticated=false but proceeding');
       }
 
       if (ApiConfig.enableLogging) {
@@ -847,18 +892,32 @@ class AuthService {
   /// Load user data from secure storage
   Future<void> _loadUserFromStorage() async {
     try {
+      // 🚨 DEBUG: Log user data loading process
+      log('🔍 DEBUG: Starting _loadUserFromStorage...', name: 'AUTH');
+      print('🔍 DEBUG: Starting _loadUserFromStorage...');
+      
       final userDataString = await _secureStorage.read(key: _userDataKey);
+      
+      log('🔍 DEBUG: userDataString from storage: ${userDataString != null ? 'found' : 'null'}', name: 'AUTH');
+      print('🔍 DEBUG: userDataString from storage: ${userDataString != null ? 'found' : 'null'}');
       
       if (userDataString != null) {
         final userData = jsonDecode(userDataString);
         _currentUser = UserModel.fromJson(userData);
         
+        log('🔍 DEBUG: User loaded successfully: ${_currentUser?.email}', name: 'AUTH');
+        print('🔍 DEBUG: User loaded successfully: ${_currentUser?.email}');
+        
         if (ApiConfig.enableLogging) {
           log('User data loaded from storage: ${_currentUser?.email}', name: 'AUTH');
         }
+      } else {
+        log('🔍 DEBUG: No user data found in storage', name: 'AUTH');
+        print('🔍 DEBUG: No user data found in storage');
       }
     } catch (e) {
-      log('Error loading user from storage: $e', name: 'AUTH');
+      log('❌ DEBUG: Error loading user from storage: $e', name: 'AUTH');
+      print('❌ DEBUG: Error loading user from storage: $e');
     }
   }
 

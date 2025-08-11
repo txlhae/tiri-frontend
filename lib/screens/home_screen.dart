@@ -10,7 +10,6 @@ import 'package:kind_clock/controllers/request_controller.dart';
 import 'package:kind_clock/infrastructure/routes.dart';
 import 'package:kind_clock/screens/widgets/home_widgets/community_requests.dart';
 import 'package:kind_clock/screens/widgets/home_widgets/my_requests.dart';
-import 'package:kind_clock/screens/my_applications_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -198,7 +197,6 @@ class HomeScreen extends StatelessWidget {
                     tabs: const <Widget>[
                       Tab(text: 'Community Posts'),
                       Tab(text: 'My Posts'),
-                      Tab(text: 'My Applications'),
                     ],
                     dividerColor: Colors.transparent,
                     indicatorColor: Colors.transparent,
@@ -249,11 +247,8 @@ class HomeScreen extends StatelessWidget {
                                       await requestController
                                           .fetchMyRequestsByLocation(
                                               location.trim().toLowerCase());
-                                    } else if (selectedTab == 2) {
-                                      // My Applications tab - no search functionality for now
-                                      // Applications are user-specific and don't need location search
                                     }
-                                  },
+                                                  },
                                   controller: homeController.searchController,
                                   style: const TextStyle(fontSize: 14),
                                   decoration: InputDecoration(
@@ -300,8 +295,6 @@ class HomeScreen extends StatelessWidget {
                                                   requestController
                                                       .hasSearchedMyPosts
                                                       .value = false;
-                                                } else if (selectedTab == 2) {
-                                                  // My Applications tab - no search clearing needed
                                                 }
                                               },
                                             )
@@ -374,7 +367,6 @@ class HomeScreen extends StatelessWidget {
                 children: const <Widget>[
                   CommunityRequests(),
                   MyRequests(),
-                  MyApplicationsScreen(),
                 ],
               ),
             ),

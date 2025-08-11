@@ -17,7 +17,7 @@ class HomeController extends GetxController
     searchController.addListener(() {
       hasSearchText.value = searchController.text.isNotEmpty;
     });
-    tabController = TabController(length: 3, vsync: this);
+    tabController = TabController(length: 2, vsync: this);
 
     tabController.addListener(() {
       searchController.clear(); // Clear search box on tab change
@@ -31,9 +31,6 @@ class HomeController extends GetxController
         // My Posts tab
         requestController.myPostRequests.clear();
         requestController.hasSearchedMyPosts.value = false; // reset
-      } else if (tabController.index == 2) {
-        // My Applications tab - no special handling needed for now
-        // The MyApplicationsScreen handles its own data loading
       }
     });
 

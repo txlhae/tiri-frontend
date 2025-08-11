@@ -44,66 +44,102 @@ class _ApprovalDashboardScreenState extends State<ApprovalDashboardScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          onPressed: () => Navigator.of(context).pop(),
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-        ),
-        title: const Text(
-          'Manage Approvals',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        centerTitle: false,
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: const Color.fromRGBO(111, 168, 67, 1),
-          unselectedLabelColor: Colors.grey,
-          indicatorColor: const Color.fromRGBO(111, 168, 67, 1),
-          tabs: [
-            Obx(() => Tab(
-              child: Row(
+      body: Column(
+        children: [
+          // Top Header with curved design like My Helps
+          SafeArea(
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 5),
+              padding: const EdgeInsets.all(16),
+              decoration: const BoxDecoration(
+                color: Color.fromRGBO(0, 140, 170, 1),
+                borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+              ),
+              child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('Pending'),
-                  if (authController.pendingApprovalsCount.value > 0) ...[
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(Icons.arrow_back, color: Colors.white),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
                       ),
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        '${authController.pendingApprovalsCount.value}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  const Text(
+                    'Manage Approvals',
+                    style: TextStyle(
+                      fontSize: 18, 
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
                     ),
-                  ],
+                  ),
+                  const SizedBox(height: 12),
+                  TabBar(
+                    controller: _tabController,
+                    indicator: const BoxDecoration(),
+                    labelColor: Colors.white,
+                    unselectedLabelColor: Colors.white70,
+                    labelStyle: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 14,
+                    ),
+                    unselectedLabelStyle: const TextStyle(
+                      fontWeight: FontWeight.normal,
+                      fontSize: 14,
+                    ),
+                    tabs: [
+                      Obx(() => Tab(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text('Pending'),
+                            if (authController.pendingApprovalsCount.value > 0) ...[
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 1,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.red,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  '${authController.pendingApprovalsCount.value}',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      )),
+                      const Tab(text: 'History'),
+                    ],
+                  ),
                 ],
               ),
-            )),
-            const Tab(text: 'History'),
-          ],
-        ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildPendingTab(),
-          _buildHistoryTab(),
+            ),
+          ),
+          
+          // Tab Content
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildPendingTab(),
+                _buildHistoryTab(),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -120,12 +156,24 @@ class _ApprovalDashboardScreenState extends State<ApprovalDashboardScreen>
           );
         }
 
+        // Show error state if there's an error
+        if (authController.pendingApprovalsError.value) {
+          return _buildErrorState(
+            icon: Icons.error_outline,
+            title: 'Failed to Load Approvals',
+            subtitle: authController.pendingApprovalsErrorMessage.value,
+            color: Colors.red,
+            onRetry: () => authController.fetchPendingApprovals(),
+          );
+        }
+
+        // Show empty state only if no error and no pending approvals
         if (authController.pendingApprovals.isEmpty) {
           return _buildEmptyState(
             icon: Icons.check_circle_outline,
             title: 'All Caught Up!',
             subtitle: 'No pending approvals at the moment.',
-            color: const Color.fromRGBO(111, 168, 67, 1),
+            color: const Color.fromRGBO(0, 140, 170, 1),
           );
         }
 
@@ -157,6 +205,18 @@ class _ApprovalDashboardScreenState extends State<ApprovalDashboardScreen>
           );
         }
 
+        // Show error state if there's an error
+        if (authController.approvalHistoryError.value) {
+          return _buildErrorState(
+            icon: Icons.error_outline,
+            title: 'Failed to Load History',
+            subtitle: authController.approvalHistoryErrorMessage.value,
+            color: Colors.red,
+            onRetry: () => authController.fetchApprovalHistory(),
+          );
+        }
+
+        // Show empty state only if no error and no history
         if (authController.approvalHistory.isEmpty) {
           return _buildEmptyState(
             icon: Icons.history,
@@ -220,6 +280,62 @@ class _ApprovalDashboardScreenState extends State<ApprovalDashboardScreen>
     );
   }
 
+  Widget _buildErrorState({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required VoidCallback onRetry,
+  }) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 80,
+              color: color.withOpacity(0.7),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 16,
+                color: Colors.black54,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh, color: Colors.white),
+              label: const Text('Try Again', style: TextStyle(color: Colors.white)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color.fromRGBO(0, 140, 170, 1),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildHistoryCard(ApprovalRequest approval) {
     IconData statusIcon;
     Color statusColor;
@@ -228,7 +344,7 @@ class _ApprovalDashboardScreenState extends State<ApprovalDashboardScreen>
     switch (approval.status) {
       case 'approved':
         statusIcon = Icons.check_circle;
-        statusColor = const Color.fromRGBO(111, 168, 67, 1);
+        statusColor = const Color.fromRGBO(0, 140, 170, 1);
         statusText = 'Approved';
         break;
       case 'rejected':
@@ -349,12 +465,10 @@ class _ApprovalDashboardScreenState extends State<ApprovalDashboardScreen>
                   ),
                 ),
                 const SizedBox(width: 16),
-                Expanded(
-                  child: _buildHistoryDetailItem(
-                    Icons.access_time,
-                    _formatDate(approval.decidedAt ?? approval.requestedAt),
-                    Colors.grey,
-                  ),
+                _buildHistoryDetailItem(
+                  Icons.access_time,
+                  _formatDate(approval.decidedAt ?? approval.requestedAt),
+                  Colors.grey,
                 ),
               ],
             ),
@@ -439,7 +553,7 @@ class _ApprovalDashboardScreenState extends State<ApprovalDashboardScreen>
               authController.approveUser(approval.id);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color.fromRGBO(111, 168, 67, 1),
+              backgroundColor: const Color.fromRGBO(0, 140, 170, 1),
               foregroundColor: Colors.white,
             ),
             child: const Text('Approve'),
@@ -483,7 +597,7 @@ class _ApprovalDashboardScreenState extends State<ApprovalDashboardScreen>
                 children: [
                   CircleAvatar(
                     radius: 24,
-                    backgroundColor: const Color.fromRGBO(111, 168, 67, 0.1),
+                    backgroundColor: const Color.fromRGBO(0, 140, 170, 0.1),
                     backgroundImage: approval.newUserProfileImage != null
                         ? NetworkImage(approval.newUserProfileImage!)
                         : null,
@@ -493,7 +607,7 @@ class _ApprovalDashboardScreenState extends State<ApprovalDashboardScreen>
                                 ? approval.newUserName[0].toUpperCase()
                                 : '?',
                             style: const TextStyle(
-                              color: Color.fromRGBO(111, 168, 67, 1),
+                              color: Color.fromRGBO(0, 140, 170, 1),
                               fontWeight: FontWeight.bold,
                               fontSize: 18,
                             ),
@@ -571,7 +685,7 @@ class _ApprovalDashboardScreenState extends State<ApprovalDashboardScreen>
                       icon: const Icon(Icons.check, size: 18),
                       label: const Text('Approve'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color.fromRGBO(111, 168, 67, 1),
+                        backgroundColor: const Color.fromRGBO(0, 140, 170, 1),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),

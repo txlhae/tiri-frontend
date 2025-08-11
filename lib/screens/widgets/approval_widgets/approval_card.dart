@@ -39,7 +39,7 @@ class ApprovalCard extends StatelessWidget {
                   // Profile picture placeholder
                   CircleAvatar(
                     radius: 24,
-                    backgroundColor: const Color.fromRGBO(111, 168, 67, 0.1),
+                    backgroundColor: const Color.fromRGBO(0, 140, 170, 0.1),
                     backgroundImage: approval.newUserProfileImage != null
                         ? NetworkImage(approval.newUserProfileImage!)
                         : null,
@@ -49,7 +49,7 @@ class ApprovalCard extends StatelessWidget {
                                 ? approval.newUserName[0].toUpperCase()
                                 : '?',
                             style: const TextStyle(
-                              color: Color.fromRGBO(111, 168, 67, 1),
+                              color: Color.fromRGBO(0, 140, 170, 1),
                               fontWeight: FontWeight.bold,
                               fontSize: 18,
                             ),
@@ -120,7 +120,7 @@ class ApprovalCard extends StatelessWidget {
       color = Colors.orange;
       icon = Icons.schedule;
     } else {
-      color = Colors.green;
+      color = const Color.fromRGBO(0, 140, 170, 1);
       icon = Icons.schedule;
     }
 
@@ -163,7 +163,7 @@ class ApprovalCard extends StatelessWidget {
           child: _buildDetailItem(
             Icons.code,
             approval.referralCodeUsed,
-            const Color.fromRGBO(111, 168, 67, 1),
+            const Color.fromRGBO(0, 140, 170, 1),
           ),
         ),
       ],
@@ -187,7 +187,7 @@ class ApprovalCard extends StatelessWidget {
               child: _buildDetailItem(
                 Icons.code,
                 approval.referralCodeUsed,
-                const Color.fromRGBO(111, 168, 67, 1),
+                const Color.fromRGBO(0, 140, 170, 1),
               ),
             ),
           ],
@@ -275,7 +275,7 @@ class ApprovalCard extends StatelessWidget {
             icon: const Icon(Icons.check, size: 18),
             label: const Text('Approve'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color.fromRGBO(111, 168, 67, 1),
+              backgroundColor: const Color.fromRGBO(0, 140, 170, 1),
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 8),
               shape: RoundedRectangleBorder(
