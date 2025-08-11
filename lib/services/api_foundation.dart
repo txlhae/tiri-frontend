@@ -1,6 +1,5 @@
-/// API Foundation Initialization - Phase 1
-/// Call this during app startup to initialize the HTTP service layer
-library api_initialization;
+// API Foundation Initialization - Phase 1  
+// Call this during app startup to initialize the HTTP service layer
 
 import 'package:flutter/foundation.dart';
 import 'api/api_client.dart';

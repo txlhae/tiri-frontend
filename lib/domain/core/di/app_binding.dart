@@ -1,18 +1,18 @@
 ﻿import 'package:get/get.dart';
-import 'package:kind_clock/controllers/auth_controller.dart';
-import 'package:kind_clock/controllers/chat_controller.dart';
-import 'package:kind_clock/controllers/email_sent_controller.dart';
-import 'package:kind_clock/controllers/home_controller.dart';
-import 'package:kind_clock/controllers/image_controller.dart';
-import 'package:kind_clock/controllers/notification_controller.dart';
-import 'package:kind_clock/controllers/request_controller.dart';
-import 'package:kind_clock/controllers/request_details_controller.dart';
-import 'package:kind_clock/controllers/splash_controller.dart';
-import 'package:kind_clock/services/api_service.dart';
-import 'package:kind_clock/services/auth_service.dart';
-import 'package:kind_clock/services/request_service.dart';
-import 'package:kind_clock/services/deep_link_service.dart';
-import 'package:kind_clock/services/user_state_service.dart';
+import 'package:tiri/controllers/auth_controller.dart';
+import 'package:tiri/controllers/chat_controller.dart';
+import 'package:tiri/controllers/email_sent_controller.dart';
+import 'package:tiri/controllers/home_controller.dart';
+import 'package:tiri/controllers/image_controller.dart';
+import 'package:tiri/controllers/notification_controller.dart';
+import 'package:tiri/controllers/request_controller.dart';
+import 'package:tiri/controllers/request_details_controller.dart';
+import 'package:tiri/controllers/splash_controller.dart';
+import 'package:tiri/services/api_service.dart';
+import 'package:tiri/services/auth_service.dart';
+import 'package:tiri/services/request_service.dart';
+import 'package:tiri/services/deep_link_service.dart';
+import 'package:tiri/services/user_state_service.dart';
 
 class AppBinding extends Bindings {
   @override

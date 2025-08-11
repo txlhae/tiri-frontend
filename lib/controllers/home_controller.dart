@@ -1,9 +1,9 @@
 import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:kind_clock/controllers/request_controller.dart';
-import 'package:kind_clock/infrastructure/routes.dart';
-import 'package:kind_clock/screens/widgets/dialog_widgets/logout_dialog.dart';
+import 'package:tiri/controllers/request_controller.dart';
+import 'package:tiri/infrastructure/routes.dart';
+import 'package:tiri/screens/widgets/dialog_widgets/logout_dialog.dart';
 
 class HomeController extends GetxController
     with GetSingleTickerProviderStateMixin {

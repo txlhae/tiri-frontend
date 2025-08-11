@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:kind_clock/controllers/request_controller.dart';
-import 'package:kind_clock/screens/widgets/custom_widgets/custom_back_button.dart';
-import 'package:kind_clock/screens/widgets/request_widgets/details_card.dart';
+import 'package:tiri/controllers/request_controller.dart';
+import 'package:tiri/screens/widgets/custom_widgets/custom_back_button.dart';
+import 'package:tiri/screens/widgets/request_widgets/details_card.dart';
 
 class ContactUs extends StatelessWidget {
   const ContactUs({super.key});

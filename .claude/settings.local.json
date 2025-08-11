@@ -7,7 +7,12 @@
       "Bash(mv:*)",
       "Bash(cp:*)",
       "Bash(rm:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(timeout 15 flutter analyze)",
+      "Bash(findstr:*)",
+      "Bash(timeout 10 flutter analyze)",
+      "Bash(timeout 30 flutter analyze)",
+      "Bash(move kind_clockMainActivity.kt tiriMainActivity.kt)"
     ],
     "deny": []
   }

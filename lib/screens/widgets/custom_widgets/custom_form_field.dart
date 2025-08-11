@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
-import 'package:kind_clock/controllers/auth_controller.dart';
+import 'package:tiri/controllers/auth_controller.dart';
 
 class CustomFormField extends StatelessWidget {
   final String hintText;

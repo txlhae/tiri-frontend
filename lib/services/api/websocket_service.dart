@@ -1,6 +1,5 @@
 /// WebSocket Service for Real-time Notifications
 /// Provides auto-reconnection, message handling, and state management
-library websocket_service;
 
 import 'dart:async';
 import 'dart:convert';

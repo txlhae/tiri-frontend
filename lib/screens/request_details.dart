@@ -2,20 +2,20 @@ import 'package:defer_pointer/defer_pointer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
-import 'package:kind_clock/controllers/auth_controller.dart';
-import 'package:kind_clock/controllers/chat_controller.dart';
-import 'package:kind_clock/controllers/notification_controller.dart';
-import 'package:kind_clock/controllers/request_controller.dart';
-import 'package:kind_clock/controllers/request_details_controller.dart';
-import 'package:kind_clock/infrastructure/routes.dart';
-import 'package:kind_clock/models/notification_model.dart';
-import 'package:kind_clock/models/request_model.dart';
-import 'package:kind_clock/screens/profile_screen.dart';
-import 'package:kind_clock/screens/widgets/custom_widgets/custom_back_button.dart';
-import 'package:kind_clock/screens/widgets/dialog_widgets/intrested_dialog.dart';
-import 'package:kind_clock/screens/widgets/request_widgets/details_card.dart';
-import 'package:kind_clock/screens/widgets/request_widgets/details_row.dart';
-import 'package:kind_clock/screens/widgets/request_widgets/status_row.dart';
+import 'package:tiri/controllers/auth_controller.dart';
+import 'package:tiri/controllers/chat_controller.dart';
+import 'package:tiri/controllers/notification_controller.dart';
+import 'package:tiri/controllers/request_controller.dart';
+import 'package:tiri/controllers/request_details_controller.dart';
+import 'package:tiri/infrastructure/routes.dart';
+import 'package:tiri/models/notification_model.dart';
+import 'package:tiri/models/request_model.dart';
+import 'package:tiri/screens/profile_screen.dart';
+import 'package:tiri/screens/widgets/custom_widgets/custom_back_button.dart';
+import 'package:tiri/screens/widgets/dialog_widgets/intrested_dialog.dart';
+import 'package:tiri/screens/widgets/request_widgets/details_card.dart';
+import 'package:tiri/screens/widgets/request_widgets/details_row.dart';
+import 'package:tiri/screens/widgets/request_widgets/status_row.dart';
 import 'package:shimmer/shimmer.dart';
 
 class RequestDetails extends StatefulWidget {
@@ -30,7 +30,6 @@ class _RequestDetailsState extends State<RequestDetails> {
   final AuthController authController = Get.find<AuthController>();
   final NotificationController notificationController =
       Get.put(NotificationController());
-  // final FirebaseStorageService store = Get.find<FirebaseStorageService>(); // REMOVED: Migrating to Django
   late final RequestDetailsController detailsController;
 
   /// Convert RequestStatus enum to user-friendly display string

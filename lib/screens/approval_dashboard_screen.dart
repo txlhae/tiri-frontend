@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:kind_clock/controllers/auth_controller.dart';
-import 'package:kind_clock/models/approval_request_model.dart';
-import 'package:kind_clock/screens/widgets/approval_widgets/approval_card.dart';
-import 'package:kind_clock/screens/widgets/dialog_widgets/rejection_dialog.dart';
+import 'package:tiri/controllers/auth_controller.dart';
+import 'package:tiri/models/approval_request_model.dart';
+import 'package:tiri/screens/widgets/approval_widgets/approval_card.dart';
+import 'package:tiri/screens/widgets/dialog_widgets/rejection_dialog.dart';
 
 class ApprovalDashboardScreen extends StatefulWidget {
   const ApprovalDashboardScreen({super.key});

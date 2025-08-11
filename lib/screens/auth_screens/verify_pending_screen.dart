@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:kind_clock/infrastructure/routes.dart';
-import 'package:kind_clock/screens/widgets/verification_status_widget.dart';
+import 'package:tiri/infrastructure/routes.dart';
+import 'package:tiri/screens/widgets/verification_status_widget.dart';
 
 class VerifyPendingScreen extends StatefulWidget {
   final String? referredUser;

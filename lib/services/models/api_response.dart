@@ -1,6 +1,5 @@
 /// API Response Models for Django Backend Integration
 /// Provides generic response wrappers and data models
-library api_response;
 
 import 'dart:convert';
 

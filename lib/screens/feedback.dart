@@ -1,10 +1,10 @@
 import 'package:defer_pointer/defer_pointer.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:kind_clock/controllers/request_controller.dart';
+import 'package:tiri/controllers/request_controller.dart';
 import 'package:intl/intl.dart';
-import 'package:kind_clock/models/feedback_model.dart';
-import 'package:kind_clock/screens/widgets/custom_widgets/custom_back_button.dart';
+import 'package:tiri/models/feedback_model.dart';
+import 'package:tiri/screens/widgets/custom_widgets/custom_back_button.dart';
 
 class Feedback extends StatefulWidget {
   const Feedback({super.key});

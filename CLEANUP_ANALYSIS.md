@@ -91,6 +91,35 @@ The following Android/iOS files contain the old package structure and may need u
 - The core app functionality appears intact
 - Most cleanup involves renaming/updating references rather than deletion
 
+## Firebase Remnants Analysis
+
+### Firebase Migration Status
+- **Status**: Successfully migrated from Firebase to Django backend
+- **Evidence**: Multiple commented lines indicating "REMOVED: Firebase dependency" and "REMOVED: Migrating to Django"
+
+#### Files with Firebase Remnants (Commented Out Code)
+1. **notification_controller.dart:3** - `// final FirebaseStorageService _store = Get.find<FirebaseStorageService>();`
+2. **notification_controller.dart:26** - `// REMOVED: Firebase dependency`
+3. **request_details.dart:25** - `// final FirebaseStorageService store = Get.find<FirebaseStorageService>();`
+4. **notification_api_service.dart:15** - Comment references "Firebase Cloud Messaging token"
+5. **notifications_page.dart:14** - `// final store = Get.find<FirebaseStorageService>();`
+6. **register_screen.dart:6** - `// final FirebaseStorageService store = Get.find<FirebaseStorageService>();`
+7. **cancel_dialog.dart:68,84** - `// REMOVED: Firebase dependency`
+8. **custom_tile.dart:17** - `// final store = Get.find<FirebaseStorageService>();`
+9. **image_controller.dart:8** - `// final store = Get.find<FirebaseStorageService>();`
+10. **image_controller.dart:28** - `// REMOVED: Firebase dependency`
+
+#### Clean Migration Evidence
+- ✅ No Firebase dependencies in `pubspec.yaml`
+- ✅ No `google-services.json` files found
+- ✅ All Firebase code is commented out, not deleted
+- ✅ Proper migration comments explaining removal reason
+
+#### Recommendations for Firebase Remnants
+- **Low Priority**: Remove commented Firebase code for cleaner codebase
+- **Keep**: FCM token reference in API service (still valid for push notifications)
+- **Action**: Clean up commented lines mentioning Firebase/FirebaseStorageService
+
 ## Impact Assessment
 - **Risk Level**: Low - mostly template cleanup
 - **Functionality Impact**: None (unused files and naming consistency)

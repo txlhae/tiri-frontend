@@ -1,7 +1,7 @@
 import 'dart:developer';
 import 'package:get/get.dart';
-import 'package:kind_clock/controllers/request_controller.dart';
-import 'package:kind_clock/models/request_model.dart';
+import 'package:tiri/controllers/request_controller.dart';
+import 'package:tiri/models/request_model.dart';
 
 class RequestDetailsController extends GetxController {
   // Access to the main RequestController for data operations

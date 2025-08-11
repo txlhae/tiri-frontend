@@ -1,6 +1,6 @@
 # pubspec.yaml
-name: kind_clock
-description: "A new Flutter project."
+name: tiri
+description: "A Flutter-based mobile application for community help requests and resource sharing."
 publish_to: 'none'
 
 version: 1.0.0+1

@@ -1,6 +1,5 @@
 /// API Exception Classes for Django Backend Integration
 /// Provides comprehensive error handling for HTTP operations
-library api_exceptions;
 
 /// Abstract base class for all API-related exceptions
 /// Provides common properties and behavior for error handling

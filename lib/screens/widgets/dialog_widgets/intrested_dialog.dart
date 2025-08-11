@@ -2,9 +2,9 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:kind_clock/controllers/request_controller.dart';
-import 'package:kind_clock/models/request_model.dart';
-import 'package:kind_clock/models/user_model.dart';
+import 'package:tiri/controllers/request_controller.dart';
+import 'package:tiri/models/request_model.dart';
+import 'package:tiri/models/user_model.dart';
 
 class IntrestedDialog extends StatefulWidget {
   final String questionText;

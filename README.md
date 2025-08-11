@@ -1,3 +1,3 @@
-# kind_clock
+# Tiri Mobile App
 
-A new Flutter project.
+A Flutter-based mobile application for community help requests and resource sharing.

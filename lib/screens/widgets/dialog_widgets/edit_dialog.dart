@@ -3,11 +3,11 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
-import 'package:kind_clock/controllers/auth_controller.dart';
-import 'package:kind_clock/controllers/image_controller.dart';
-import 'package:kind_clock/models/user_model.dart';
-import 'package:kind_clock/screens/widgets/custom_widgets/custom_button.dart';
-import 'package:kind_clock/screens/widgets/custom_widgets/custom_form_field.dart';
+import 'package:tiri/controllers/auth_controller.dart';
+import 'package:tiri/controllers/image_controller.dart';
+import 'package:tiri/models/user_model.dart';
+import 'package:tiri/screens/widgets/custom_widgets/custom_button.dart';
+import 'package:tiri/screens/widgets/custom_widgets/custom_form_field.dart';
 
 class EditDialog extends StatefulWidget {
   final UserModel user;

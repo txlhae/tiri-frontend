@@ -2,9 +2,9 @@
 import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:kind_clock/controllers/auth_controller.dart';
-import 'package:kind_clock/infrastructure/routes.dart';
-import 'package:kind_clock/services/user_state_service.dart';
+import 'package:tiri/controllers/auth_controller.dart';
+import 'package:tiri/infrastructure/routes.dart';
+import 'package:tiri/services/user_state_service.dart';
 
 /// Smart Splash Controller with State-Based Routing
 /// 

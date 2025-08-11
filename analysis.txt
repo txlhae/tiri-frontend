@@ -1,0 +1,405 @@
+Analyzing tirinajidfrontend...                                  
+
+   info - Dangling library doc comment - lib\config\api_config.dart:3:1 - dangling_library_doc_comments
+   info - Don't invoke 'print' in production code - lib\config\api_config.dart:234:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\config\api_config.dart:235:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\config\api_config.dart:236:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\config\api_config.dart:237:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\config\api_config.dart:238:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\config\api_config.dart:239:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\config\api_config.dart:240:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\config\api_config.dart:241:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\config\api_config.dart:242:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\config\api_config.dart:243:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\auth_controller.dart:1414:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\auth_controller.dart:1438:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\auth_controller.dart:1439:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\auth_controller.dart:1440:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\auth_controller.dart:1441:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\auth_controller.dart:1442:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\auth_controller.dart:1443:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\auth_controller.dart:1444:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\auth_controller.dart:1445:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\auth_controller.dart:1446:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\auth_controller.dart:1447:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\auth_controller.dart:1448:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\auth_controller.dart:1449:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\auth_controller.dart:1450:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\auth_controller.dart:1472:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\auth_controller.dart:1475:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\auth_controller.dart:1526:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\auth_controller.dart:1555:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\auth_controller.dart:1588:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\auth_controller.dart:1635:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\chat_controller.dart:95:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\chat_controller.dart:96:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\chat_controller.dart:97:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\chat_controller.dart:98:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\chat_controller.dart:99:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\chat_controller.dart:105:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\chat_controller.dart:109:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\chat_controller.dart:119:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\chat_controller.dart:120:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\chat_controller.dart:121:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\chat_controller.dart:122:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\chat_controller.dart:123:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\chat_controller.dart:127:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\chat_controller.dart:131:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\chat_controller.dart:140:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\chat_controller.dart:141:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\chat_controller.dart:142:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\chat_controller.dart:193:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\chat_controller.dart:194:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\chat_controller.dart:202:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\chat_controller.dart:213:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\chat_controller.dart:224:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\chat_controller.dart:237:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\chat_controller.dart:245:13 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\chat_controller.dart:248:13 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\chat_controller.dart:268:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\chat_controller.dart:273:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\chat_controller.dart:277:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\chat_controller.dart:287:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\chat_controller.dart:293:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\chat_controller.dart:297:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\chat_controller.dart:305:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\chat_controller.dart:306:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\chat_controller.dart:309:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\chat_controller.dart:313:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\chat_controller.dart:515:9 - avoid_print
+   info - Use 'isNotEmpty' instead of 'length' to test whether the collection is empty - lib\controllers\request_controller.dart:299:11 - prefer_is_empty
+   info - Use 'isEmpty' instead of 'length' to test whether the collection is empty - lib\controllers\request_controller.dart:299:50 - prefer_is_empty
+   info - Don't use 'BuildContext's across async gaps - lib\controllers\request_controller.dart:555:36 - use_build_context_synchronously
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\controllers\request_controller.dart:648:39 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\controllers\request_controller.dart:678:51 - deprecated_member_use
+   info - Don't invoke 'print' in production code - lib\controllers\request_controller.dart:937:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\request_controller.dart:966:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\request_controller.dart:969:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\request_controller.dart:972:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\request_controller.dart:973:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\request_controller.dart:975:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\request_controller.dart:977:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\request_controller.dart:979:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\request_controller.dart:981:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\request_controller.dart:983:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\request_controller.dart:985:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\request_controller.dart:987:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\request_controller.dart:991:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\request_controller.dart:993:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\request_controller.dart:997:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\request_controller.dart:1009:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\request_controller.dart:1011:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\request_controller.dart:1016:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\request_controller.dart:1018:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\request_controller.dart:1023:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\request_controller.dart:1025:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\request_controller.dart:1096:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\request_controller.dart:1137:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\request_controller.dart:1141:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\request_controller.dart:1145:13 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\request_controller.dart:1149:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\request_controller.dart:1153:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\request_controller.dart:1154:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\request_controller.dart:1155:11 - avoid_print
+   info - The 'if' statement could be replaced by a null-aware assignment - lib\controllers\request_controller.dart:1596:5 - prefer_conditional_assignment
+   info - Don't invoke 'print' in production code - lib\controllers\request_controller.dart:1936:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\request_controller.dart:1960:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\request_controller.dart:1966:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\request_controller.dart:1973:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\request_controller.dart:1975:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\request_controller.dart:1979:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\request_controller.dart:1984:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\splash_controller.dart:62:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\splash_controller.dart:64:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\splash_controller.dart:85:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\splash_controller.dart:89:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\splash_controller.dart:94:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\splash_controller.dart:99:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\splash_controller.dart:104:9 - avoid_print
+warning - This default clause is covered by the previous cases - lib\controllers\splash_controller.dart:117:7 - unreachable_switch_default
+   info - Don't invoke 'print' in production code - lib\controllers\splash_controller.dart:118:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\controllers\splash_controller.dart:121:11 - avoid_print
+warning - The declaration '_showCongratulationsFlow' isn't referenced - lib\controllers\splash_controller.dart:249:16 - unused_element
+warning - The declaration '_$ChatMessageModelToJson' isn't referenced - lib\models\chat_message_model.g.dart:10:22 - unused_element
+warning - The declaration '_$ChatRoomModelToJson' isn't referenced - lib\models\chatroom_model.g.dart:10:22 - unused_element
+   info - Unnecessary use of '??' with 'null' - lib\models\chatroom_model.g.dart:36:56 - unnecessary_null_in_if_null_operators
+warning - The declaration '_$FeedbackModelToJson' isn't referenced - lib\models\feedback_model.g.dart:10:22 - unused_element
+warning - The declaration '_$NotificationModelToJson' isn't referenced - lib\models\notification_model.g.dart:10:22 - unused_element
+   info - Don't invoke 'print' in production code - lib\models\request_model.dart:38:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\models\request_model.dart:39:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\models\request_model.dart:40:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\models\request_model.dart:41:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\models\request_model.dart:42:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\models\request_model.dart:43:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\models\request_model.dart:44:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\models\request_model.dart:45:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\models\request_model.dart:46:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\models\request_model.dart:47:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\models\request_model.dart:48:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\models\request_model.dart:143:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\models\request_model.dart:145:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\models\request_model.dart:153:5 - avoid_print
+warning - The '!' will have no effect because the receiver can't be null - lib\screens\add_feedback_page.dart:29:36 - unnecessary_non_null_assertion
+warning - The '!' will have no effect because the receiver can't be null - lib\screens\add_feedback_page.dart:30:52 - unnecessary_non_null_assertion
+warning - The receiver can't be null, so the null-aware operator '?.' is unnecessary - lib\screens\add_feedback_page.dart:80:44 - invalid_null_aware_operator
+warning - The '!' will have no effect because the receiver can't be null - lib\screens\add_feedback_page.dart:97:40 - unnecessary_non_null_assertion
+warning - The '!' will have no effect because the receiver can't be null - lib\screens\add_feedback_page.dart:114:57 - unnecessary_non_null_assertion
+warning - The '!' will have no effect because the receiver can't be null - lib\screens\add_feedback_page.dart:116:61 - unnecessary_non_null_assertion
+   info - Unnecessary use of 'toList' in a spread - lib\screens\add_request_page.dart:171:46 - unnecessary_to_list_in_spreads
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\approval_dashboard_screen.dart:256:28 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\approval_dashboard_screen.dart:299:28 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\approval_dashboard_screen.dart:382:48 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\approval_dashboard_screen.dart:433:40 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\approval_dashboard_screen.dart:483:37 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\approval_dashboard_screen.dart:485:56 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\auth_screens\expired_screen.dart:42:46 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\auth_screens\expired_screen.dart:89:46 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\auth_screens\expired_screen.dart:92:48 - deprecated_member_use
+   info - Don't invoke 'print' in production code - lib\screens\auth_screens\pending_approval_screen.dart:50:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\auth_screens\pending_approval_screen.dart:55:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\auth_screens\pending_approval_screen.dart:59:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\auth_screens\pending_approval_screen.dart:65:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\auth_screens\pending_approval_screen.dart:70:13 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\auth_screens\pending_approval_screen.dart:74:13 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\auth_screens\pending_approval_screen.dart:80:13 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\auth_screens\pending_approval_screen.dart:85:7 - avoid_print
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\auth_screens\pending_approval_screen.dart:286:26 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\auth_screens\pending_approval_screen.dart:288:45 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\auth_screens\verify_pending_screen.dart:51:41 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\auth_screens\verify_pending_screen.dart:64:43 - deprecated_member_use
+   info - Don't invoke 'print' in production code - lib\screens\chat_page.dart:107:13 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\chat_page.dart:111:15 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\chat_page.dart:177:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\chat_page.dart:178:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\chat_page.dart:333:19 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\chat_page.dart:334:19 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\chat_page.dart:335:19 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\chat_page.dart:336:19 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\chat_page.dart:337:19 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\chat_page.dart:338:19 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\chat_page.dart:339:19 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\chat_page.dart:340:19 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\chat_page.dart:341:19 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\chat_page.dart:342:19 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\chat_page.dart:346:21 - avoid_print
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\chat_page.dart:393:55 - deprecated_member_use
+warning - The operand can't be 'null', so the condition is always 'false' - lib\screens\edit_add_request_page.dart:78:12 - unnecessary_null_comparison
+warning - The operand can't be 'null', so the condition is always 'false' - lib\screens\edit_add_request_page.dart:81:11 - unnecessary_null_comparison
+warning - The left operand can't be null, so the right operand is never executed - lib\screens\edit_add_request_page.dart:97:52 - dead_null_aware_expression
+   info - Don't invoke 'print' in production code - lib\screens\edit_add_request_page.dart:103:5 - avoid_print
+warning - The member 'value' can only be used within instance members of subclasses of 'package:get/get_rx/src/rx_types/rx_iterables/rx_map.dart' - lib\screens\feedback.dart:69:57 - invalid_use_of_protected_member
+warning - The value of the local variable 'firstName' isn't used - lib\screens\feedback.dart:189:29 - unused_local_variable
+warning - The value of the local variable 'lastName' isn't used - lib\screens\feedback.dart:190:29 - unused_local_variable
+warning - The value of the local variable 'totalHoursHelped' isn't used - lib\screens\feedback.dart:194:29 - unused_local_variable
+warning - The value of the local variable 'averageRating' isn't used - lib\screens\feedback.dart:195:29 - unused_local_variable
+   info - 'color' is deprecated and shouldn't be used. Use colorFilter instead - lib\screens\home_screen.dart:269:41 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\my_helps.dart:139:41 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\profile_screen.dart:129:59 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\profile_screen.dart:133:63 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\profile_screen.dart:189:61 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps - lib\screens\profile_screen.dart:211:64 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\screens\profile_screen.dart:217:73 - use_build_context_synchronously
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\profile_screen.dart:233:69 - deprecated_member_use
+   info - Don't invoke 'print' in production code - lib\screens\request_details.dart:78:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\request_details.dart:92:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\request_details.dart:300:38 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\request_details.dart:301:38 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\request_details.dart:302:38 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\request_details.dart:303:38 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\request_details.dart:304:38 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\request_details.dart:312:38 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\request_details.dart:324:38 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\request_details.dart:495:51 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\request_details.dart:496:51 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\request_details.dart:497:51 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\request_details.dart:498:51 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\request_details.dart:506:51 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\request_details.dart:518:51 - avoid_print
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\request_details.dart:837:32 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\request_details.dart:839:51 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\request_details.dart:861:44 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\request_details.dart:947:51 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\request_details.dart:949:70 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\request_details.dart:971:63 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\request_details.dart:1059:36 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\request_details.dart:1061:55 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\request_details.dart:1091:29 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\request_details.dart:1093:48 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\request_details.dart:1150:34 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\request_details.dart:1152:53 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\request_details.dart:1221:30 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\request_details.dart:1223:49 - deprecated_member_use
+   info - Don't invoke 'print' in production code - lib\screens\request_details.dart:1577:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\request_details.dart:1581:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\request_details.dart:1585:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\request_details.dart:1593:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\request_details.dart:1603:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\request_details.dart:1610:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\request_details.dart:1614:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\request_details.dart:1772:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\request_details.dart:1782:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\request_details.dart:1783:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\request_details.dart:1784:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\request_details.dart:1785:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\request_details.dart:1786:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\request_details.dart:1787:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\request_details.dart:1806:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\request_details.dart:1807:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\request_details.dart:1815:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\request_details.dart:1816:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\request_details.dart:1822:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\request_details.dart:1823:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\request_details.dart:1835:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\request_details.dart:1838:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\request_details.dart:1839:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\screens\request_details.dart:1840:7 - avoid_print
+   info - Parameter 'key' could be a super parameter - lib\screens\widgets\approval_widgets\approval_card.dart:11:9 - use_super_parameters
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\widgets\approval_widgets\approval_card.dart:130:22 - deprecated_member_use
+   info - Parameter 'key' could be a super parameter - lib\screens\widgets\approval_widgets\countdown_timer.dart:9:9 - use_super_parameters
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\widgets\approval_widgets\countdown_timer.dart:64:29 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\widgets\approval_widgets\countdown_timer.dart:66:48 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\widgets\approval_widgets\countdown_timer.dart:111:26 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\widgets\approval_widgets\countdown_timer.dart:113:45 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\widgets\custom_widgets\custom_tile.dart:25:35 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\widgets\custom_widgets\custom_tile.dart:98:43 - deprecated_member_use
+   info - Parameter 'key' could be a super parameter - lib\screens\widgets\dialog_widgets\rejection_dialog.dart:10:9 - use_super_parameters
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\widgets\dialog_widgets\rejection_dialog.dart:63:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\widgets\dialog_widgets\rejection_dialog.dart:98:40 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\widgets\dialog_widgets\rejection_dialog.dart:101:42 - deprecated_member_use
+   info - Unnecessary use of 'toList' in a spread - lib\screens\widgets\dialog_widgets\rejection_dialog.dart:170:20 - unnecessary_to_list_in_spreads
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\widgets\dialog_widgets\rejection_dialog.dart:193:40 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\widgets\dialog_widgets\rejection_dialog.dart:196:42 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\widgets\home_widgets\community_requests.dart:106:57 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\widgets\home_widgets\my_requests.dart:76:43 - deprecated_member_use
+warning - Unused import: 'dart:developer' - lib\screens\widgets\profile_nav_button.dart:1:8 - unused_import
+   info - Parameter 'key' could be a super parameter - lib\screens\widgets\verification_status_widget.dart:13:9 - use_super_parameters
+   info - Library names are not necessary - lib\services\api\api_client.dart:3:9 - unnecessary_library_name
+   info - Library names are not necessary - lib\services\api\api_interceptors.dart:3:9 - unnecessary_library_name
+   info - Don't invoke 'print' in production code - lib\services\api\api_interceptors.dart:77:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\api\api_interceptors.dart:80:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\api\api_interceptors.dart:84:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\api\api_interceptors.dart:91:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\api\api_interceptors.dart:174:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\api\api_interceptors.dart:178:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\api\api_interceptors.dart:254:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\api\api_interceptors.dart:255:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\api\api_interceptors.dart:258:7 - avoid_print
+   info - Library names are not necessary - lib\services\api\notification_api_service.dart:3:9 - unnecessary_library_name
+   info - Library names are not necessary - lib\services\api\websocket_service.dart:3:9 - unnecessary_library_name
+   info - Use 'rethrow' to rethrow a caught exception - lib\services\api\websocket_service.dart:206:7 - use_rethrow_when_possible
+   info - Library names are not necessary - lib\services\api_foundation.dart:3:9 - unnecessary_library_name
+warning - The value of the field '_requestQueue' isn't used - lib\services\api_service.dart:55:30 - unused_field
+   info - Don't invoke 'print' in production code - lib\services\api_service.dart:583:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\api_service.dart:584:9 - avoid_print
+   info - Unnecessary braces in a string interpolation - lib\services\api_service.dart:584:54 - unnecessary_brace_in_string_interps
+   info - Unnecessary braces in a string interpolation - lib\services\auth_service.dart:105:34 - unnecessary_brace_in_string_interps
+   info - Don't invoke 'print' in production code - lib\services\auth_service.dart:643:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\auth_service.dart:644:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\auth_service.dart:645:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\auth_service.dart:651:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\auth_service.dart:658:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\auth_service.dart:668:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\auth_service.dart:675:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\auth_service.dart:676:7 - avoid_print
+   info - Use 'rethrow' to rethrow a caught exception - lib\services\auth_service.dart:693:7 - use_rethrow_when_possible
+   info - Don't invoke 'print' in production code - lib\services\auth_service.dart:799:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\auth_service.dart:804:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\auth_service.dart:811:9 - avoid_print
+   info - Use 'rethrow' to rethrow a caught exception - lib\services\auth_service.dart:835:7 - use_rethrow_when_possible
+   info - Don't invoke 'print' in production code - lib\services\auth_service.dart:897:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\auth_service.dart:902:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\auth_service.dart:909:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\auth_service.dart:916:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\auth_service.dart:920:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\chat_api_service.dart:73:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\chat_api_service.dart:74:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\chat_api_service.dart:75:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\chat_api_service.dart:76:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\chat_api_service.dart:77:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\chat_api_service.dart:87:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\chat_api_service.dart:88:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\chat_api_service.dart:89:7 - avoid_print
+   info - Unnecessary braces in a string interpolation - lib\services\chat_api_service.dart:89:43 - unnecessary_brace_in_string_interps
+   info - Unnecessary braces in a string interpolation - lib\services\chat_api_service.dart:89:55 - unnecessary_brace_in_string_interps
+   info - Don't invoke 'print' in production code - lib\services\chat_api_service.dart:90:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\chat_api_service.dart:91:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\chat_api_service.dart:93:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\chat_api_service.dart:104:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\chat_api_service.dart:105:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\chat_api_service.dart:106:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\chat_api_service.dart:107:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\chat_api_service.dart:108:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\chat_api_service.dart:113:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\chat_api_service.dart:114:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\chat_api_service.dart:117:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\chat_api_service.dart:122:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\chat_api_service.dart:123:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\chat_api_service.dart:130:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\chat_api_service.dart:131:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\chat_api_service.dart:132:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\chat_api_service.dart:143:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\chat_api_service.dart:144:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\chat_websocket_service.dart:99:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\chat_websocket_service.dart:119:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\chat_websocket_service.dart:132:7 - avoid_print
+   info - Use 'rethrow' to rethrow a caught exception - lib\services\chat_websocket_service.dart:136:7 - use_rethrow_when_possible
+   info - Don't invoke 'print' in production code - lib\services\chat_websocket_service.dart:248:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\chat_websocket_service.dart:254:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\chat_websocket_service.dart:259:11 - avoid_print
+   info - Library names are not necessary - lib\services\deep_link_service.dart:4:9 - unnecessary_library_name
+   info - Library names are not necessary - lib\services\exceptions\api_exceptions.dart:3:9 - unnecessary_library_name
+   info - Unnecessary braces in a string interpolation - lib\services\exceptions\api_exceptions.dart:34:19 - unnecessary_brace_in_string_interps
+   info - Parameters ''message', 'originalError', and 'context'' could be super parameters - lib\services\exceptions\api_exceptions.dart:62:3 - use_super_parameters
+   info - Parameters ''message', 'originalError', and 'context'' could be super parameters - lib\services\exceptions\api_exceptions.dart:115:3 - use_super_parameters
+   info - Parameters ''message', 'originalError', and 'context'' could be super parameters - lib\services\exceptions\api_exceptions.dart:156:3 - use_super_parameters
+   info - Parameters ''message', 'originalError', and 'context'' could be super parameters - lib\services\exceptions\api_exceptions.dart:196:3 - use_super_parameters
+   info - Parameters ''message', 'originalError', and 'context'' could be super parameters - lib\services\exceptions\api_exceptions.dart:238:3 - use_super_parameters
+   info - Parameters ''message', 'originalError', and 'context'' could be super parameters - lib\services\exceptions\api_exceptions.dart:300:3 - use_super_parameters
+   info - Parameters ''message', 'originalError', and 'context'' could be super parameters - lib\services\exceptions\api_exceptions.dart:362:3 - use_super_parameters
+   info - Parameters ''message', 'statusCode', 'originalError', and 'context'' could be super parameters - lib\services\exceptions\api_exceptions.dart:395:3 - use_super_parameters
+   info - Library names are not necessary - lib\services\models\api_response.dart:3:9 - unnecessary_library_name
+   info - The null check operator shouldn't be used on a variable whose type is a potentially nullable type parameter - lib\services\models\api_response.dart:85:19 - null_check_on_nullable_type_parameter
+   info - The null check operator shouldn't be used on a variable whose type is a potentially nullable type parameter - lib\services\models\api_response.dart:106:61 - null_check_on_nullable_type_parameter
+   info - Library names are not necessary - lib\services\models\notification_response.dart:3:9 - unnecessary_library_name
+   info - Don't invoke 'print' in production code - lib\services\request_service.dart:371:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\request_service.dart:372:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\request_service.dart:373:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\request_service.dart:374:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\request_service.dart:375:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\request_service.dart:404:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\request_service.dart:406:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\request_service.dart:407:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\request_service.dart:409:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\request_service.dart:411:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\request_service.dart:417:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\request_service.dart:418:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\request_service.dart:419:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\request_service.dart:424:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\request_service.dart:429:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\request_service.dart:452:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\request_service.dart:456:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\request_service.dart:457:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\request_service.dart:458:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\request_service.dart:459:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\request_service.dart:460:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\request_service.dart:465:11 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\request_service.dart:467:13 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\request_service.dart:733:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\request_service.dart:742:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\request_service.dart:744:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\request_service.dart:765:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\request_service.dart:770:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\request_service.dart:812:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\request_service.dart:813:9 - avoid_print
+   info - Don't invoke 'print' in production code - lib\services\request_service.dart:814:9 - avoid_print
+   info - Library names are not necessary - lib\services\user_state_service.dart:8:9 - unnecessary_library_name
+warning - This default clause is covered by the previous cases - lib\services\user_state_service.dart:272:7 - unreachable_switch_default
+   info - Library names are not necessary - test\unit\api_foundation_test.dart:3:9 - unnecessary_library_name
+   info - Don't invoke 'print' in production code - test\unit\api_foundation_test.dart:213:5 - avoid_print
+   info - Don't invoke 'print' in production code - test\unit\api_foundation_test.dart:218:5 - avoid_print
+   info - Don't invoke 'print' in production code - test\unit\api_foundation_test.dart:219:5 - avoid_print
+   info - Don't invoke 'print' in production code - test\unit\api_foundation_test.dart:220:5 - avoid_print
+   info - Don't invoke 'print' in production code - test\unit\api_foundation_test.dart:221:5 - avoid_print
+   info - Don't invoke 'print' in production code - test\unit\api_foundation_test.dart:223:5 - avoid_print
+
+401 issues found. (ran in 3.7s)

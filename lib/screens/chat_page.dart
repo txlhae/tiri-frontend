@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
-import 'package:kind_clock/controllers/auth_controller.dart';
-import 'package:kind_clock/controllers/chat_controller.dart';
-import 'package:kind_clock/controllers/request_controller.dart';
-import 'package:kind_clock/screens/widgets/custom_widgets/custom_back_button.dart';
+import 'package:tiri/controllers/auth_controller.dart';
+import 'package:tiri/controllers/chat_controller.dart';
+import 'package:tiri/controllers/request_controller.dart';
+import 'package:tiri/screens/widgets/custom_widgets/custom_back_button.dart';
 
 class ChatPage extends StatefulWidget {
   final String chatRoomId;

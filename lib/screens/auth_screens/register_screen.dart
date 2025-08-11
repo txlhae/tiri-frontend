@@ -3,12 +3,12 @@ import 'package:defer_pointer/defer_pointer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
-import 'package:kind_clock/controllers/auth_controller.dart';
-import 'package:kind_clock/controllers/image_controller.dart';
-import 'package:kind_clock/infrastructure/routes.dart';
-import 'package:kind_clock/screens/widgets/custom_widgets/custom_button.dart';
-import 'package:kind_clock/screens/widgets/custom_widgets/custom_form_field.dart';
-import 'package:kind_clock/screens/widgets/navigate_row.dart';
+import 'package:tiri/controllers/auth_controller.dart';
+import 'package:tiri/controllers/image_controller.dart';
+import 'package:tiri/infrastructure/routes.dart';
+import 'package:tiri/screens/widgets/custom_widgets/custom_button.dart';
+import 'package:tiri/screens/widgets/custom_widgets/custom_form_field.dart';
+import 'package:tiri/screens/widgets/navigate_row.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -19,7 +19,6 @@ class RegisterScreen extends StatefulWidget {
 
 final AuthController authController = Get.find<AuthController>();
 final ImageController imageController = Get.find<ImageController>();
-// final FirebaseStorageService store = Get.find<FirebaseStorageService>(); // REMOVED: Migrating to Django
 
 class _RegisterScreenState extends State<RegisterScreen> {
   @override

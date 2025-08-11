@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:kind_clock/controllers/auth_controller.dart';
-import 'package:kind_clock/controllers/request_controller.dart';
-import 'package:kind_clock/screens/auth_screens/register_screen.dart';
+import 'package:tiri/controllers/auth_controller.dart';
+import 'package:tiri/controllers/request_controller.dart';
+import 'package:tiri/screens/auth_screens/register_screen.dart';
 
 class CustomButton extends StatelessWidget {
   const CustomButton({

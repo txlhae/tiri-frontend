@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:kind_clock/controllers/request_controller.dart';
-import 'package:kind_clock/models/request_model.dart';
-import 'package:kind_clock/screens/widgets/custom_widgets/custom_back_button.dart';
-import 'package:kind_clock/screens/widgets/custom_widgets/custom_button.dart';
-import 'package:kind_clock/screens/widgets/custom_widgets/custom_form_field.dart';
+import 'package:tiri/controllers/request_controller.dart';
+import 'package:tiri/models/request_model.dart';
+import 'package:tiri/screens/widgets/custom_widgets/custom_back_button.dart';
+import 'package:tiri/screens/widgets/custom_widgets/custom_button.dart';
+import 'package:tiri/screens/widgets/custom_widgets/custom_form_field.dart';
 
 class AddFeedbackPage extends StatefulWidget {
   final RequestModel request;

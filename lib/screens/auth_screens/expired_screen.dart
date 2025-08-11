@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:kind_clock/controllers/auth_controller.dart';
-import 'package:kind_clock/infrastructure/routes.dart';
-import 'package:kind_clock/screens/widgets/custom_widgets/custom_button.dart';
-import 'package:kind_clock/screens/widgets/dialog_widgets/referral_dialog.dart';
+import 'package:tiri/controllers/auth_controller.dart';
+import 'package:tiri/infrastructure/routes.dart';
+import 'package:tiri/screens/widgets/custom_widgets/custom_button.dart';
+import 'package:tiri/screens/widgets/dialog_widgets/referral_dialog.dart';
 
 class ExpiredScreen extends StatelessWidget {
   const ExpiredScreen({super.key});

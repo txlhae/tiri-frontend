@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:kind_clock/models/approval_request_model.dart';
+import 'package:tiri/models/approval_request_model.dart';
 
 class ApprovalCard extends StatelessWidget {
   final ApprovalRequest approval;

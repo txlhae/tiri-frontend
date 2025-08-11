@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:kind_clock/controllers/auth_controller.dart';
-import 'package:kind_clock/controllers/notification_controller.dart';
-import 'package:kind_clock/screens/widgets/custom_widgets/custom_back_button.dart';
-import 'package:kind_clock/screens/widgets/custom_widgets/custom_tile.dart';
+import 'package:tiri/controllers/auth_controller.dart';
+import 'package:tiri/controllers/notification_controller.dart';
+import 'package:tiri/screens/widgets/custom_widgets/custom_back_button.dart';
+import 'package:tiri/screens/widgets/custom_widgets/custom_tile.dart';
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({super.key});
@@ -16,7 +16,6 @@ class _NotificationsPageState extends State<NotificationsPage> {
   final notifyController = Get.find<NotificationController>();
   final authController = Get.find<AuthController>();
 
-  // final store = Get.find<FirebaseStorageService>(); // REMOVED: Migrating to Django
 
   @override
   void initState() {

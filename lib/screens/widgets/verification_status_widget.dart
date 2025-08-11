@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:kind_clock/controllers/auth_controller.dart';
+import 'package:tiri/controllers/auth_controller.dart';
 
 /// Widget for handling email verification status checks
 /// Used in verification pending screens and forgot password flows

@@ -1,6 +1,7 @@
 /// Unit Tests for API Foundation Components - Phase 1
 /// Basic test structure for validating API client functionality
-library api_foundation_tests;
+
+import 'dart:developer';
 
 // TODO: Phase 2 - Implement comprehensive unit tests
 // These are placeholder test structures to be completed in Phase 2
@@ -210,17 +211,17 @@ class TestRunner {
   
   /// Run all foundation tests
   static void runAllTests() {
-    print('🧪 Running API Foundation Tests - Phase 1');
+    log('🧪 Running API Foundation Tests - Phase 1');
     
     // Note: These are placeholder calls
     // Actual test implementations will be added in Phase 2
     
-    print('  ✅ ApiClient tests - TODO');
-    print('  ✅ ApiResponse tests - TODO');
-    print('  ✅ ApiException tests - TODO');
-    print('  ✅ ApiInterceptor tests - TODO');
+    log('  ✅ ApiClient tests - TODO');
+    log('  ✅ ApiResponse tests - TODO');
+    log('  ✅ ApiException tests - TODO');
+    log('  ✅ ApiInterceptor tests - TODO');
     
-    print('🎉 Foundation test structure ready for Phase 2 implementation');
+    log('🎉 Foundation test structure ready for Phase 2 implementation');
   }
 }
 

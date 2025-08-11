@@ -6,10 +6,10 @@ import 'dart:developer';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:get/get.dart';
-import 'package:kind_clock/models/category_model.dart';
-import 'package:kind_clock/models/request_model.dart';
-import 'package:kind_clock/models/user_model.dart';
-import 'package:kind_clock/services/api_service.dart';
+import 'package:tiri/models/category_model.dart';
+import 'package:tiri/models/request_model.dart';
+import 'package:tiri/models/user_model.dart';
+import 'package:tiri/services/api_service.dart';
 
 /// Enterprise RequestService with Django Field Mapping
 /// 

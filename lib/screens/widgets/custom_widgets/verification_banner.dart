@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:kind_clock/controllers/auth_controller.dart';
+import 'package:tiri/controllers/auth_controller.dart';
 
 /// Verification Banner Widget
 /// Shows a banner for unverified users encouraging email verification

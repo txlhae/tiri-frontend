@@ -23,14 +23,14 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
-import 'package:kind_clock/controllers/auth_controller.dart';
-import 'package:kind_clock/infrastructure/routes.dart';
-import 'package:kind_clock/models/category_model.dart';
-import 'package:kind_clock/models/feedback_model.dart';
-import 'package:kind_clock/models/request_model.dart';
-import 'package:kind_clock/models/user_model.dart';
-import 'package:kind_clock/services/api_service.dart';
-import 'package:kind_clock/services/request_service.dart';
+import 'package:tiri/controllers/auth_controller.dart';
+import 'package:tiri/infrastructure/routes.dart';
+import 'package:tiri/models/category_model.dart';
+import 'package:tiri/models/feedback_model.dart';
+import 'package:tiri/models/request_model.dart';
+import 'package:tiri/models/user_model.dart';
+import 'package:tiri/services/api_service.dart';
+import 'package:tiri/services/request_service.dart';
 
 enum FilterOption { recentPosts, urgentRequired, location }
 

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:kind_clock/domain/core/di/app_binding.dart';
-import 'package:kind_clock/infrastructure/navigation.dart';
-import 'package:kind_clock/infrastructure/routes.dart';
-import 'package:kind_clock/services/deep_link_service.dart';
+import 'package:tiri/domain/core/di/app_binding.dart';
+import 'package:tiri/infrastructure/navigation.dart';
+import 'package:tiri/infrastructure/routes.dart';
+import 'package:tiri/services/deep_link_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

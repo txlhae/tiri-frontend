@@ -1,6 +1,5 @@
 /// API Interceptors for Django Backend Integration
 /// Handles request/response interception, logging, and error mapping
-library api_interceptors;
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';

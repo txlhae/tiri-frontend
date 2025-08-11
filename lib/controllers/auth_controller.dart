@@ -10,13 +10,13 @@ import 'dart:math' as math;
 import 'package:country_picker/country_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:kind_clock/infrastructure/routes.dart';
-import 'package:kind_clock/models/user_model.dart';
-import 'package:kind_clock/models/approval_request_model.dart';
-import 'package:kind_clock/screens/auth_screens/email_verification_screen.dart';
-import 'package:kind_clock/services/auth_service.dart';
-import 'package:kind_clock/services/api_service.dart';
-import 'package:kind_clock/services/user_state_service.dart';
+import 'package:tiri/infrastructure/routes.dart';
+import 'package:tiri/models/user_model.dart';
+import 'package:tiri/models/approval_request_model.dart';
+import 'package:tiri/screens/auth_screens/email_verification_screen.dart';
+import 'package:tiri/services/auth_service.dart';
+import 'package:tiri/services/api_service.dart';
+import 'package:tiri/services/user_state_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Enterprise AuthController for TIRI application

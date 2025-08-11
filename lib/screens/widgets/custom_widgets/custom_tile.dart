@@ -2,10 +2,10 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:kind_clock/controllers/request_controller.dart';
-import 'package:kind_clock/models/notification_model.dart';
-import 'package:kind_clock/screens/widgets/dialog_widgets/verify_dialog.dart';
-import 'package:kind_clock/screens/widgets/request_widgets/status_row.dart';
+import 'package:tiri/controllers/request_controller.dart';
+import 'package:tiri/models/notification_model.dart';
+import 'package:tiri/screens/widgets/dialog_widgets/verify_dialog.dart';
+import 'package:tiri/screens/widgets/request_widgets/status_row.dart';
 
 class CustomTile extends StatelessWidget {
   final NotificationModel notify;
@@ -13,7 +13,6 @@ class CustomTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // final store = Get.find<FirebaseStorageService>(); // REMOVED: Migrating to Django
     final requestController = Get.find<RequestController>();
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),

@@ -4,17 +4,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
-import 'package:kind_clock/controllers/auth_controller.dart';
-import 'package:kind_clock/controllers/chat_controller.dart';
-import 'package:kind_clock/controllers/request_controller.dart';
-import 'package:kind_clock/infrastructure/routes.dart';
-import 'package:kind_clock/models/feedback_model.dart';
-import 'package:kind_clock/models/user_model.dart';
-import 'package:kind_clock/screens/widgets/custom_widgets/custom_back_button.dart';
-import 'package:kind_clock/screens/widgets/dialog_widgets/delete_dialog.dart';
-import 'package:kind_clock/screens/widgets/dialog_widgets/edit_dialog.dart';
-import 'package:kind_clock/screens/widgets/dialog_widgets/logout_dialog.dart';
-import 'package:kind_clock/screens/widgets/profile_nav_button.dart';
+import 'package:tiri/controllers/auth_controller.dart';
+import 'package:tiri/controllers/chat_controller.dart';
+import 'package:tiri/controllers/request_controller.dart';
+import 'package:tiri/infrastructure/routes.dart';
+import 'package:tiri/models/feedback_model.dart';
+import 'package:tiri/models/user_model.dart';
+import 'package:tiri/screens/widgets/custom_widgets/custom_back_button.dart';
+import 'package:tiri/screens/widgets/dialog_widgets/delete_dialog.dart';
+import 'package:tiri/screens/widgets/dialog_widgets/edit_dialog.dart';
+import 'package:tiri/screens/widgets/dialog_widgets/logout_dialog.dart';
+import 'package:tiri/screens/widgets/profile_nav_button.dart';
 
 class ProfileScreen extends StatefulWidget {
   final UserModel? user;

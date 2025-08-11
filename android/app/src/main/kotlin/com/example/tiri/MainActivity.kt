@@ -1,4 +1,4 @@
-package com.example.kind_clock
+package com.example.tiri
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -1,9 +1,9 @@
 // import 'package:flutter/material.dart';
 // import 'package:flutter_svg/svg.dart';
 // import 'package:get/get.dart';
-// import 'package:kind_clock/controllers/request_controller.dart';
-// import 'package:kind_clock/models/request_model.dart';
-// import 'package:kind_clock/screens/widgets/custom_widgets/custom_button.dart';
+// import 'package:tiri/controllers/request_controller.dart';
+// import 'package:tiri/models/request_model.dart';
+// import 'package:tiri/screens/widgets/custom_widgets/custom_button.dart';
 
 // class FeedbackSheet extends StatelessWidget {
 //   final RequestModel request;

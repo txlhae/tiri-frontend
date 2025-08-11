@@ -3,14 +3,14 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
-import 'package:kind_clock/controllers/auth_controller.dart';
-import 'package:kind_clock/controllers/request_controller.dart';
-import 'package:kind_clock/models/notification_model.dart';
-import 'package:kind_clock/models/request_model.dart';
-import 'package:kind_clock/models/user_model.dart';
-import 'package:kind_clock/screens/widgets/custom_widgets/custom_button.dart';
-import 'package:kind_clock/screens/widgets/custom_widgets/custom_cancel.dart';
-import 'package:kind_clock/screens/widgets/custom_widgets/custom_form_field.dart';
+import 'package:tiri/controllers/auth_controller.dart';
+import 'package:tiri/controllers/request_controller.dart';
+import 'package:tiri/models/notification_model.dart';
+import 'package:tiri/models/request_model.dart';
+import 'package:tiri/models/user_model.dart';
+import 'package:tiri/screens/widgets/custom_widgets/custom_button.dart';
+import 'package:tiri/screens/widgets/custom_widgets/custom_cancel.dart';
+import 'package:tiri/screens/widgets/custom_widgets/custom_form_field.dart';
 
 class CancelDialog extends StatefulWidget {
   final String questionText;
@@ -166,7 +166,6 @@ class _CancelDialogState extends State<CancelDialog> {
                                 .toString(),
                           );
                           // await store.saveNotification(notification);
-                          // REMOVED: Firebase dependency
                         }
                       } else if (isAcceptedUser) {
                         // Create notification for requester

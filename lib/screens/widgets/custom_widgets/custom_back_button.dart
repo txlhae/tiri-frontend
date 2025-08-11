@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
-import 'package:kind_clock/controllers/request_controller.dart';
+import 'package:tiri/controllers/request_controller.dart';
 
 class CustomBackButton extends StatelessWidget {
   final bool? isClose;

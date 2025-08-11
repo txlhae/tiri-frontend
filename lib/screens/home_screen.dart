@@ -3,13 +3,13 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
-import 'package:kind_clock/controllers/auth_controller.dart';
-import 'package:kind_clock/controllers/home_controller.dart';
-import 'package:kind_clock/controllers/notification_controller.dart';
-import 'package:kind_clock/controllers/request_controller.dart';
-import 'package:kind_clock/infrastructure/routes.dart';
-import 'package:kind_clock/screens/widgets/home_widgets/community_requests.dart';
-import 'package:kind_clock/screens/widgets/home_widgets/my_requests.dart';
+import 'package:tiri/controllers/auth_controller.dart';
+import 'package:tiri/controllers/home_controller.dart';
+import 'package:tiri/controllers/notification_controller.dart';
+import 'package:tiri/controllers/request_controller.dart';
+import 'package:tiri/infrastructure/routes.dart';
+import 'package:tiri/screens/widgets/home_widgets/community_requests.dart';
+import 'package:tiri/screens/widgets/home_widgets/my_requests.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});

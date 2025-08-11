@@ -1,15 +1,14 @@
 /// Enhanced Deep Link Service for Email Verification and App Navigation
 /// Handles incoming deep links from email verification and other sources
 /// Supports token extraction and automatic authentication
-library deep_link_service;
 
 import 'dart:async';
 import 'dart:developer';
 import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:kind_clock/controllers/auth_controller.dart';
-import 'package:kind_clock/infrastructure/routes.dart';
+import 'package:tiri/controllers/auth_controller.dart';
+import 'package:tiri/infrastructure/routes.dart';
 
 class DeepLinkService extends GetxService {
   late final AppLinks _appLinks;

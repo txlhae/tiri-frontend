@@ -1,6 +1,5 @@
 /// Notification Response Models for Django Backend Integration
 /// Data models matching Django notification API structure
-library notification_response;
 
 import '../models/api_response.dart';
 

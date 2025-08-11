@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
-import 'package:kind_clock/infrastructure/routes.dart';
+import 'package:tiri/infrastructure/routes.dart';
 import '../../controllers/email_sent_controller.dart';
 
 class EmailSentSplash extends StatefulWidget {
