@@ -12,6 +12,7 @@ import 'package:kind_clock/services/api_service.dart';
 import 'package:kind_clock/services/auth_service.dart';
 import 'package:kind_clock/services/request_service.dart';
 import 'package:kind_clock/services/deep_link_service.dart';
+import 'package:kind_clock/services/user_state_service.dart';
 
 class AppBinding extends Bindings {
   @override
@@ -21,6 +22,7 @@ class AppBinding extends Bindings {
     Get.put<AuthService>(AuthService());
     Get.put<RequestService>(RequestService());
     Get.put<DeepLinkService>(DeepLinkService(), permanent: true);
+    Get.put<UserStateService>(UserStateService(), permanent: true);
     
     // PHASE 3: All controllers with Django integration
     Get.put<AuthController>(AuthController());

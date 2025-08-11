@@ -422,7 +422,14 @@ class ApiService {
     CancelToken? cancelToken,
   }) async {
     try {
-      await waitForConnection();
+      // 🚨 CRITICAL FIX: Make connectivity check optional for critical endpoints
+      // The verification-status endpoint should work even if connectivity check fails
+      final skipConnectivityCheck = path.contains('/auth/verification-status/') || 
+                                    path.contains('/auth/check-approval/');
+      
+      if (!skipConnectivityCheck) {
+        await waitForConnection();
+      }
       
       return await _dio.get<T>(
         path,

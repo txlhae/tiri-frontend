@@ -2,6 +2,7 @@
 // 🚨 COMPLETE REWRITE: Your existing AuthController + Token Loading Fix
 // Prompt 31.7 - All existing functionality preserved + 401 error fix
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:math' as math;
@@ -15,6 +16,7 @@ import 'package:kind_clock/models/approval_request_model.dart';
 import 'package:kind_clock/screens/auth_screens/email_verification_screen.dart';
 import 'package:kind_clock/services/auth_service.dart';
 import 'package:kind_clock/services/api_service.dart';
+import 'package:kind_clock/services/user_state_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Enterprise AuthController for TIRI application
@@ -36,6 +38,9 @@ class AuthController extends GetxController {
   
   /// Enterprise API service
   late ApiService _apiService;
+  
+  /// User state management service
+  late UserStateService _userStateService;
 
   // =============================================================================
   // UI CONSTANTS
@@ -154,6 +159,7 @@ class AuthController extends GetxController {
     try {
       _authService = Get.find<AuthService>();
       _apiService = Get.find<ApiService>();
+      _userStateService = Get.find<UserStateService>();
       log('✅ AuthController: Services initialized successfully');
     } catch (e) {
       log('❌ AuthController: Error initializing services: $e');
@@ -247,7 +253,7 @@ class AuthController extends GetxController {
             colorText: Colors.white,
             duration: const Duration(seconds: 3),
           );
-          Get.offAllNamed(Routes.verifyPendingPage);
+          Get.offAllNamed(Routes.emailVerificationPage);
           return;
         }
         
@@ -387,7 +393,7 @@ class AuthController extends GetxController {
             colorText: Colors.white,
             duration: const Duration(seconds: 4),
           );
-          Get.toNamed(Routes.verifyPendingPage);
+          Get.toNamed(Routes.emailVerificationPage);
           return;
         }
         
@@ -440,7 +446,7 @@ class AuthController extends GetxController {
         phoneNumber: phoneNumberWithCode.value,
         country: selectedCountry.value?.name ?? countryController.value.text.trim(),
         password: passwordController.value.text,
-        referralCode: referralCodeController.value.text.trim(),
+        referralCode: referredUid.value.isNotEmpty ? referredUid.value : referralCodeController.value.text.trim(),
       );
 
       if (result.isSuccess) {
@@ -449,6 +455,15 @@ class AuthController extends GetxController {
         // ✅ SET AUTHENTICATION STATE
         isLoggedIn.value = true;
         currentUserStore.value = result.user;
+        
+        // ✅ UPDATE USER STATE: Set initial state after registration
+        final usedReferralCode = referredUid.value.isNotEmpty ? referredUid.value : referralCodeController.value.text.trim();
+        await _userStateService.updateState(
+          UserApprovalState.emailUnverified,
+          userId: result.user!.userId,
+          referrerName: referredUser.value.isNotEmpty ? referredUser.value : null,
+        );
+        log('📊 AuthController: User state updated to emailUnverified after registration');
         
         Get.snackbar(
           'Registration Successful!',
@@ -460,7 +475,7 @@ class AuthController extends GetxController {
         );
         
         // ✅ APPROVAL SYSTEM: Route based on referral usage
-        if (referralCodeController.value.text.trim().isNotEmpty) {
+        if (usedReferralCode.isNotEmpty) {
           log('🔄 Registration with referral code - will need approval after email verification');
           // User will go to pending approval after email verification
           Get.offAll(() => const EmailVerificationScreen());
@@ -537,6 +552,10 @@ class AuthController extends GetxController {
       
       // 🚨 FIXED: Clear tokens
       await _apiService.clearTokens();
+      
+      // ✅ CLEAR USER STATE: Reset approval state on logout
+      await _userStateService.clearState();
+      log('📊 AuthController: User state cleared on logout');
       
       Get.snackbar(
         'Logged Out',
@@ -735,6 +754,15 @@ class AuthController extends GetxController {
               
             case 'pending':
               log('⏳ Email verified but approval still pending');
+              
+              // ✅ CRITICAL FIX: Update user state to emailVerifiedPendingApproval
+              await _userStateService.updateState(
+                UserApprovalState.emailVerifiedPendingApproval,
+                userId: currentUser.userId,
+                referrerName: statusResult['user']?['referred_by_name'] ?? statusResult['user']?['referredByName'],
+              );
+              log('📊 AuthController: User state updated to emailVerifiedPendingApproval in completeUserRegistration');
+              
               Get.snackbar(
                 'Email Verified!',
                 'Your email is verified. Now waiting for approval from your referrer.',
@@ -1172,6 +1200,8 @@ class AuthController extends GetxController {
       
     } catch (e) {
       log('❌ AuthController: Error checking approval status: $e');
+      
+      // Don't show snackbar error for silent polling - let the UI handle it
     }
   }
 
@@ -1345,104 +1375,46 @@ class AuthController extends GetxController {
   /// Enhanced to handle direct JWT tokens in API response
   Future<bool> checkVerificationStatus() async {
     try {
+      print('🔍 AuthController: Starting checkVerificationStatus...');
       log('🔍 AuthController: Checking verification status with enhanced JWT token support...');
       
       final statusResult = await _authService.checkVerificationStatus();
       
       final isVerified = statusResult['is_verified'] == true;
       final autoLogin = statusResult['auto_login'] == true;
+      final approvalStatus = statusResult['approval_status'] ?? 'unknown';
       final message = statusResult['message'] ?? '';
       final accessToken = statusResult['access_token'];
       final refreshToken = statusResult['refresh_token'];
       
+      // ✅ UPDATE USER STATE: Sync with API response
+      await _userStateService.updateStateFromApiResponse(statusResult);
+      log('📊 AuthController: User state synced with API response');
+      
       log('📊 AuthController: Enhanced status result:');
       log('   - verified: $isVerified');
       log('   - auto_login: $autoLogin');
+      log('   - approval_status: $approvalStatus');
       log('   - has_access_token: ${accessToken != null}');
       log('   - has_refresh_token: ${refreshToken != null}');
       
-      if (isVerified && autoLogin) {
-        log('✅ AuthController: Auto-login enabled - user verified within time window');
-        
-        // Verify that JWT tokens were received and saved
-        if (accessToken != null && refreshToken != null) {
-          log('🔑 AuthController: JWT tokens received in response and saved to storage');
-          
-          // Update local user state
-          if (currentUserStore.value != null) {
-            final updatedUser = currentUserStore.value!.copyWith(isVerified: true);
-            currentUserStore.value = updatedUser;
-            await _saveUserToStorage(updatedUser);
-          }
-          
-          // Update user data if provided in response
-          if (statusResult['user'] != null) {
-            final user = UserModel.fromJson(statusResult['user']);
-            currentUserStore.value = user;
-            await _saveUserToStorage(user);
-            log('👤 AuthController: User data updated from API response');
-          }
-          
-          // Mark as logged in (tokens already saved by AuthService)
-          isLoggedIn.value = true;
-          
-          // Show success and navigate to home
-          Get.snackbar(
-            'Welcome Back!',
-            'Email verified successfully. You are now logged in.',
-            snackPosition: SnackPosition.TOP,
-            backgroundColor: move,
-            colorText: Colors.white,
-            duration: const Duration(seconds: 3),
-            icon: const Icon(Icons.check_circle, color: Colors.white),
-          );
-          
-          // Navigate to home page
-          await Future.delayed(const Duration(seconds: 1));
-          Get.offAllNamed(Routes.homePage);
-          
-          return true;
-        } else {
-          log('⚠️ AuthController: auto_login=true but no JWT tokens received');
-          Get.snackbar(
-            'Authentication Error',
-            'Verification successful but login tokens missing. Please try logging in manually.',
-            snackPosition: SnackPosition.TOP,
-            backgroundColor: Colors.orange,
-            colorText: Colors.white,
-            duration: const Duration(seconds: 4),
-          );
-          
-          // Navigate to login as fallback
-          await Future.delayed(const Duration(seconds: 1));
-          Get.offAllNamed(Routes.loginPage);
-          return false;
-        }
-        
-      } else if (isVerified && !autoLogin) {
-        log('⚠️ AuthController: Verification expired - user must login manually');
-        
-        // Clear current session
-        await logout();
-        
-        // Show verification expired message and navigate to login
-        Get.snackbar(
-          'Verification Expired',
-          'Your email verification window has expired. Please log in manually.',
-          snackPosition: SnackPosition.TOP,
-          backgroundColor: Colors.orange,
-          colorText: Colors.white,
-          duration: const Duration(seconds: 4),
-          icon: const Icon(Icons.schedule, color: Colors.white),
-        );
-        
-        // Navigate to login
-        await Future.delayed(const Duration(seconds: 1));
-        Get.offAllNamed(Routes.loginPage);
-        
-        return false;
-        
-      } else {
+      // 🔍 DEBUG: Print exact values and conditions
+      print('🔍 DEBUG: Raw statusResult = $statusResult');
+      print('🔍 DEBUG: isVerified = $isVerified (${isVerified.runtimeType})');
+      print('🔍 DEBUG: approvalStatus = "$approvalStatus" (${approvalStatus.runtimeType})');
+      print('🔍 DEBUG: autoLogin = $autoLogin (${autoLogin.runtimeType})');
+      print('🔍 DEBUG: message = "$message"');
+      print('🔍 DEBUG: accessToken != null = ${accessToken != null}');
+      print('🔍 DEBUG: refreshToken != null = ${refreshToken != null}');
+      print('🔍 DEBUG: Condition 1 (approved + autoLogin): ${isVerified && approvalStatus == "approved" && autoLogin}');
+      print('🔍 DEBUG: Condition 2 (approved + !autoLogin): ${isVerified && approvalStatus == "approved" && !autoLogin}');
+      print('🔍 DEBUG: NEW Condition (unknown + tokens): ${isVerified && autoLogin && accessToken != null && approvalStatus == "unknown"}');
+      print('🔍 DEBUG: Condition 3 (pending): ${isVerified && approvalStatus == "pending"}');
+      print('🔍 DEBUG: Condition 4 (rejected): ${isVerified && approvalStatus == "rejected"}');
+      print('🔍 DEBUG: Condition 5 (expired): ${isVerified && approvalStatus == "expired"}');
+      
+      // Handle unverified users first
+      if (!isVerified) {
         log('❌ AuthController: User not yet verified');
         
         Get.snackbar(
@@ -1453,6 +1425,188 @@ class AuthController extends GetxController {
           colorText: Colors.white,
           duration: const Duration(seconds: 4),
           icon: const Icon(Icons.email, color: Colors.white),
+        );
+        
+        return false;
+      }
+      
+      // 🚨 CRITICAL FIX: Check APPROVED status first, then pending
+      // User is verified - handle approval status with correct priority
+      
+      print('🔍 DEBUG: About to check approval conditions...');
+      
+      if (isVerified && (approvalStatus == "approved" || (autoLogin && accessToken != null && approvalStatus == "unknown"))) {
+        print('🎉 DEBUG: APPROVED condition matched!');
+        if (autoLogin && accessToken != null && refreshToken != null) {
+          // Scenario 1: Approved user within auto-login window (has JWT tokens)
+          log('✅ AuthController: Auto-login enabled - approved user with JWT tokens');
+          
+          // Update local user state
+          if (currentUserStore.value != null) {
+            final updatedUser = currentUserStore.value!.copyWith(
+              isVerified: true,
+              isApproved: true,
+              approvalStatus: 'approved',
+            );
+            currentUserStore.value = updatedUser;
+            await _saveUserToStorage(updatedUser);
+          }
+          
+          // Update user data if provided in response
+          if (statusResult['user'] != null) {
+            try {
+              final userData = statusResult['user'] as Map<String, dynamic>;
+              // Map Django user data to Flutter format with proper field mapping
+              final mappedUserData = _mapDjangoUserToFlutter(userData);
+              // Ensure the user data has the correct approval fields
+              mappedUserData['isApproved'] = true;
+              mappedUserData['approvalStatus'] = 'approved';
+              
+              final user = UserModel.fromJson(mappedUserData);
+              currentUserStore.value = user;
+              await _saveUserToStorage(user);
+              log('👤 AuthController: User data updated from API response with approval status');
+            } catch (e) {
+              log('⚠️ AuthController: Failed to parse user data: $e');
+            }
+          }
+          
+          // Mark as logged in
+          isLoggedIn.value = true;
+          
+          // Update state to fully approved
+          await _userStateService.updateState(
+            UserApprovalState.fullyApproved,
+            userId: currentUserStore.value?.userId,
+          );
+          
+          // Show approval popup and auto-redirect
+          _showApprovalSuccessPopup();
+          
+          return true;
+          
+        } else {
+          // Scenario 2: Approved user outside auto-login window (no JWT tokens)
+          print('🎉 DEBUG: APPROVED without auto-login - showing congratulations');
+          log('🎉 AuthController: User approved but outside auto-login window - showing congratulations');
+          
+          // Update user state to fully approved
+          await _userStateService.updateState(
+            UserApprovalState.fullyApproved,
+            userId: currentUserStore.value?.userId,
+          );
+          log('📊 AuthController: User state updated to fullyApproved');
+          
+          // Update user model with approval status
+          if (currentUserStore.value != null) {
+            final updatedUser = currentUserStore.value!.copyWith(
+              isVerified: true,
+              isApproved: true,
+              approvalStatus: 'approved',
+            );
+            currentUserStore.value = updatedUser;
+            await _saveUserToStorage(updatedUser);
+          }
+          
+          // Show approval popup and auto-redirect (no tokens case)
+          _showApprovalSuccessPopup();
+          
+          return true;
+        }
+        
+      } else if (isVerified && approvalStatus == "pending") {
+        // Scenario 3: ✅ Email verified but pending approval - Proper state transition
+        print('⏳ DEBUG: PENDING condition matched');
+        log('📋 AuthController: Email verified, approval pending - transitioning to pending approval state');
+        
+        // ✅ CRITICAL FIX: Update user state to prevent screen switching
+        await _userStateService.updateState(
+          UserApprovalState.emailVerifiedPendingApproval,
+          userId: currentUserStore.value?.userId,
+          referrerName: statusResult['user']?['referred_by_name'] ?? statusResult['user']?['referredByName'],
+        );
+        log('📊 AuthController: User state updated to emailVerifiedPendingApproval');
+        
+        // Extract referrer info for display
+        final userData = statusResult['user'] ?? {};
+        final referrerName = userData['referred_by_name'] ?? userData['referredByName'] ?? 'your referrer';
+        
+        Get.snackbar(
+          'Email Verified!',
+          'Awaiting approval from $referrerName. You\'ll be notified when approved.',
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: Colors.orange,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 4),
+          icon: const Icon(Icons.pending_actions, color: Colors.white),
+        );
+        
+        // Navigate to pending approval screen (DON'T LOGOUT)
+        await Future.delayed(const Duration(seconds: 1));
+        Get.offAllNamed(Routes.pendingApprovalPage);
+        
+        return false; // Not fully complete, but don't logout
+        
+      } else if (isVerified && approvalStatus == "rejected") {
+        // Scenario 4: Rejected by referrer
+        print('❌ DEBUG: REJECTED condition matched');
+        log('❌ AuthController: User registration was rejected by referrer');
+        
+        final userData = statusResult['user'] ?? {};
+        final rejectionReason = userData['rejection_reason'] ?? userData['rejectionReason'] ?? 'No reason provided';
+        
+        Get.snackbar(
+          'Registration Rejected',
+          'Reason: $rejectionReason',
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: cancel,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 5),
+          icon: const Icon(Icons.cancel, color: Colors.white),
+        );
+        
+        // Navigate to rejection screen
+        await Future.delayed(const Duration(seconds: 1));
+        Get.offAllNamed(Routes.rejectionScreen);
+        
+        return false;
+        
+      } else if (isVerified && approvalStatus == "expired") {
+        // Scenario 5: Approval window expired
+        log('⏰ AuthController: Approval request expired - require new referral');
+        
+        // Clear session for expired approval
+        await logout();
+        
+        Get.snackbar(
+          'Approval Expired',
+          'Your approval request expired. Please get a new referral code to register.',
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: Colors.orange,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 4),
+          icon: const Icon(Icons.schedule, color: Colors.white),
+        );
+        
+        // Navigate to expired screen
+        await Future.delayed(const Duration(seconds: 1));
+        Get.offAllNamed(Routes.expiredScreen);
+        
+        return false;
+        
+      } else {
+        // Unknown scenario - fallback
+        print('❓ DEBUG: UNKNOWN scenario - falling to else block');
+        log('⚠️ AuthController: Unknown approval scenario - approval_status: $approvalStatus, auto_login: $autoLogin');
+        
+        Get.snackbar(
+          'Status Unknown',
+          'Please contact support or try logging in manually.',
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: cancel,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 4),
+          icon: const Icon(Icons.help, color: Colors.white),
         );
         
         return false;
@@ -1644,14 +1798,33 @@ class AuthController extends GetxController {
     return List.generate(6, (index) => chars[random.nextInt(chars.length)]).join();
   }
 
-  /// 🚨 NEW: Force reload tokens (useful for debugging)
+  /// Reload JWT tokens and user data (used by splash controller)
   Future<void> reloadTokens() async {
-    log('🔄 AuthController: Force reloading tokens...');
     try {
+      log('🔄 AuthController: Reloading tokens and user data...');
+      
+      // Load JWT tokens from secure storage
       await _apiService.loadTokensFromStorage();
-      log('✅ AuthController: Tokens reloaded successfully');
+      
+      // Load user data from shared preferences
+      final prefs = await SharedPreferences.getInstance();
+      final userStr = prefs.getString('user');
+      
+      if (userStr != null) {
+        final userJson = jsonDecode(userStr);
+        currentUserStore.value = UserModel.fromJson(userJson);
+        isLoggedIn.value = true;
+        log('✅ AuthController: Tokens and user data reloaded successfully');
+      } else {
+        log('ℹ️  AuthController: No user data found in storage');
+        isLoggedIn.value = false;
+        currentUserStore.value = null;
+      }
+      
     } catch (e) {
-      log('❌ AuthController: Failed to reload tokens: $e');
+      log('❌ AuthController: Error reloading tokens: $e');
+      isLoggedIn.value = false;
+      currentUserStore.value = null;
     }
   }
 
@@ -1700,6 +1873,10 @@ class AuthController extends GetxController {
     referralCodeController.value.clear();
     selectedCountry.value = null;
     
+    // Clear referral data
+    referredUid.value = '';
+    referredUser.value = '';
+    
     // Clear errors
     nameError.value = '';
     emailError.value = '';
@@ -1743,5 +1920,101 @@ class AuthController extends GetxController {
     referralCodeController.value.dispose();
     
     super.onClose();
+  }
+
+  /// Show approval success popup with auto-redirect
+  void _showApprovalSuccessPopup() {
+    Get.dialog(
+      Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(30),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Success icon with animation
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: const Color.fromRGBO(111, 168, 67, 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.celebration,
+                  size: 40,
+                  color: Color.fromRGBO(111, 168, 67, 1),
+                ),
+              ),
+              
+              const SizedBox(height: 20),
+              
+              // Title
+              const Text(
+                'Congratulations! 🎉',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              
+              const SizedBox(height: 12),
+              
+              // Message
+              const Text(
+                'Your account has been approved!\nWelcome to TIRI!',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.black54,
+                  height: 1.4,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              
+              const SizedBox(height: 25),
+              
+              // Loading indicator
+              const SizedBox(
+                width: 30,
+                height: 30,
+                child: CircularProgressIndicator(
+                  strokeWidth: 3,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    Color.fromRGBO(111, 168, 67, 1),
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 15),
+              
+              const Text(
+                'Redirecting to home...',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.black38,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      barrierDismissible: false,
+    );
+    
+    // Auto-redirect after 3 seconds
+    Timer(const Duration(seconds: 3), () {
+      if (Get.isDialogOpen ?? false) {
+        Get.back(); // Close dialog
+      }
+      Get.offAllNamed(Routes.homePage);
+    });
   }
 }

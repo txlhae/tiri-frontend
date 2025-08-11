@@ -6,6 +6,7 @@ import 'package:kind_clock/screens/auth_screens/email_sent_splash.dart';
 import 'package:kind_clock/screens/auth_screens/forgot_password_screen.dart';
 import 'package:kind_clock/screens/auth_screens/onboarding_screen.dart';
 import 'package:kind_clock/screens/auth_screens/verify_pending_screen.dart';
+import 'package:kind_clock/screens/auth_screens/email_verification_screen.dart';
 import 'package:kind_clock/screens/chat_page.dart';
 import 'package:kind_clock/screens/contact_us.dart';
 import 'package:kind_clock/screens/edit_add_request_page.dart';
@@ -38,7 +39,11 @@ class Navigation {
     GetPage(
       name: Routes.verifyPendingPage,
       page: () =>
-          VerifyPendingScreen(referredUser: Get.arguments['referredUser']),
+          VerifyPendingScreen(referredUser: Get.arguments?['referredUser']),
+    ),
+    GetPage(
+      name: Routes.emailVerificationPage,
+      page: () => const EmailVerificationScreen(),
     ),
     GetPage(
       name: Routes.loginPage,
@@ -70,7 +75,7 @@ class Navigation {
     ),
     GetPage(
       name: Routes.editAddRequestPage,
-      page: () => EditAddRequestPage(request: Get.arguments['request']),
+      page: () => EditAddRequestPage(request: Get.arguments?['request']),
     ),
     GetPage(
       name: Routes.profilePage,
@@ -99,7 +104,7 @@ class Navigation {
     GetPage(
   name: Routes.addfeedbackPage,
   page: () => AddFeedbackPage(
-    request: Get.arguments['request'] ?? '',
+    request: Get.arguments?['request'] ?? '',
   ),
 ),
     GetPage(

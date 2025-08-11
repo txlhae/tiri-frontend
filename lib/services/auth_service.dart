@@ -21,7 +21,7 @@ class AuthService {
   /// Map backend user JSON (snake_case) to Flutter UserModel camelCase
   Map<String, dynamic> _mapUserSnakeToCamel(Map<String, dynamic> user) {
     return {
-      'userId': user['userId'] ?? user['user_id'],
+      'userId': user['userId'] ?? user['user_id'] ?? user['id'],
       'email': user['email'],
       'username': user['username'],
       'imageUrl': user['imageUrl'] ?? user['image_url'],
@@ -38,6 +38,11 @@ class AuthService {
       'approvalStatus': user['approvalStatus'] ?? user['approval_status'],
       'rejectionReason': user['rejectionReason'] ?? user['rejection_reason'],
       'approvalExpiresAt': user['approvalExpiresAt'] ?? user['approval_expires_at'],
+      // New referral fields from backend
+      'referredByUserId': user['referredByUserId'] ?? user['referred_by_user_id'],
+      'referredByName': user['referredByName'] ?? user['referred_by_name'],
+      'referredByEmail': user['referredByEmail'] ?? user['referred_by_email'],
+      'approvalDate': user['approvalDate'] ?? user['approval_date'],
     };
   }
   // =============================================================================
@@ -386,12 +391,11 @@ class AuthService {
   /// Returns: Map with verification status, auto_login flag, and JWT tokens
   Future<Map<String, dynamic>> checkVerificationStatus() async {
     try {
-      if (!isAuthenticated) {
-        throw Exception('User not authenticated');
-      }
-
+      // 🚨 CRITICAL FIX: Don't require authentication for verification status
+      // Pending approval users need to check status before getting JWT tokens
+      
       if (ApiConfig.enableLogging) {
-        log('Checking verification status with enhanced auto-login support', name: 'AUTH');
+        log('Checking verification status (no auth required for pending users)', name: 'AUTH');
       }
 
       final response = await _apiService.get(ApiConfig.authVerificationStatus);
@@ -421,7 +425,7 @@ class AuthService {
             
             // Update user data if provided
             if (data['user'] != null) {
-              final user = UserModel.fromJson(data['user']);
+              final user = UserModel.fromJson(_mapUserSnakeToCamel(data['user']));
               await _saveUserToStorage(user);
               _currentUser = user;
               
@@ -437,6 +441,7 @@ class AuthService {
         return {
           'is_verified': data['is_verified'] ?? false,
           'auto_login': data['auto_login'] ?? false,
+          'approval_status': data['approval_status'] ?? 'unknown',
           'message': data['message'] ?? 'Status retrieved successfully',
           'access_token': data['access_token'],
           'refresh_token': data['refresh_token'],
@@ -451,6 +456,7 @@ class AuthService {
       return {
         'is_verified': false,
         'auto_login': false,
+        'approval_status': 'error',
         'message': _extractErrorMessage(e),
         'access_token': null,
         'refresh_token': null,
@@ -521,7 +527,7 @@ class AuthService {
         final data = response.data;
         final userData = data['data'] ?? data;
         
-        final user = UserModel.fromJson(userData);
+        final user = UserModel.fromJson(_mapUserSnakeToCamel(userData));
         
         // Update local user data
         await _saveUserToStorage(user);
@@ -559,7 +565,7 @@ class AuthService {
         final data = response.data;
         final userData = data['data'] ?? data;
         
-        final user = UserModel.fromJson(userData);
+        final user = UserModel.fromJson(_mapUserSnakeToCamel(userData));
         
         // Update local user data
         await _saveUserToStorage(user);
@@ -790,12 +796,12 @@ class AuthService {
   /// Returns: Map with approval status info
   Future<Map<String, dynamic>> checkApprovalStatus() async {
     try {
-      if (!isAuthenticated) {
-        throw Exception('User not authenticated');
-      }
-
+      // 🚨 CRITICAL FIX: Don't require authentication for pending approval users
+      // They need to check status before getting JWT tokens
+      // The verification-status endpoint works without auth for email-verified users
+      
       if (ApiConfig.enableLogging) {
-        log('Checking approval status', name: 'AUTH');
+        log('Checking approval status (no auth required for pending users)', name: 'AUTH');
       }
 
       final response = await _apiService.get('/api/auth/verification-status/');

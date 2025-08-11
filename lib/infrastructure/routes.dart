@@ -16,6 +16,11 @@ class Routes {
     return verifyPendingPage;
   }
 
+  static const emailVerificationPage = "/emailVerification";
+  static Future<String> get emailVerificationPageRoute async {
+    return emailVerificationPage;
+  }
+
   static const loginPage = "/login";
   static Future<String> get loginPageRoute async {
     return loginPage;

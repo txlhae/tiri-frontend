@@ -40,47 +40,65 @@ class _PendingApprovalScreenState extends State<PendingApprovalScreen>
     
     _animationController.repeat(reverse: true);
     
-    // Start periodic status checking
-    _startStatusPolling();
-    
-    // Initial status check
-    _checkApprovalStatus();
+    // No automatic polling - only check when button is clicked
   }
 
-  void _startStatusPolling() {
-    _statusCheckTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
-      _checkApprovalStatus();
-    });
-  }
+  // Removed automatic polling - now only checks when button is clicked
 
   void _checkApprovalStatus() async {
-    await authController.checkApprovalStatus();
-    
-    // Handle status changes
-    switch (authController.approvalStatus.value) {
-      case 'approved':
-        _stopStatusPolling();
-        Get.offAllNamed(Routes.homePage);
-        break;
-      case 'rejected':
-        _stopStatusPolling();
-        Get.offAllNamed(Routes.rejectionScreen);
-        break;
-      case 'expired':
-        _stopStatusPolling();
-        Get.offAllNamed(Routes.expiredScreen);
-        break;
+    try {
+      print('🔍 PendingApprovalScreen: Check Status button clicked');
+      
+      // Use checkVerificationStatus which returns full approval info  
+      final isApproved = await authController.checkVerificationStatus();
+      
+      print('📊 PendingApprovalScreen: checkVerificationStatus returned: $isApproved');
+      
+      if (isApproved) {
+        // User is approved! 
+        print('✅ PendingApprovalScreen: User approved');
+        
+        // The checkVerificationStatus method handles all navigation and notifications
+        
+      } else {
+        // User is not approved yet - check for other status changes
+        print('⏳ PendingApprovalScreen: Still not approved, checking status: ${authController.approvalStatus.value}');
+        
+        // Handle rejection or expiration cases
+        switch (authController.approvalStatus.value) {
+          case 'rejected':
+            print('❌ PendingApprovalScreen: User rejected - navigating to rejection screen');
+            Get.offAllNamed(Routes.rejectionScreen);
+            break;
+          case 'expired':
+            print('⏰ PendingApprovalScreen: Approval expired - navigating to expired screen');
+            Get.offAllNamed(Routes.expiredScreen);
+            break;
+          case 'pending':
+          default:
+            // Still pending, stay on current screen
+            print('⏳ PendingApprovalScreen: Still pending approval');
+            break;
+        }
+      }
+    } catch (e) {
+      print('❌ PendingApprovalScreen: Error in _checkApprovalStatus: $e');
+      
+      // Show user-friendly error
+      Get.snackbar(
+        'Check Failed',
+        'Unable to check status. Please try again.',
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 3),
+      );
     }
-  }
-
-  void _stopStatusPolling() {
-    _statusCheckTimer?.cancel();
-    _statusCheckTimer = null;
   }
 
   @override
   void dispose() {
-    _stopStatusPolling();
+    _statusCheckTimer?.cancel(); // Just in case
     _animationController.dispose();
     super.dispose();
   }
@@ -94,17 +112,6 @@ class _PendingApprovalScreenState extends State<PendingApprovalScreen>
           padding: const EdgeInsets.all(20.0),
           child: Column(
             children: [
-              // Header
-              Row(
-                children: [
-                  Image.asset(
-                    'assets/images/logo_named.png',
-                    width: 100,
-                    height: 40,
-                  ),
-                ],
-              ),
-              
               Expanded(
                 child: Obx(() {
                   return Column(
