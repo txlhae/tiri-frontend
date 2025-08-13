@@ -1070,24 +1070,50 @@ class AuthController extends GetxController {
       approvalHistoryErrorMessage.value = '';
       
       final history = await _authService.getApprovalHistory();
+      log('📊 AuthController: Received history data: $history');
       
       // Convert to ApprovalRequest objects
       approvalHistory.clear();
       for (final item in history) {
-        approvalHistory.add(ApprovalRequest.fromJson({
-          'id': item['id'],
-          'newUserEmail': item['new_user_email'],
-          'newUserName': item['new_user_name'],
-          'newUserCountry': item['new_user_country'],
-          'newUserPhone': item['new_user_phone'],
-          'referralCodeUsed': item['referral_code_used'],
-          'status': item['status'],
-          'requestedAt': item['requested_at'],
-          'expiresAt': item['expires_at'],
-          'newUserProfileImage': item['new_user_profile_image'],
-          'rejectionReason': item['rejection_reason'],
-          'decidedAt': item['decided_at'],
-        }));
+        log('📊 AuthController: Processing history item: $item');
+        try {
+          // Parse dates properly
+          final requestedAt = item['requested_at'] != null 
+              ? (item['requested_at'] is String 
+                  ? DateTime.parse(item['requested_at']) 
+                  : item['requested_at'])
+              : DateTime.now();
+              
+          final expiresAt = item['expires_at'] != null
+              ? (item['expires_at'] is String 
+                  ? DateTime.parse(item['expires_at']) 
+                  : item['expires_at'])
+              : DateTime.now().add(const Duration(days: 7));
+              
+          final decidedAt = item['decided_at'] != null
+              ? (item['decided_at'] is String 
+                  ? DateTime.parse(item['decided_at']) 
+                  : item['decided_at'])
+              : null;
+          
+          approvalHistory.add(ApprovalRequest.fromJson({
+            'id': item['id'] ?? '',
+            'newUserEmail': item['new_user_email'] ?? '',
+            'newUserName': item['new_user_name'] ?? '',
+            'newUserCountry': item['new_user_country'] ?? '',
+            'newUserPhone': item['new_user_phone'],
+            'referralCodeUsed': item['referral_code_used'] ?? '',
+            'status': item['status'] ?? 'unknown',
+            'requestedAt': requestedAt.toIso8601String(),
+            'expiresAt': expiresAt.toIso8601String(),
+            'newUserProfileImage': item['new_user_profile_image'],
+            'rejectionReason': item['rejection_reason'],
+            'decidedAt': decidedAt?.toIso8601String(),
+          }));
+        } catch (e) {
+          log('❌ AuthController: Error parsing history item: $e');
+          log('❌ AuthController: Item data: $item');
+        }
       }
       
       log('✅ AuthController: Fetched ${approvalHistory.length} approval history items');
@@ -1411,7 +1437,7 @@ class AuthController extends GetxController {
   /// Enhanced to handle direct JWT tokens in API response
   Future<bool> checkVerificationStatus() async {
     try {
-      print('🔍 AuthController: Starting checkVerificationStatus...');
+      log('🔍 AuthController: Starting checkVerificationStatus...');
       log('🔍 AuthController: Checking verification status with enhanced JWT token support...');
       
       final statusResult = await _authService.checkVerificationStatus();
@@ -1435,19 +1461,19 @@ class AuthController extends GetxController {
       log('   - has_refresh_token: ${refreshToken != null}');
       
       // 🔍 DEBUG: Print exact values and conditions
-      print('🔍 DEBUG: Raw statusResult = $statusResult');
-      print('🔍 DEBUG: isVerified = $isVerified (${isVerified.runtimeType})');
-      print('🔍 DEBUG: approvalStatus = "$approvalStatus" (${approvalStatus.runtimeType})');
-      print('🔍 DEBUG: autoLogin = $autoLogin (${autoLogin.runtimeType})');
-      print('🔍 DEBUG: message = "$message"');
-      print('🔍 DEBUG: accessToken != null = ${accessToken != null}');
-      print('🔍 DEBUG: refreshToken != null = ${refreshToken != null}');
-      print('🔍 DEBUG: Condition 1 (approved + autoLogin): ${isVerified && approvalStatus == "approved" && autoLogin}');
-      print('🔍 DEBUG: Condition 2 (approved + !autoLogin): ${isVerified && approvalStatus == "approved" && !autoLogin}');
-      print('🔍 DEBUG: NEW Condition (unknown + tokens): ${isVerified && autoLogin && accessToken != null && approvalStatus == "unknown"}');
-      print('🔍 DEBUG: Condition 3 (pending): ${isVerified && approvalStatus == "pending"}');
-      print('🔍 DEBUG: Condition 4 (rejected): ${isVerified && approvalStatus == "rejected"}');
-      print('🔍 DEBUG: Condition 5 (expired): ${isVerified && approvalStatus == "expired"}');
+      log('🔍 DEBUG: Raw statusResult = $statusResult');
+      log('🔍 DEBUG: isVerified = $isVerified (${isVerified.runtimeType})');
+      log('🔍 DEBUG: approvalStatus = "$approvalStatus" (${approvalStatus.runtimeType})');
+      log('🔍 DEBUG: autoLogin = $autoLogin (${autoLogin.runtimeType})');
+      log('🔍 DEBUG: message = "$message"');
+      log('🔍 DEBUG: accessToken != null = ${accessToken != null}');
+      log('🔍 DEBUG: refreshToken != null = ${refreshToken != null}');
+      log('🔍 DEBUG: Condition 1 (approved + autoLogin): ${isVerified && approvalStatus == "approved" && autoLogin}');
+      log('🔍 DEBUG: Condition 2 (approved + !autoLogin): ${isVerified && approvalStatus == "approved" && !autoLogin}');
+      log('🔍 DEBUG: NEW Condition (unknown + tokens): ${isVerified && autoLogin && accessToken != null && approvalStatus == "unknown"}');
+      log('🔍 DEBUG: Condition 3 (pending): ${isVerified && approvalStatus == "pending"}');
+      log('🔍 DEBUG: Condition 4 (rejected): ${isVerified && approvalStatus == "rejected"}');
+      log('🔍 DEBUG: Condition 5 (expired): ${isVerified && approvalStatus == "expired"}');
       
       // Handle unverified users first
       if (!isVerified) {
@@ -1469,10 +1495,10 @@ class AuthController extends GetxController {
       // 🚨 CRITICAL FIX: Check APPROVED status first, then pending
       // User is verified - handle approval status with correct priority
       
-      print('🔍 DEBUG: About to check approval conditions...');
+      log('🔍 DEBUG: About to check approval conditions...');
       
       if (isVerified && (approvalStatus == "approved" || (autoLogin && accessToken != null && approvalStatus == "unknown"))) {
-        print('🎉 DEBUG: APPROVED condition matched!');
+        log('🎉 DEBUG: APPROVED condition matched!');
         if (autoLogin && accessToken != null && refreshToken != null) {
           // Scenario 1: Approved user within auto-login window (has JWT tokens)
           log('✅ AuthController: Auto-login enabled - approved user with JWT tokens');
@@ -1523,7 +1549,7 @@ class AuthController extends GetxController {
           
         } else {
           // Scenario 2: Approved user outside auto-login window (no JWT tokens)
-          print('🎉 DEBUG: APPROVED without auto-login - showing congratulations');
+          log('🎉 DEBUG: APPROVED without auto-login - showing congratulations');
           log('🎉 AuthController: User approved but outside auto-login window - showing congratulations');
           
           // Update user state to fully approved
@@ -1552,7 +1578,7 @@ class AuthController extends GetxController {
         
       } else if (isVerified && approvalStatus == "pending") {
         // Scenario 3: ✅ Email verified but pending approval - Proper state transition
-        print('⏳ DEBUG: PENDING condition matched');
+        log('⏳ DEBUG: PENDING condition matched');
         log('📋 AuthController: Email verified, approval pending - transitioning to pending approval state');
         
         // ✅ CRITICAL FIX: Update user state to prevent screen switching
@@ -1585,7 +1611,7 @@ class AuthController extends GetxController {
         
       } else if (isVerified && approvalStatus == "rejected") {
         // Scenario 4: Rejected by referrer
-        print('❌ DEBUG: REJECTED condition matched');
+        log('❌ DEBUG: REJECTED condition matched');
         log('❌ AuthController: User registration was rejected by referrer');
         
         final userData = statusResult['user'] ?? {};
@@ -1632,7 +1658,7 @@ class AuthController extends GetxController {
         
       } else {
         // Unknown scenario - fallback
-        print('❓ DEBUG: UNKNOWN scenario - falling to else block');
+        log('❓ DEBUG: UNKNOWN scenario - falling to else block');
         log('⚠️ AuthController: Unknown approval scenario - approval_status: $approvalStatus, auto_login: $autoLogin');
         
         Get.snackbar(
@@ -1842,15 +1868,62 @@ class AuthController extends GetxController {
       // Load JWT tokens from secure storage
       await _apiService.loadTokensFromStorage();
       
+      // Check if we have valid tokens
+      final hasTokens = _apiService.isAuthenticated;
+      log('🔄 AuthController: Has valid tokens: $hasTokens');
+      
       // Load user data from shared preferences
       final prefs = await SharedPreferences.getInstance();
       final userStr = prefs.getString('user');
       
-      if (userStr != null) {
+      if (userStr != null && hasTokens) {
         final userJson = jsonDecode(userStr);
         currentUserStore.value = UserModel.fromJson(userJson);
-        isLoggedIn.value = true;
-        log('✅ AuthController: Tokens and user data reloaded successfully');
+        
+        // Try to validate the token by making a simple API call
+        try {
+          log('🔄 AuthController: Validating stored tokens...');
+          // Make a simple authenticated request to verify token is still valid
+          final response = await _apiService.get('/api/auth/user/');
+          
+          if (response.statusCode == 200) {
+            isLoggedIn.value = true;
+            
+            // Update user state to fullyApproved if we have valid tokens and user data
+            await _userStateService.updateState(
+              UserApprovalState.fullyApproved,
+              userId: currentUserStore.value?.userId,
+            );
+            
+            log('✅ AuthController: Tokens validated and user authenticated');
+            log('✅ AuthController: User state updated to fullyApproved');
+          } else {
+            throw Exception('Token validation failed');
+          }
+        } catch (e) {
+          log('⚠️ AuthController: Token validation failed, attempting refresh: $e');
+          
+          // Try to refresh the token
+          final refreshSuccess = await _apiService.refreshTokenIfNeeded();
+          
+          if (refreshSuccess) {
+            isLoggedIn.value = true;
+            
+            // Update user state to fullyApproved after successful refresh
+            await _userStateService.updateState(
+              UserApprovalState.fullyApproved,
+              userId: currentUserStore.value?.userId,
+            );
+            
+            log('✅ AuthController: Token refreshed successfully');
+            log('✅ AuthController: User state updated to fullyApproved');
+          } else {
+            log('❌ AuthController: Token refresh failed - user needs to login again');
+            isLoggedIn.value = false;
+            currentUserStore.value = null;
+            await _clearUserData();
+          }
+        }
       } else {
         log('ℹ️  AuthController: No user data found in storage');
         isLoggedIn.value = false;

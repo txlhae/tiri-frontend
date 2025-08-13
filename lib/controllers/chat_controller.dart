@@ -92,21 +92,21 @@ class ChatController extends GetxController {
       log('📋 Service Request ID: $serviceRequestId', name: 'ChatController');
       
       // Enhanced logging for debugging
-      print('🔍 [CHAT CONTROLLER] === Chat Room Creation Debug ===');
-      print('🔍 [CHAT CONTROLLER] User A: $userA');
-      print('🔍 [CHAT CONTROLLER] User B: $userB');
-      print('🔍 [CHAT CONTROLLER] Service Request ID: $serviceRequestId');
-      print('🔍 [CHAT CONTROLLER] Has service request: ${serviceRequestId != null}');
+      log('🔍 [CHAT CONTROLLER] === Chat Room Creation Debug ===');
+      log('🔍 [CHAT CONTROLLER] User A: $userA');
+      log('🔍 [CHAT CONTROLLER] User B: $userB');
+      log('🔍 [CHAT CONTROLLER] Service Request ID: $serviceRequestId');
+      log('🔍 [CHAT CONTROLLER] Has service request: ${serviceRequestId != null}');
       
       final ChatRoomModel chatRoom;
       
       if (serviceRequestId != null) {
         // For service request chats, use the specialized endpoint
-        print('🔍 [CHAT CONTROLLER] Using service request endpoint (getOrCreateChatRoom)');
+        log('🔍 [CHAT CONTROLLER] Using service request endpoint (getOrCreateChatRoom)');
         chatRoom = await ChatApiService.getOrCreateChatRoom(serviceRequestId, userA, userB);
       } else {
         // For general chats, create a simple room
-        print('🔍 [CHAT CONTROLLER] Using general chat endpoint (createChatRoom)');
+        log('🔍 [CHAT CONTROLLER] Using general chat endpoint (createChatRoom)');
         chatRoom = await ChatApiService.createChatRoom(userA, userB);
       }
       
@@ -116,19 +116,19 @@ class ChatController extends GetxController {
       log('✅ Chat room ready with ID: "$roomId" (length: ${roomId.length})', name: 'ChatController');
       
       // Enhanced logging
-      print('🔍 [CHAT CONTROLLER] Chat room created successfully');
-      print('🔍 [CHAT CONTROLLER] Room ID: $roomId');
-      print('🔍 [CHAT CONTROLLER] Room ID length: ${roomId.length}');
-      print('🔍 [CHAT CONTROLLER] Participants: ${chatRoom.participantIds}');
-      print('🔍 [CHAT CONTROLLER] Service Request ID: ${chatRoom.serviceRequestId}');
+      log('🔍 [CHAT CONTROLLER] Chat room created successfully');
+      log('🔍 [CHAT CONTROLLER] Room ID: $roomId');
+      log('🔍 [CHAT CONTROLLER] Room ID length: ${roomId.length}');
+      log('🔍 [CHAT CONTROLLER] Participants: ${chatRoom.participantIds}');
+      log('🔍 [CHAT CONTROLLER] Service Request ID: ${chatRoom.serviceRequestId}');
       
       // Validate that we got a proper room ID
       if (roomId.isEmpty) {
-        print('❌ [CHAT CONTROLLER] Empty room ID received from server');
+        log('❌ [CHAT CONTROLLER] Empty room ID received from server');
         throw Exception('Received empty room ID from server');
       }
       
-      print('✅ [CHAT CONTROLLER] Returning room ID: $roomId');
+      log('✅ [CHAT CONTROLLER] Returning room ID: $roomId');
       return roomId;
       
     } catch (e) {
@@ -137,9 +137,9 @@ class ChatController extends GetxController {
       log('❌ Error creating/getting chat room: $e', name: 'ChatController');
       
       // Enhanced error logging
-      print('❌ [CHAT CONTROLLER] Error in createOrGetChatRoom: $e');
-      print('❌ [CHAT CONTROLLER] Error type: ${e.runtimeType}');
-      print('❌ [CHAT CONTROLLER] Error message for UI: $errorMsg');
+      log('❌ [CHAT CONTROLLER] Error in createOrGetChatRoom: $e');
+      log('❌ [CHAT CONTROLLER] Error type: ${e.runtimeType}');
+      log('❌ [CHAT CONTROLLER] Error message for UI: $errorMsg');
       
       rethrow;
     } finally {
@@ -190,8 +190,8 @@ class ChatController extends GetxController {
       errorMessage.value = '';
       _canSendMessage = false;
       
-      print('� Sending message to room: $chatRoomId');
-      print('� WebSocket connected: ${ChatWebSocketService.isConnected}');
+      log('📤 Sending message to room: $chatRoomId');
+      log('📡 WebSocket connected: ${ChatWebSocketService.isConnected}');
       
       // Send message via REST API for reliability
       final sentMessage = await ChatApiService.sendMessage(chatRoomId, message.trim());
@@ -199,7 +199,7 @@ class ChatController extends GetxController {
       // Add the message to local list immediately with deduplication
       addMessageSafely(sentMessage);
       
-      print('✅ Message sent successfully: ${sentMessage.messageId}');
+      log('✅ Message sent successfully: ${sentMessage.messageId}');
       
       // Reset throttle timer
       _sendMessageThrottleTimer?.cancel();
@@ -210,7 +210,7 @@ class ChatController extends GetxController {
     } catch (e) {
       final errorMsg = ChatApiService.getErrorMessage(e);
       errorMessage.value = errorMsg;
-      print('❌ Error sending message: $e');
+      log('❌ Error sending message: $e');
       _canSendMessage = true;
     } finally {
       isSendingMessage.value = false;
@@ -221,7 +221,7 @@ class ChatController extends GetxController {
   /// 
   /// This method loads initial messages via REST API and establishes WebSocket connection for real-time updates
   void listenToMessages(String chatRoomId) {
-    print('🚨 DEBUG: listenToMessages called with roomId: $chatRoomId');
+    log('🚨 DEBUG: listenToMessages called with roomId: $chatRoomId');
     
     // Reset pagination
     currentPage.value = 1;
@@ -234,7 +234,7 @@ class ChatController extends GetxController {
     _connectWebSocket(chatRoomId).then((_) {
       // Only set up stream listener after connection is established
       if (ChatWebSocketService.isConnected) {
-        print('🎧 Setting up WebSocket message listener for room: $chatRoomId');
+        log('🎧 Setting up WebSocket message listener for room: $chatRoomId');
         
         // Cancel existing subscription first to prevent duplicates
         _messageSubscription?.cancel();
@@ -242,10 +242,10 @@ class ChatController extends GetxController {
         _messageSubscription = ChatWebSocketService.messageStream.listen(
           (message) {
             addMessageSafely(message);
-            print('📥 Added message from WebSocket: ${message.messageId}');
+            log('📥 Added message from WebSocket: ${message.messageId}');
           },
           onError: (error) {
-            print('❌ WebSocket message stream error: $error');
+            log('❌ WebSocket message stream error: $error');
           },
         );
       }
@@ -265,16 +265,16 @@ class ChatController extends GetxController {
   /// Connect to WebSocket for real-time messaging
   Future<void> _connectWebSocket(String chatRoomId) async {
     try {
-      print('🚨 About to find AuthController');
+      log('🚨 About to find AuthController');
       final authController = Get.find<AuthController>();
       final currentUserId = authController.currentUserStore.value?.userId ?? '';
       
       if (currentUserId.isEmpty) {
-        print('⚠️ Cannot connect WebSocket - no user ID available');
+        log('⚠️ Cannot connect WebSocket - no user ID available');
         return;
       }
       
-      print('🔌 Connecting WebSocket for room: $chatRoomId');
+      log('🔌 Connecting WebSocket for room: $chatRoomId');
       
       // Wait for WebSocket connection to be fully ready
       await ChatWebSocketService.connect(chatRoomId, currentUserId);
@@ -284,17 +284,17 @@ class ChatController extends GetxController {
       
       if (ChatWebSocketService.isConnected) {
         webSocketConnectionState.value = 'connected';
-        print('✅ WebSocket connected and ready for messaging');
+        log('✅ WebSocket connected and ready for messaging');
         
         // Start connection monitoring
         _startConnectionMonitoring();
       } else {
         webSocketConnectionState.value = 'error';
-        print('❌ WebSocket connection failed');
+        log('❌ WebSocket connection failed');
       }
       
     } catch (e) {
-      print('❌ Error connecting WebSocket: $e');
+      log('❌ Error connecting WebSocket: $e');
       webSocketConnectionState.value = 'error';
       isWebSocketConnected.value = false;
     }
@@ -302,15 +302,15 @@ class ChatController extends GetxController {
 
   /// Internal method to load messages with pagination support
   Future<void> _loadMessages(String chatRoomId, {bool refresh = false}) async {
-    print('🚨 _loadMessages called with: $chatRoomId, refresh: $refresh');
-    print('🚨 Checking hasMoreMessages: ${hasMoreMessages.value}');
+    log('🚨 _loadMessages called with: $chatRoomId, refresh: $refresh');
+    log('🚨 Checking hasMoreMessages: ${hasMoreMessages.value}');
     
     if (!hasMoreMessages.value && !refresh) {
-      print('🚨 Early return - no more messages');
+      log('🚨 Early return - no more messages');
       return;
     }
     
-    print('🚨 Continuing with message loading...');
+    log('🚨 Continuing with message loading...');
     
     try {
       if (refresh) {
@@ -512,7 +512,7 @@ class ChatController extends GetxController {
     _connectionMonitorTimer = Timer.periodic(Duration(seconds: 5), (timer) {
       final actualConnectionStatus = ChatWebSocketService.isConnected;
       if (isWebSocketConnected.value != actualConnectionStatus) {
-        print('🔄 Connection status changed: $actualConnectionStatus');
+        log('🔄 Connection status changed: $actualConnectionStatus');
         isWebSocketConnected.value = actualConnectionStatus;
         webSocketConnectionState.value = actualConnectionStatus ? 'connected' : 'disconnected';
       }

@@ -1,5 +1,6 @@
 import 'package:defer_pointer/defer_pointer.dart';
 import 'package:flutter/material.dart';
+import 'dart:developer';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:tiri/controllers/auth_controller.dart';
@@ -75,7 +76,7 @@ class _RequestDetailsState extends State<RequestDetails> {
           await requestController.loadRequestDetails(requestId);
         } catch (e) {
           // Handle loading errors gracefully
-          print('Error loading request details in initState: $e');
+          log('Error loading request details in initState: $e');
           if (mounted) {
             Get.snackbar(
               'Loading Error',
@@ -89,7 +90,7 @@ class _RequestDetailsState extends State<RequestDetails> {
         }
       } else {
         // Handle error case where no valid requestId is provided
-        print('Warning: No valid requestId provided to RequestDetails');
+        log('Warning: No valid requestId provided to RequestDetails');
         requestController.currentRequestDetails.value = null;
         requestController.isLoadingRequestDetails.value = false;
         
@@ -241,15 +242,10 @@ class _RequestDetailsState extends State<RequestDetails> {
 
     final currentUserId = currentUser.userId;
     
-    // Check for invalid user data
+    // 🚨 FIXED: Enhanced user data validation with retry mechanism
     if (currentUserId.isEmpty) {
-      return _buildErrorState(
-        icon: Icons.warning_outlined,
-        title: 'Invalid User Data',
-        message: 'There seems to be an issue with your account. Please try logging in again.',
-        buttonText: 'Refresh',
-        onPressed: () => Get.back(),
-      );
+      // Instead of immediately showing error, try to refresh user data first
+      return _buildUserDataRefreshState();
     }
 
     return Column(
@@ -297,11 +293,11 @@ class _RequestDetailsState extends State<RequestDetails> {
                                    final chatController = Get.put(ChatController());
                                    
                                    try {
-                                     print('🔍 [CHAT POSTER] Starting chat creation...');
-                                     print('🔍 [CHAT POSTER] Current User ID: $currentUserId');
-                                     print('🔍 [CHAT POSTER] Request User ID: ${request.userId}');
-                                     print('🔍 [CHAT POSTER] Service Request ID: ${request.requestId}');
-                                     print('🔍 [CHAT POSTER] Request Owner: ${request.requester?.username}');
+                                     log('🔍 [CHAT POSTER] Starting chat creation...');
+                                     log('🔍 [CHAT POSTER] Current User ID: $currentUserId');
+                                     log('🔍 [CHAT POSTER] Request User ID: ${request.userId}');
+                                     log('🔍 [CHAT POSTER] Service Request ID: ${request.requestId}');
+                                     log('🔍 [CHAT POSTER] Request Owner: ${request.requester?.username}');
                                      
                                      final roomId = await chatController.createOrGetChatRoom(
                                        currentUserId,
@@ -309,7 +305,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                                        serviceRequestId: request.requestId,
                                      );
                                      
-                                     print('✅ [CHAT POSTER] Chat room created successfully: $roomId');
+                                     log('✅ [CHAT POSTER] Chat room created successfully: $roomId');
                                      
                                      Get.toNamed(
                                        Routes.chatPage,
@@ -321,7 +317,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                                        },
                                      );
                                    } catch (e) {
-                                     print('❌ [CHAT POSTER] Error creating chat room: $e');
+                                     log('❌ [CHAT POSTER] Error creating chat room: $e');
                                      Get.snackbar(
                                        'Error',
                                        'Failed to create chat room. Please try again.',
@@ -492,10 +488,10 @@ class _RequestDetailsState extends State<RequestDetails> {
                                                 final chatController = Get.put(ChatController());
                                                 
                                                 try {
-                                                  print('🔍 [CHAT ACCEPTED] Starting chat with accepted volunteer...');
-                                                  print('🔍 [CHAT ACCEPTED] Current User ID: $currentUserId');
-                                                  print('🔍 [CHAT ACCEPTED] Volunteer ID: ${user.userId}');
-                                                  print('🔍 [CHAT ACCEPTED] Service Request ID: ${request.requestId}');
+                                                  log('🔍 [CHAT ACCEPTED] Starting chat with accepted volunteer...');
+                                                  log('🔍 [CHAT ACCEPTED] Current User ID: $currentUserId');
+                                                  log('🔍 [CHAT ACCEPTED] Volunteer ID: ${user.userId}');
+                                                  log('🔍 [CHAT ACCEPTED] Service Request ID: ${request.requestId}');
                                                   
                                                   final roomId = await chatController.createOrGetChatRoom(
                                                     currentUserId,
@@ -503,7 +499,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                                                     serviceRequestId: request.requestId,
                                                   );
                                                   
-                                                  print('✅ [CHAT ACCEPTED] Chat room created: $roomId');
+                                                  log('✅ [CHAT ACCEPTED] Chat room created: $roomId');
                                                   
                                                   Get.toNamed(
                                                     Routes.chatPage,
@@ -515,7 +511,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                                                     },
                                                   );
                                                 } catch (e) {
-                                                  print('❌ [CHAT ACCEPTED] Error: $e');
+                                                  log('❌ [CHAT ACCEPTED] Error: $e');
                                                   Get.snackbar(
                                                     'Error',
                                                     'Failed to create chat room. Please try again.',
@@ -1574,15 +1570,15 @@ class _RequestDetailsState extends State<RequestDetails> {
     
     // 🎯 PRIMARY: Use the userRequestStatus from RequestModel extension (this is the authoritative source)
     final userStatus = request.userRequestStatus;
-    print("🔍 DEBUG: _getCurrentUserVolunteerStatus - userStatus from backend: '$userStatus'"); // Debug log
+    log("🔍 DEBUG: _getCurrentUserVolunteerStatus - userStatus from backend: '$userStatus'"); // Debug log
     
     if (userStatus.isNotEmpty && userStatus != 'not_requested') {
       // The backend provides the actual status - use it directly!
-      print("🔍 DEBUG: Using backend status: '$userStatus'"); // Debug log
+      log("🔍 DEBUG: Using backend status: '$userStatus'"); // Debug log
       return userStatus;
     }
     
-    print("🔍 DEBUG: Backend status was '$userStatus', trying fallbacks..."); // Debug log
+    log("🔍 DEBUG: Backend status was '$userStatus', trying fallbacks..."); // Debug log
     
     // 🔄 FALLBACK 1: Check volunteer requests data if available (for request owners)
     final volunteerRequests = requestController.pendingVolunteers;
@@ -1590,7 +1586,7 @@ class _RequestDetailsState extends State<RequestDetails> {
       final volunteer = volunteerRequest['volunteer'];
       if (volunteer != null && volunteer['userId'] == currentUserId) {
         final status = volunteerRequest['status']?.toString();
-        print("🔍 DEBUG: Found status in volunteer requests: '$status'"); // Debug log
+        log("🔍 DEBUG: Found status in volunteer requests: '$status'"); // Debug log
         return status;
       }
     }
@@ -1600,18 +1596,18 @@ class _RequestDetailsState extends State<RequestDetails> {
       (user) => user.userId == currentUserId
     );
     if (isAcceptedVolunteer) {
-      print("🔍 DEBUG: Found user in acceptedUser list - status: 'approved'"); // Debug log
+      log("🔍 DEBUG: Found user in acceptedUser list - status: 'approved'"); // Debug log
       return 'approved';
     }
     
     // 🔄 FALLBACK 3: If we have volunteer message or hasVolunteered flag, likely pending
     if (request.hasVolunteered || 
         (request.volunteerMessage != null && request.volunteerMessage!.isNotEmpty)) {
-      print("🔍 DEBUG: hasVolunteered or volunteerMessage exists - status: 'pending'"); // Debug log
+      log("🔍 DEBUG: hasVolunteered or volunteerMessage exists - status: 'pending'"); // Debug log
       return 'pending';
     }
     
-    print("🔍 DEBUG: No status found, returning null"); // Debug log
+    log("🔍 DEBUG: No status found, returning null"); // Debug log
     return null;
   }
 
@@ -1769,7 +1765,7 @@ class _RequestDetailsState extends State<RequestDetails> {
       // Get current user ID
       final currentUserId = authController.currentUserStore.value?.userId;
       if (currentUserId == null) {
-        print('❌ [CHAT VOLUNTEER] No current user ID available');
+        log('❌ [CHAT VOLUNTEER] No current user ID available');
         Get.snackbar(
           'Error',
           'Unable to get current user information',
@@ -1779,12 +1775,12 @@ class _RequestDetailsState extends State<RequestDetails> {
         return;
       }
 
-      print('🔍 [CHAT VOLUNTEER] Starting chat creation...');
-      print('🔍 [CHAT VOLUNTEER] Current User ID (Requester): $currentUserId');
-      print('🔍 [CHAT VOLUNTEER] Volunteer ID: $volunteerId');
-      print('🔍 [CHAT VOLUNTEER] Volunteer Name: $volunteerName');
-      print('🔍 [CHAT VOLUNTEER] Service Request ID: $requestId');
-      print('🔍 [CHAT VOLUNTEER] User Role: REQUEST OWNER (requester)');
+      log('🔍 [CHAT VOLUNTEER] Starting chat creation...');
+      log('🔍 [CHAT VOLUNTEER] Current User ID (Requester): $currentUserId');
+      log('🔍 [CHAT VOLUNTEER] Volunteer ID: $volunteerId');
+      log('🔍 [CHAT VOLUNTEER] Volunteer Name: $volunteerName');
+      log('🔍 [CHAT VOLUNTEER] Service Request ID: $requestId');
+      log('🔍 [CHAT VOLUNTEER] User Role: REQUEST OWNER (requester)');
 
       // Show loading indicator
       Get.dialog(
@@ -1803,8 +1799,8 @@ class _RequestDetailsState extends State<RequestDetails> {
 
       // Create or get chat room using existing ChatController
       final chatController = Get.put(ChatController());
-      print('🔍 [CHAT VOLUNTEER] About to call createOrGetChatRoom...');
-      print('🔍 [CHAT VOLUNTEER] Parameters: userA=$currentUserId, userB=$volunteerId, serviceRequestId=$requestId');
+      log('🔍 [CHAT VOLUNTEER] About to call createOrGetChatRoom...');
+      log('🔍 [CHAT VOLUNTEER] Parameters: userA=$currentUserId, userB=$volunteerId, serviceRequestId=$requestId');
       
       final roomId = await chatController.createOrGetChatRoom(
         currentUserId,
@@ -1812,15 +1808,15 @@ class _RequestDetailsState extends State<RequestDetails> {
         serviceRequestId: requestId,
       );
 
-      print('✅ [CHAT VOLUNTEER] Chat room created successfully: $roomId');
-      print('🔍 [CHAT VOLUNTEER] Room ID length: ${roomId.length}');
+      log('✅ [CHAT VOLUNTEER] Chat room created successfully: $roomId');
+      log('🔍 [CHAT VOLUNTEER] Room ID length: ${roomId.length}');
 
       // Close loading dialog
       Get.back();
 
       // Navigate to chat page
-      print('🔍 [CHAT VOLUNTEER] Navigating to chat page...');
-      print('🔍 [CHAT VOLUNTEER] Chat arguments: roomId=$roomId, receiverId=$volunteerId, receiverName=$volunteerName');
+      log('🔍 [CHAT VOLUNTEER] Navigating to chat page...');
+      log('🔍 [CHAT VOLUNTEER] Chat arguments: roomId=$roomId, receiverId=$volunteerId, receiverName=$volunteerName');
       
       Get.toNamed(
         Routes.chatPage,
@@ -1832,12 +1828,12 @@ class _RequestDetailsState extends State<RequestDetails> {
         },
       );
 
-      print('✅ [CHAT VOLUNTEER] Successfully navigated to chat page');
+      log('✅ [CHAT VOLUNTEER] Successfully navigated to chat page');
 
     } catch (e) {
-      print('❌ [CHAT VOLUNTEER] Error in _openChatWithVolunteer: $e');
-      print('❌ [CHAT VOLUNTEER] Error type: ${e.runtimeType}');
-      print('❌ [CHAT VOLUNTEER] Stack trace: ${StackTrace.current}');
+      log('❌ [CHAT VOLUNTEER] Error in _openChatWithVolunteer: $e');
+      log('❌ [CHAT VOLUNTEER] Error type: ${e.runtimeType}');
+      log('❌ [CHAT VOLUNTEER] Stack trace: ${StackTrace.current}');
       
       // Close loading dialog if still open
       if (Get.isDialogOpen ?? false) {
@@ -1854,6 +1850,110 @@ class _RequestDetailsState extends State<RequestDetails> {
         duration: const Duration(seconds: 4),
       );
     }
+  }
+
+  /// 🚨 FIXED: Smart user data refresh state with retry mechanism
+  /// Shows loading state while attempting to refresh user data instead of immediate error
+  Widget _buildUserDataRefreshState() {
+    // Create a reactive variable to track refresh state
+    final isRefreshing = true.obs;
+    final refreshAttempted = false.obs;
+    
+    // Attempt to refresh user data automatically
+    Future.microtask(() async {
+      try {
+        log('🔄 RequestDetails: Attempting to refresh user data...');
+        
+        // Try to refresh user profile from the server
+        await authController.refreshUserProfile();
+        
+        // Check if we now have valid user ID
+        final refreshedUser = authController.currentUserStore.value;
+        if (refreshedUser != null && refreshedUser.userId.isNotEmpty) {
+          log('✅ RequestDetails: User data refreshed successfully - userId: ${refreshedUser.userId}');
+          isRefreshing.value = false;
+          refreshAttempted.value = true;
+          // The Obx will automatically rebuild and show the proper content
+        } else {
+          log('⚠️ RequestDetails: User data refresh failed - still no valid userId');
+          // After failed refresh, still mark as attempted for error handling
+          isRefreshing.value = false;
+          refreshAttempted.value = true;
+        }
+      } catch (e) {
+        log('❌ RequestDetails: Error during user data refresh: $e');
+        isRefreshing.value = false;
+        refreshAttempted.value = true;
+      }
+    });
+
+    return Obx(() {
+      // If we're still refreshing, show loading
+      if (isRefreshing.value) {
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Loading User Data',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'We\'re refreshing your account information. Please wait...',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey.shade600,
+                    height: 1.4,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                TextButton.icon(
+                  onPressed: () => Get.back(),
+                  icon: const Icon(Icons.arrow_back),
+                  label: const Text('Go Back'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.grey.shade600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+      
+      // If refresh completed and user data is now valid, show the normal content
+      final currentUser = authController.currentUserStore.value;
+      if (refreshAttempted.value && currentUser != null && currentUser.userId.isNotEmpty) {
+        // Recursively call _buildLoadedContent to show the normal view
+        return _buildLoadedContent();
+      }
+      
+      // If refresh failed, show the original error state
+      return _buildErrorState(
+        icon: Icons.warning_outlined,
+        title: 'Invalid User Data',
+        message: 'There seems to be an issue with your account. Please try logging in again.',
+        buttonText: 'Refresh',
+        onPressed: () {
+          // Reset and try again
+          isRefreshing.value = true;
+          refreshAttempted.value = false;
+        },
+      );
+    });
   }
 }
 

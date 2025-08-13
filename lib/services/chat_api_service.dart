@@ -70,11 +70,11 @@ class ChatApiService {
       log('👥 Participants: $userId1, $userId2', name: 'ChatAPI');
       
       // Enhanced logging for debugging
-      print('🔍 [CHAT API] === API Call Debug ===');
-      print('🔍 [CHAT API] Endpoint: POST /api/chat/rooms/get_or_create/');
-      print('🔍 [CHAT API] Request ID: $requestId');
-      print('🔍 [CHAT API] User ID 1: $userId1');
-      print('🔍 [CHAT API] User ID 2: $userId2');
+      log('🔍 [CHAT API] === API Call Debug ===');
+      log('🔍 [CHAT API] Endpoint: POST /api/chat/rooms/get_or_create/');
+      log('🔍 [CHAT API] Request ID: $requestId');
+      log('🔍 [CHAT API] User ID 1: $userId1');
+      log('🔍 [CHAT API] User ID 2: $userId2');
       
       final requestData = {
         'service_request_id': requestId,
@@ -84,13 +84,13 @@ class ChatApiService {
       log('📤 Sending request data: $requestData', name: 'ChatAPI');
       
       // Enhanced logging for exact payload
-      print('🔍 [CHAT API] === Request Payload ===');
-      print('🔍 [CHAT API] service_request_id: $requestId');
-      print('🔍 [CHAT API] participants: [${userId1}, ${userId2}]');
-      print('🔍 [CHAT API] Full payload: $requestData');
-      print('🔍 [CHAT API] JSON payload: ${requestData.toString()}');
+      log('🔍 [CHAT API] === Request Payload ===');
+      log('🔍 [CHAT API] service_request_id: $requestId');
+      log('🔍 [CHAT API] participants: [${userId1}, ${userId2}]');
+      log('🔍 [CHAT API] Full payload: $requestData');
+      log('🔍 [CHAT API] JSON payload: ${requestData.toString()}');
       
-      print('🔍 [CHAT API] Making API call...');
+      log('🔍 [CHAT API] Making API call...');
       
       final response = await _apiService.post(
         '/api/chat/rooms/get_or_create/',
@@ -101,35 +101,35 @@ class ChatApiService {
       log('📡 Response data: ${response.data}', name: 'ChatAPI');
       
       // Enhanced response logging
-      print('🔍 [CHAT API] === API Response ===');
-      print('🔍 [CHAT API] Status Code: ${response.statusCode}');
-      print('🔍 [CHAT API] Response Headers: ${response.headers}');
-      print('🔍 [CHAT API] Response Data: ${response.data}');
-      print('🔍 [CHAT API] Response Type: ${response.data.runtimeType}');
+      log('🔍 [CHAT API] === API Response ===');
+      log('🔍 [CHAT API] Status Code: ${response.statusCode}');
+      log('🔍 [CHAT API] Response Headers: ${response.headers}');
+      log('🔍 [CHAT API] Response Data: ${response.data}');
+      log('🔍 [CHAT API] Response Type: ${response.data.runtimeType}');
       
       if (response.statusCode == 200 || response.statusCode == 201) {
         // Handle the nested chat_room structure from get_or_create endpoint
         final responseData = response.data as Map<String, dynamic>;
-        print('🔍 [CHAT API] Processing successful response...');
-        print('🔍 [CHAT API] Response data keys: ${responseData.keys.toList()}');
+        log('🔍 [CHAT API] Processing successful response...');
+        log('🔍 [CHAT API] Response data keys: ${responseData.keys.toList()}');
         
         final chatRoomData = responseData['chat_room'] as Map<String, dynamic>;
-        print('🔍 [CHAT API] Chat room data: $chatRoomData');
+        log('🔍 [CHAT API] Chat room data: $chatRoomData');
         
         final chatRoom = _mapChatRoomFromBackend(chatRoomData);
         log('✅ Chat room ready: ${chatRoom.chatRoomId}', name: 'ChatAPI');
         
-        print('✅ [CHAT API] Chat room created successfully');
-        print('✅ [CHAT API] Room ID: ${chatRoom.chatRoomId}');
+        log('✅ [CHAT API] Chat room created successfully');
+        log('✅ [CHAT API] Room ID: ${chatRoom.chatRoomId}');
         
         return chatRoom;
       } else {
         log('❌ Failed to get/create chat room - Status: ${response.statusCode}', name: 'ChatAPI');
         log('❌ Response body: ${response.data}', name: 'ChatAPI');
         
-        print('❌ [CHAT API] API call failed');
-        print('❌ [CHAT API] Status Code: ${response.statusCode}');
-        print('❌ [CHAT API] Error Response: ${response.data}');
+        log('❌ [CHAT API] API call failed');
+        log('❌ [CHAT API] Status Code: ${response.statusCode}');
+        log('❌ [CHAT API] Error Response: ${response.data}');
         
         throw DioException(
           requestOptions: response.requestOptions,
@@ -140,8 +140,8 @@ class ChatApiService {
     } catch (e) {
       log('❌ Error getting/creating chat room: $e', name: 'ChatAPI');
       
-      print('❌ [CHAT API] Exception in getOrCreateChatRoom: $e');
-      print('❌ [CHAT API] Exception type: ${e.runtimeType}');
+      log('❌ [CHAT API] Exception in getOrCreateChatRoom: $e');
+      log('❌ [CHAT API] Exception type: ${e.runtimeType}');
       
       rethrow;
     }

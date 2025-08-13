@@ -137,7 +137,7 @@ class ApiService {
         if (error.response?.statusCode == 401) {
           log('🔄 401 Unauthorized - attempting token refresh', name: 'API');
           
-          if (await _refreshTokenIfNeeded()) {
+          if (await refreshTokenIfNeeded()) {
             log('✅ Token refreshed - retrying original request', name: 'API');
             
             // Retry the original request with new token
@@ -293,7 +293,7 @@ class ApiService {
   }
 
   /// Refresh access token using refresh token
-  Future<bool> _refreshTokenIfNeeded() async {
+  Future<bool> refreshTokenIfNeeded() async {
     if (_isRefreshing) {
       // Wait for ongoing refresh to complete
       await Future.doWhile(() async {
@@ -580,8 +580,8 @@ class ApiService {
     switch (statusCode) {
       case 400:
         // 🚨 DEBUG FIX: Preserve original DioException for debugging Django validation errors
-        print('🚨 [API_SERVICE DEBUG] 400 Bad Request detected');
-        print('🚨 [API_SERVICE DEBUG] Response data: ${data}');
+        log('🚨 [API_SERVICE DEBUG] 400 Bad Request detected');
+        log('🚨 [API_SERVICE DEBUG] Response data: ${data}');
         
         // Throw the original DioException so RequestService can extract Django errors
         throw error;

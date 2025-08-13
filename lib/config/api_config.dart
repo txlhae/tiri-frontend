@@ -64,25 +64,25 @@ class ApiConfig {
   static const String authTokenRefresh = '/api/auth/token/refresh/';
   static const String authVerifyEmail = '/api/auth/verify-email/';
   static const String authVerificationStatus = '/api/auth/verification-status/';
-  static const String authPasswordReset = '/auth/password-reset/';
+  static const String authPasswordReset = '/api/auth/password-reset/';
 
   /// Profile endpoints
-  static const String profileMe = '/profile/me/';
-  static const String profileUpdate = '/profile/update/';
+  static const String profileMe = '/api/profile/me/';
+  static const String profileUpdate = '/api/profile/update/';
 
   /// Request endpoints
-  static const String requests = '/requests/';
-  static const String requestsNearby = '/requests/nearby/';
+  static const String requests = '/api/requests/';
+  static const String requestsNearby = '/api/requests/nearby/';
   
   /// Chat endpoints
-  static const String chatRooms = '/chat/rooms/';
-  static const String chatMessages = '/chat/messages/';
+  static const String chatRooms = '/api/chat/rooms/';
+  static const String chatMessages = '/api/chat/messages/';
 
   /// Feedback endpoints
-  static const String feedback = '/feedback/';
+  static const String feedback = '/api/feedback/';
 
   /// Notification endpoints
-  static const String notifications = '/notifications/';
+  static const String notifications = '/api/notifications/';
 
   // =============================================================================
   // TIMEOUT CONFIGURATIONS

@@ -100,7 +100,7 @@ if (hours == null) return;
     );
 
     log(request.toJson().toString());
-    print("Updating request with data: ${request.toJson()}");
+    log("Updating request with data: ${request.toJson()}");
 
     requestController
         .controllerUpdateRequest(widget.request.requestId, request)

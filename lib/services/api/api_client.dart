@@ -3,6 +3,7 @@
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'dart:developer';
 import '../../config/api_config.dart';
 import '../exceptions/api_exceptions.dart';
 import '../models/api_response.dart';
@@ -66,7 +67,7 @@ class ApiClient {
     _isInitialized = true;
 
     if (kDebugMode) {
-      print('🚀 ApiClient initialized with base URL: $_baseUrl');
+      log('🚀 ApiClient initialized with base URL: $_baseUrl');
     }
   }
 
@@ -89,7 +90,7 @@ class ApiClient {
     }
 
     if (kDebugMode) {
-      print('🔐 Auth token ${token != null ? 'set' : 'removed'}');
+      log('🔐 Auth token ${token != null ? 'set' : 'removed'}');
     }
   }
 
@@ -104,7 +105,7 @@ class ApiClient {
     }
 
     if (kDebugMode) {
-      print('🔄 Base URL updated to: $newBaseUrl');
+      log('🔄 Base URL updated to: $newBaseUrl');
     }
   }
 
@@ -438,7 +439,7 @@ class ApiClient {
     _isInitialized = false;
 
     if (kDebugMode) {
-      print('🔄 ApiClient reset');
+      log('🔄 ApiClient reset');
     }
   }
 

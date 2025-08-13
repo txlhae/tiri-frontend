@@ -368,11 +368,11 @@ class RequestService extends GetxController {
       final response = await _apiService.get('/api/requests/$requestId/');
       
       // Enhanced debug logging for API response
-      print('🌐 API URL: ${response.requestOptions.uri}');
-      print('🌐 Status Code: ${response.statusCode}');
-      print('🌐 Response Headers: ${response.headers}');
-      print('🌐 Raw Response Data Type: ${response.data.runtimeType}');
-      print('🌐 Raw Response: ${response.data}');
+      log('🌐 API URL: ${response.requestOptions.uri}');
+      log('🌐 Status Code: ${response.statusCode}');
+      log('🌐 Response Headers: ${response.headers}');
+      log('🌐 Raw Response Data Type: ${response.data.runtimeType}');
+      log('🌐 Raw Response: ${response.data}');
       
       if (response.statusCode == 200 && response.data != null) {
         try {
@@ -401,32 +401,32 @@ class RequestService extends GetxController {
           }
           
           // 🎯 APPLY FIELD MAPPING
-          print('🔄 Applying Django to Flutter field mapping...');
+          log('🔄 Applying Django to Flutter field mapping...');
           final flutterJson = _mapDjangoToFlutter(response.data as Map<String, dynamic>);
-          print('✅ Field mapping completed successfully');
-          print('🔍 Mapped JSON: $flutterJson');
+          log('✅ Field mapping completed successfully');
+          log('🔍 Mapped JSON: $flutterJson');
           
-          print('🏗️ Creating RequestModel from mapped JSON...');
+          log('🏗️ Creating RequestModel from mapped JSON...');
           final RequestModel request = RequestModelExtension.fromJsonWithRequester(flutterJson);
-          print('✅ RequestModel created successfully');
+          log('✅ RequestModel created successfully');
           
           log('✅ RequestService: Mapped request $requestId successfully');
           return request;
           
         } catch (parseError) {
-          print('❌ JSON Parse Error: $parseError');
-          print('❌ Parse Error Stack Trace: ${parseError.toString()}');
-          print('❌ Failed to parse response data: ${response.data}');
+          log('❌ JSON Parse Error: $parseError');
+          log('❌ Parse Error Stack Trace: ${parseError.toString()}');
+          log('❌ Failed to parse response data: ${response.data}');
           return null;
         }
       } else {
         log('❌ RequestService: Failed to fetch request $requestId - Status: ${response.statusCode}');
-        print('❌ Response body: ${response.data}');
+        log('❌ Response body: ${response.data}');
         return null;
       }
     } catch (e) {
       log('💥 RequestService: Error fetching request $requestId - $e');
-      print('💥 Full error stack trace: $e');
+      log('💥 Full error stack trace: $e');
       return null;
     }
   }
@@ -449,22 +449,22 @@ class RequestService extends GetxController {
       }
     } catch (e) {
       log('💥 RequestService: Error creating request - $e');
-      print('🚨 [SERVICE DEBUG] Error creating request - $e');
+      log('🚨 [SERVICE DEBUG] Error creating request - $e');
       
       // 🚨 CRITICAL: Extract DioException details to see actual Django errors
       if (e is DioException) {
-        print('🚨 [SERVICE DEBUG] DioException detected!');
-        print('🚨 [SERVICE DEBUG] HTTP Status: ${e.response?.statusCode}');
-        print('🚨 [SERVICE DEBUG] Django Response: ${e.response?.data}');
-        print('🚨 [SERVICE DEBUG] Request URL: ${e.requestOptions.path}');
-        print('🚨 [SERVICE DEBUG] Request Data: ${e.requestOptions.data}');
+        log('🚨 [SERVICE DEBUG] DioException detected!');
+        log('🚨 [SERVICE DEBUG] HTTP Status: ${e.response?.statusCode}');
+        log('🚨 [SERVICE DEBUG] Django Response: ${e.response?.data}');
+        log('🚨 [SERVICE DEBUG] Request URL: ${e.requestOptions.path}');
+        log('🚨 [SERVICE DEBUG] Request Data: ${e.requestOptions.data}');
         
         // Extract field-specific errors from Django
         if (e.response?.data is Map) {
           final errors = e.response!.data as Map;
-          print('🚨 [SERVICE DEBUG] === DJANGO FIELD ERRORS ===');
+          log('🚨 [SERVICE DEBUG] === DJANGO FIELD ERRORS ===');
           errors.forEach((field, error) {
-            print('🚨 [SERVICE DEBUG] Field "$field": $error');
+            log('🚨 [SERVICE DEBUG] Field "$field": $error');
           });
         }
       }
@@ -730,7 +730,7 @@ class RequestService extends GetxController {
   Future<List<Map<String, dynamic>>> getVolunteerRequests(String requestId) async {
     try {
       log('📋 RequestService: Fetching volunteer requests for request $requestId via Django API');
-      print('📋 RequestService: Fetching volunteer requests for request $requestId via Django API'); // Force print
+      log('📋 RequestService: Fetching volunteer requests for request $requestId via Django API'); // Force print
       
       final response = await _apiService.get('/api/requests/$requestId/volunteer-requests/');
       
@@ -739,9 +739,9 @@ class RequestService extends GetxController {
         final requests = data['volunteer_requests'] as List<dynamic>? ?? [];
         
         log('✅ RequestService: Found ${requests.length} volunteer requests for request $requestId');
-        print('✅ RequestService: Found ${requests.length} volunteer requests for request $requestId'); // Force print
+        log('✅ RequestService: Found ${requests.length} volunteer requests for request $requestId'); // Force print
         log('📊 Raw response data: $data');
-        print('📊 Raw response data: $data'); // Force print
+        log('📊 Raw response data: $data'); // Force print
         
         // Convert to list of maps with proper field mapping for actual backend structure
         final mappedRequests = requests.map((request) {
@@ -762,12 +762,12 @@ class RequestService extends GetxController {
         
       } else {
         log('❌ RequestService: Failed to fetch volunteer requests for request $requestId - Status: ${response.statusCode}');
-        print('❌ RequestService: Failed to fetch volunteer requests for request $requestId - Status: ${response.statusCode}'); // Force print
+        log('❌ RequestService: Failed to fetch volunteer requests for request $requestId - Status: ${response.statusCode}'); // Force print
         return [];
       }
     } catch (e) {
       log('💥 RequestService: Error fetching volunteer requests for request $requestId - $e');
-      print('💥 RequestService: Error fetching volunteer requests for request $requestId - $e'); // Force print
+      log('💥 RequestService: Error fetching volunteer requests for request $requestId - $e'); // Force print
       return [];
     }
   }
@@ -809,9 +809,9 @@ class RequestService extends GetxController {
       
       // 🚨 Enhanced error logging for category fetching
       if (e is DioException) {
-        print('🚨 [SERVICE DEBUG] Category fetch error:');
-        print('🚨 [SERVICE DEBUG] - Status Code: ${e.response?.statusCode}');
-        print('🚨 [SERVICE DEBUG] - Response Data: ${e.response?.data}');
+        log('🚨 [SERVICE DEBUG] Category fetch error:');
+        log('🚨 [SERVICE DEBUG] - Status Code: ${e.response?.statusCode}');
+        log('🚨 [SERVICE DEBUG] - Response Data: ${e.response?.data}');
       }
       
       return [];

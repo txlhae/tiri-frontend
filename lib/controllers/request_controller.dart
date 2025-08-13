@@ -428,11 +428,11 @@ class RequestController extends GetxController {
       
       debugLog("📋 Available categories: ${categories.map((c) => c.name).toList()}");
       
-      // Set default category to Home Help (ID 34) if none selected
+      // Set default category to Moving & Lifting (ID 5) if none selected
       if (selectedCategory.value == null && categories.isNotEmpty) {
-        // Try to find Home Help (ID 34) first, otherwise use first category
+        // Try to find Moving & Lifting (ID 5) first, otherwise use first category
         selectedCategory.value = categories.firstWhere(
-          (cat) => cat.id == 34,
+          (cat) => cat.id == 5,
           orElse: () => categories.first,
         );
         debugLog("📌 Set default category: ${selectedCategory.value?.name} (ID: ${selectedCategory.value?.id})");
@@ -446,10 +446,10 @@ class RequestController extends GetxController {
         categories.assignAll(CategoryModel.getAllCategories());
         debugLog("🔄 RequestController: Loaded fallback categories");
         
-        // Set default category to Home Help (ID 34) even in fallback
+        // Set default category to Moving & Lifting (ID 5) even in fallback
         if (selectedCategory.value == null && categories.isNotEmpty) {
           selectedCategory.value = categories.firstWhere(
-            (cat) => cat.id == 34,
+            (cat) => cat.id == 5,
             orElse: () => categories.first,
           );
           debugLog("📌 Set fallback default category: ${selectedCategory.value?.name} (ID: ${selectedCategory.value?.id})");
@@ -645,7 +645,7 @@ class RequestController extends GetxController {
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 10,
                   offset: const Offset(0, 5),
                 ),
@@ -675,7 +675,7 @@ class RequestController extends GetxController {
                           borderRadius: BorderRadius.circular(50),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
+                              color: Colors.black.withValues(alpha: 0.1),
                               blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),
@@ -934,7 +934,7 @@ class RequestController extends GetxController {
 
       isLoading.value = true;
       debugLog("📝 createRequest: Creating request via Django API");
-      print("🚨 [DEBUG] createRequest: Creating request via Django API");
+      log('🚨 [DEBUG] createRequest: Creating request via Django API');
 
       // 🚨 COMPLETE FIX: Include ALL required Django backend fields
       final requestData = {
@@ -942,8 +942,8 @@ class RequestController extends GetxController {
         'title': titleController.value.text.trim(),
         'description': descriptionController.value.text.trim(),
         
-        // ✅ NEW: Category field - Use selected category ID or default to 34 (Home Help)
-        'category': selectedCategory.value?.id ?? 34, // ✅ FIXED: Use actual selected category or default to valid ID 34
+        // ✅ NEW: Category field - Use selected category ID or default to 5 (Moving & Lifting)
+        'category': selectedCategory.value?.id ?? 5, // ✅ FIXED: Use actual selected category or default to valid backend ID 5
         
         // ✅ REQUIRED: Location fields - Django expects separate latitude/longitude/address/city
         'latitude': 0.0,  // Default coordinates (can be enhanced with GPS later)
@@ -963,38 +963,38 @@ class RequestController extends GetxController {
       };
 
       debugLog("📋 Request payload: $requestData");
-      print("🚨 [DEBUG] Request payload: $requestData");
+      log('🚨 [DEBUG] Request payload: $requestData');
       
       debugLog("🔍 Payload validation:");
-      print("🚨 [DEBUG] Payload validation:");
+      log('🚨 [DEBUG] Payload validation:');
       debugLog("   - Title: '${requestData['title']}' (${requestData['title']?.runtimeType})");
       debugLog("   - Category ID: ${requestData['category']} (${requestData['category']?.runtimeType}) - ${selectedCategory.value?.name ?? 'Default Home Help'}");
-      print("🚨 [DEBUG] Category ID: ${requestData['category']} (${requestData['category']?.runtimeType}) - ${selectedCategory.value?.name ?? 'Default Home Help'}");
-      print("🚨 [DEBUG]    - Title: '${requestData['title']}' (${requestData['title']?.runtimeType})");
+      log('🚨 [DEBUG] Category ID: ${requestData['category']} (${requestData['category']?.runtimeType}) - ${selectedCategory.value?.name ?? 'Default Home Help'}');
+      log('🚨 [DEBUG]    - Title: \'${requestData['title']}\' (${requestData['title']?.runtimeType})');
       debugLog("   - Description: '${requestData['description']}' (${requestData['description']?.runtimeType})");
-      print("🚨 [DEBUG]    - Description: '${requestData['description']}' (${requestData['description']?.runtimeType})");
+      log('🚨 [DEBUG]    - Description: \'${requestData['description']}\' (${requestData['description']?.runtimeType})');
       debugLog("   - Category: ${requestData['category']} (${requestData['category']?.runtimeType})");
-      print("🚨 [DEBUG]    - Category: ${requestData['category']} (${requestData['category']?.runtimeType})");
+      log('🚨 [DEBUG]    - Category: ${requestData['category']} (${requestData['category']?.runtimeType})');
       debugLog("   - Address: '${requestData['address']}' (${requestData['address']?.runtimeType})");
-      print("🚨 [DEBUG]    - Address: '${requestData['address']}' (${requestData['address']?.runtimeType})");
+      log('🚨 [DEBUG]    - Address: \'${requestData['address']}\' (${requestData['address']?.runtimeType})');
       debugLog("   - City: '${requestData['city']}' (${requestData['city']?.runtimeType})");
-      print("🚨 [DEBUG]    - City: '${requestData['city']}' (${requestData['city']?.runtimeType})");
+      log('🚨 [DEBUG]    - City: \'${requestData['city']}\' (${requestData['city']?.runtimeType})');
       debugLog("   - Date needed: '${requestData['date_needed']}' (${requestData['date_needed']?.runtimeType})");
-      print("🚨 [DEBUG]    - Date needed: '${requestData['date_needed']}' (${requestData['date_needed']?.runtimeType})");
+      log('🚨 [DEBUG]    - Date needed: \'${requestData['date_needed']}\' (${requestData['date_needed']?.runtimeType})');
       debugLog("   - Volunteers needed: ${requestData['volunteers_needed']} (${requestData['volunteers_needed']?.runtimeType})");
-      print("🚨 [DEBUG]    - Volunteers needed: ${requestData['volunteers_needed']} (${requestData['volunteers_needed']?.runtimeType})");
+      log('🚨 [DEBUG]    - Volunteers needed: ${requestData['volunteers_needed']} (${requestData['volunteers_needed']?.runtimeType})');
       debugLog("   - Estimated hours: ${requestData['estimated_hours']} (${requestData['estimated_hours']?.runtimeType})");
-      print("🚨 [DEBUG]    - Estimated hours: ${requestData['estimated_hours']} (${requestData['estimated_hours']?.runtimeType})");
+      log('🚨 [DEBUG]    - Estimated hours: ${requestData['estimated_hours']} (${requestData['estimated_hours']?.runtimeType})');
       
       // 🚨 ADD DETAILED ERROR HANDLING
       try {
-        print("🚨 [DEBUG] About to call requestService.createRequest...");
+        log('🚨 [DEBUG] About to call requestService.createRequest...');
         final success = await requestService.createRequest(requestData);
-        print("🚨 [DEBUG] requestService.createRequest returned: $success");
+        log('🚨 [DEBUG] requestService.createRequest returned: $success');
         
         if (success) {
           debugLog("✅ createRequest: Request created successfully");
-          print("🚨 [DEBUG] ✅ Request created successfully");
+          log('🚨 [DEBUG] ✅ Request created successfully');
           
           // Show success dialog
           if (Get.context != null) {
@@ -1006,23 +1006,23 @@ class RequestController extends GetxController {
           return true;
         } else {
           debugLog("❌ createRequest: Failed to create request - service returned false");
-          print("🚨 [DEBUG] ❌ Failed to create request - service returned false");
+          log('🚨 [DEBUG] ❌ Failed to create request - service returned false');
           debugLog("🔍 Check RequestService.createRequest() logs for Django response details");
-          print("🚨 [DEBUG] 🔍 Check RequestService.createRequest() logs for Django response details");
+          log('🚨 [DEBUG] 🔍 Check RequestService.createRequest() logs for Django response details');
           return false;
         }
       } catch (serviceError) {
         debugLog("💥 createRequest: Service error details: $serviceError");
-        print("🚨 [DEBUG] 💥 Service error details: $serviceError");
+        log('🚨 [DEBUG] 💥 Service error details: $serviceError');
         debugLog("💥 Service error type: ${serviceError.runtimeType}");
-        print("🚨 [DEBUG] 💥 Service error type: ${serviceError.runtimeType}");
+        log('🚨 [DEBUG] 💥 Service error type: ${serviceError.runtimeType}');
         
         // Check if it's a DioException with response details
         if (serviceError.toString().contains('400')) {
           debugLog("🔍 400 Bad Request detected - likely Django validation error");
-          print("🚨 [DEBUG] 🔍 400 Bad Request detected - likely Django validation error");
+          log('🚨 [DEBUG] 🔍 400 Bad Request detected - likely Django validation error');
           debugLog("🔍 This suggests Django is rejecting specific field values or formats");
-          print("🚨 [DEBUG] 🔍 This suggests Django is rejecting specific field values or formats");
+          log('🚨 [DEBUG] 🔍 This suggests Django is rejecting specific field values or formats');
         }
         
         return false;
@@ -1093,7 +1093,7 @@ class RequestController extends GetxController {
   Future<void> loadRequestDetails(String requestId) async {
     try {
       debugLog("🔄 LoadRequestDetails: STARTING - Fetching request $requestId");
-      print("🔄 LoadRequestDetails: STARTING - Fetching request $requestId"); // Force print to console
+      log('🔄 LoadRequestDetails: STARTING - Fetching request $requestId');
       isLoadingRequestDetails.value = true;
       currentRequestDetails.value = null;
       
@@ -1134,25 +1134,25 @@ class RequestController extends GetxController {
         // ✅ NEW: Load pending volunteers if user is the request owner
         final currentUserId = authController.currentUserStore.value?.userId;
         debugLog("🔍 LoadRequestDetails: Checking ownership - currentUserId: $currentUserId, request.userId: ${request.userId}");
-        print("🔍 LoadRequestDetails: Checking ownership - currentUserId: $currentUserId, request.userId: ${request.userId}"); // Force print
+        log('🔍 LoadRequestDetails: Checking ownership - currentUserId: $currentUserId, request.userId: ${request.userId}');
         
         if (currentUserId != null && request.userId == currentUserId) {
           debugLog("👥 LoadRequestDetails: User IS request owner, loading pending volunteers");
-          print("👥 LoadRequestDetails: User IS request owner, loading pending volunteers"); // Force print
+          log('👥 LoadRequestDetails: User IS request owner, loading pending volunteers');
           // Load pending volunteers in the background (don't await to avoid blocking UI)
           loadPendingVolunteers(requestId).catchError((error) {
             debugLog("⚠️ LoadRequestDetails: Failed to load pending volunteers - $error");
-            print("⚠️ LoadRequestDetails: Failed to load pending volunteers - $error"); // Force print
+            log('⚠️ LoadRequestDetails: Failed to load pending volunteers - $error');
           });
         } else {
           debugLog("❌ LoadRequestDetails: User is NOT request owner or currentUserId is null");
-          print("❌ LoadRequestDetails: User is NOT request owner or currentUserId is null"); // Force print
+          log('❌ LoadRequestDetails: User is NOT request owner or currentUserId is null');
           debugLog("   - currentUserId: $currentUserId");
           debugLog("   - request.userId: ${request.userId}");
           debugLog("   - Are they equal? ${currentUserId == request.userId}");
-          print("   - currentUserId: $currentUserId");
-          print("   - request.userId: ${request.userId}");
-          print("   - Are they equal? ${currentUserId == request.userId}");
+          log('   - currentUserId: $currentUserId');
+          log('   - request.userId: ${request.userId}');
+          log('   - Are they equal? ${currentUserId == request.userId}');
         }
         
       } else {
@@ -1933,7 +1933,7 @@ class RequestController extends GetxController {
       isLoadingPendingVolunteers.value = true;
       pendingVolunteersError.value = '';
       debugLog("📋 RequestController: Loading all volunteer requests for request $requestId");
-      print("📋 RequestController: Loading all volunteer requests for request $requestId"); // Force print
+      log('📋 RequestController: Loading all volunteer requests for request $requestId');
       
       // Validate inputs
       if (requestId.isEmpty) {
@@ -1957,31 +1957,31 @@ class RequestController extends GetxController {
       // Fetch pending volunteers from service
       final volunteers = await getVolunteerRequests(requestId);
       debugLog("📥 RequestController: Raw volunteers data: ${volunteers.length} volunteers found");
-      print("📥 RequestController: Raw volunteers data: ${volunteers.length} volunteers found"); // Force print
+      log('📥 RequestController: Raw volunteers data: ${volunteers.length} volunteers found');
       
       // Debug: Log each volunteer's data structure
       for (int i = 0; i < volunteers.length; i++) {
         final vol = volunteers[i];
         debugLog("   Volunteer $i: id=${vol['id']}, status=${vol['status']}, volunteer=${vol['volunteer']?['username']}");
-        print("   Volunteer $i: id=${vol['id']}, status=${vol['status']}, volunteer=${vol['volunteer']?['username']}"); // Force print
+        log('   Volunteer $i: id=${vol['id']}, status=${vol['status']}, volunteer=${vol['volunteer']?['username']}');
       }
       
       // Store ALL volunteer requests (pending, approved, rejected)
       // UI will handle different displays based on status
       pendingVolunteers.value = volunteers;
       debugLog("✅ RequestController: Loaded ${volunteers.length} volunteer requests for request $requestId");
-      print("✅ RequestController: Loaded ${volunteers.length} volunteer requests for request $requestId"); // Force print
+      log('✅ RequestController: Loaded ${volunteers.length} volunteer requests for request $requestId');
       debugLog("📊 RequestController: Volunteer requests data: ${volunteers.map((v) => '${v['volunteer']?['username']}(${v['status']})').toList()}");
-      print("📊 RequestController: Volunteer requests data: ${volunteers.map((v) => '${v['volunteer']?['username']}(${v['status']})').toList()}"); // Force print
+      log('📊 RequestController: Volunteer requests data: ${volunteers.map((v) => '${v['volunteer']?['username']}(${v['status']})').toList()}');
       
     } catch (e) {
       debugLog("💥 RequestController: Error loading pending volunteers for $requestId - $e");
-      print("💥 RequestController: Error loading pending volunteers for $requestId - $e"); // Force print
+      log('💥 RequestController: Error loading pending volunteers for $requestId - $e');
       pendingVolunteersError.value = 'Failed to load pending volunteers. Please try again.';
       pendingVolunteers.value = [];
     } finally {
       isLoadingPendingVolunteers.value = false;
-      print("🏁 RequestController: loadPendingVolunteers completed for $requestId"); // Force print
+      log('🏁 RequestController: loadPendingVolunteers completed for $requestId');
     }
   }
 

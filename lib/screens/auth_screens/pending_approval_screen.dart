@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:tiri/controllers/auth_controller.dart';
@@ -47,42 +48,42 @@ class _PendingApprovalScreenState extends State<PendingApprovalScreen>
 
   void _checkApprovalStatus() async {
     try {
-      print('🔍 PendingApprovalScreen: Check Status button clicked');
+      log('🔍 PendingApprovalScreen: Check Status button clicked');
       
       // Use checkVerificationStatus which returns full approval info  
       final isApproved = await authController.checkVerificationStatus();
       
-      print('📊 PendingApprovalScreen: checkVerificationStatus returned: $isApproved');
+      log('📊 PendingApprovalScreen: checkVerificationStatus returned: $isApproved');
       
       if (isApproved) {
         // User is approved! 
-        print('✅ PendingApprovalScreen: User approved');
+        log('✅ PendingApprovalScreen: User approved');
         
         // The checkVerificationStatus method handles all navigation and notifications
         
       } else {
         // User is not approved yet - check for other status changes
-        print('⏳ PendingApprovalScreen: Still not approved, checking status: ${authController.approvalStatus.value}');
+        log('⏳ PendingApprovalScreen: Still not approved, checking status: ${authController.approvalStatus.value}');
         
         // Handle rejection or expiration cases
         switch (authController.approvalStatus.value) {
           case 'rejected':
-            print('❌ PendingApprovalScreen: User rejected - navigating to rejection screen');
+            log('❌ PendingApprovalScreen: User rejected - navigating to rejection screen');
             Get.offAllNamed(Routes.rejectionScreen);
             break;
           case 'expired':
-            print('⏰ PendingApprovalScreen: Approval expired - navigating to expired screen');
+            log('⏰ PendingApprovalScreen: Approval expired - navigating to expired screen');
             Get.offAllNamed(Routes.expiredScreen);
             break;
           case 'pending':
           default:
             // Still pending, stay on current screen
-            print('⏳ PendingApprovalScreen: Still pending approval');
+            log('⏳ PendingApprovalScreen: Still pending approval');
             break;
         }
       }
     } catch (e) {
-      print('❌ PendingApprovalScreen: Error in _checkApprovalStatus: $e');
+      log('❌ PendingApprovalScreen: Error in _checkApprovalStatus: $e');
       
       // Show user-friendly error
       Get.snackbar(
@@ -108,15 +109,12 @@ class _PendingApprovalScreenState extends State<PendingApprovalScreen>
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(20.0),
-          child: Column(
-            children: [
-              Expanded(
-                child: Obx(() {
-                  return Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
+          child: Obx(() {
+            return Column(
+              children: [
+                const SizedBox(height: 40),
                       // Animated waiting icon
                       AnimatedBuilder(
                         animation: _pulseAnimation,
@@ -231,12 +229,11 @@ class _PendingApprovalScreenState extends State<PendingApprovalScreen>
                           ),
                         ),
                       ),
-                    ],
-                  );
-                }),
-              ),
-            ],
-          ),
+                
+                const SizedBox(height: 40),
+              ],
+            );
+          }),
         ),
       ),
     );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
+import 'dart:developer';
 import 'package:tiri/controllers/auth_controller.dart';
 import 'package:tiri/controllers/chat_controller.dart';
 import 'package:tiri/controllers/request_controller.dart';
@@ -104,11 +105,11 @@ class _ChatPageState extends State<ChatPage> {
           // Debounce rapid pagination calls
           _paginationDebounceTimer?.cancel();
           _paginationDebounceTimer = Timer(const Duration(milliseconds: 300), () {
-            print('🔄 Loading more messages - reached top of chat');
+            log('🔄 Loading more messages - reached top of chat');
             
             chatController.loadMoreMessages(widget.chatRoomId).then((_) {
               // ListView should maintain position automatically after loading
-              print('✅ More messages loaded');
+              log('✅ More messages loaded');
             });
           });
         }
@@ -174,8 +175,8 @@ class _ChatPageState extends State<ChatPage> {
   @override
   Widget build(BuildContext context) {
     final currentUserId = authController.currentUserStore.value!.userId;
-    print('🔍 Current user ID at build: "$currentUserId" (${currentUserId.runtimeType})');
-    print('🔍 Widget receiver ID: "${widget.receiverId}" (${widget.receiverId.runtimeType})');
+    log('🔍 Current user ID at build: "$currentUserId" (${currentUserId.runtimeType})');
+    log('🔍 Widget receiver ID: "${widget.receiverId}" (${widget.receiverId.runtimeType})');
     
     return Scaffold(
       appBar: PreferredSize(
@@ -330,20 +331,20 @@ class _ChatPageState extends State<ChatPage> {
                   final isMe = message.senderId.trim() == currentUserId.trim();
                   
                   // Debug logging
-                  print('🔍 Message Debug:');
-                  print('   Message senderId: "${message.senderId}" (${message.senderId.runtimeType})');
-                  print('   Current userId: "$currentUserId" (${currentUserId.runtimeType})');
-                  print('   isMe: $isMe');
-                  print('   Message content: "${message.message}"');
-                  print('   Sender ID length: ${message.senderId.length}');
-                  print('   Current ID length: ${currentUserId.length}');
-                  print('   Are they equal? ${message.senderId == currentUserId}');
-                  print('   Trimmed comparison: "${message.senderId.trim()}" == "${currentUserId.trim()}" = ${message.senderId.trim() == currentUserId.trim()}');
-                  print('---');
+                  log('🔍 Message Debug:');
+                  log('   Message senderId: "${message.senderId}" (${message.senderId.runtimeType})');
+                  log('   Current userId: "$currentUserId" (${currentUserId.runtimeType})');
+                  log('   isMe: $isMe');
+                  log('   Message content: "${message.message}"');
+                  log('   Sender ID length: ${message.senderId.length}');
+                  log('   Current ID length: ${currentUserId.length}');
+                  log('   Are they equal? ${message.senderId == currentUserId}');
+                  log('   Trimmed comparison: "${message.senderId.trim()}" == "${currentUserId.trim()}" = ${message.senderId.trim() == currentUserId.trim()}');
+                  log('---');
                   
                   // Debug logging to check user IDs
                   if (index < 3) { // Only log first few messages to avoid spam
-                    print('🔍 Message ${index + 1}: senderId="${message.senderId}", currentUserId="$currentUserId", isMe=$isMe');
+                    log('🔍 Message ${index + 1}: senderId="${message.senderId}", currentUserId="$currentUserId", isMe=$isMe');
                   }
 
                   return Container(

@@ -2,6 +2,7 @@
 // Call this during app startup to initialize the HTTP service layer
 
 import 'package:flutter/foundation.dart';
+import 'dart:developer';
 import 'api/api_client.dart';
 import '../config/api_config.dart';
 
@@ -26,16 +27,16 @@ class ApiFoundationInitializer {
       );
       
       if (kDebugMode) {
-        print('🚀 API Foundation initialized successfully');
-        print('   Base URL: ${ApiClient.baseUrl}');
-        print('   Environment: ${ApiConfig.environment}');
-        print('   Retry enabled: $enableRetry');
-        print('   Max retries: $maxRetries');
+        log('🚀 API Foundation initialized successfully');
+        log('   Base URL: ${ApiClient.baseUrl}');
+        log('   Environment: ${ApiConfig.environment}');
+        log('   Retry enabled: $enableRetry');
+        log('   Max retries: $maxRetries');
       }
       
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Failed to initialize API Foundation: $e');
+        log('❌ Failed to initialize API Foundation: $e');
       }
       rethrow;
     }
@@ -50,7 +51,7 @@ class ApiFoundationInitializer {
   static void setAuthToken(String token) {
     ApiClient.setAuthToken(token);
     if (kDebugMode) {
-      print('🔐 Authentication token updated');
+      log('🔐 Authentication token updated');
     }
   }
   
@@ -58,7 +59,7 @@ class ApiFoundationInitializer {
   static void clearAuthToken() {
     ApiClient.setAuthToken(null);
     if (kDebugMode) {
-      print('🔓 Authentication token cleared');
+      log('🔓 Authentication token cleared');
     }
   }
   

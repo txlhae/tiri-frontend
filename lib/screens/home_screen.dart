@@ -108,7 +108,7 @@ class HomeScreen extends StatelessWidget {
                                         color: Colors.white),
                                   ),
                                   Obx(() => SizedBox(
-                                    width: 100, // Constraint width for username
+                                    width: 160, // 🚨 FIXED: Increased width for longer usernames to prevent truncation
                                     child: Text(
                                       authController.currentUserStore.value
                                               ?.username ??

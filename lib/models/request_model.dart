@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'user_model.dart';
 import 'feedback_model.dart';
@@ -35,17 +36,17 @@ class UserRequestStatus {
                           json['message'] ?? 
                           json['user_message'] ?? '';
     
-    print('🔍 UserRequestStatus.fromJson DEBUG:');
-    print('   - request_status: ${json['request_status']}');
-    print('   - ALL JSON KEYS: ${json.keys.toList()}');
-    print('   - message_content: "${json['message_content']}"');
-    print('   - message_to_requester: "${json['message_to_requester']}"');
-    print('   - volunteer_message: "${json['volunteer_message']}"');
-    print('   - message: "${json['message']}"');
-    print('   - user_message: "${json['user_message']}"');
-    print('   - FINAL messageContent: "$messageContent"');
-    print('   - messageContent type: ${messageContent.runtimeType}');
-    print('   - messageContent isEmpty: ${messageContent?.toString().isEmpty}');
+    log('🔍 UserRequestStatus.fromJson DEBUG:');
+    log('   - request_status: ${json['request_status']}');
+    log('   - ALL JSON KEYS: ${json.keys.toList()}');
+    log('   - message_content: "${json['message_content']}"');
+    log('   - message_to_requester: "${json['message_to_requester']}"');
+    log('   - volunteer_message: "${json['volunteer_message']}"');
+    log('   - message: "${json['message']}"');
+    log('   - user_message: "${json['user_message']}"');
+    log('   - FINAL messageContent: "$messageContent"');
+    log('   - messageContent type: ${messageContent.runtimeType}');
+    log('   - messageContent isEmpty: ${messageContent?.toString().isEmpty}');
     
     return UserRequestStatus(
       requestStatus: json['request_status'] ?? 'not_requested',
@@ -140,9 +141,9 @@ extension RequestModelExtension on RequestModel {
   static void clearUserStatusCache(String requestId) {
     if (_userRequestStatusCache.containsKey(requestId)) {
       _userRequestStatusCache.remove(requestId);
-      print('🗑️ RequestModelExtension: Cleared user status cache for request $requestId');
+      log('🗑️ RequestModelExtension: Cleared user status cache for request $requestId');
     } else {
-      print('🔍 RequestModelExtension: No cache entry found for request $requestId to clear');
+      log('🔍 RequestModelExtension: No cache entry found for request $requestId to clear');
     }
   }
   
@@ -150,7 +151,7 @@ extension RequestModelExtension on RequestModel {
   static void clearAllUserStatusCache() {
     final cacheSize = _userRequestStatusCache.length;
     _userRequestStatusCache.clear();
-    print('🗑️ RequestModelExtension: Cleared all user status cache ($cacheSize entries)');
+    log('🗑️ RequestModelExtension: Cleared all user status cache ($cacheSize entries)');
   }
   
   // Get requester for this request

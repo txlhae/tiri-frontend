@@ -73,7 +73,7 @@ class MyRequests extends StatelessWidget {
                           : const Color(0xFFF6F8F9),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withValues(alpha: 0.1),
                       blurRadius: 5,
                       offset: const Offset(0, 2),
                     ),

@@ -26,8 +26,8 @@ class _AddFeedbackPageState extends State<AddFeedbackPage> {
   }
 
   void applyFirstUserDataToAll() {
-    if (widget.request.acceptedUser!.length <= 1) return;
-    for (int i = 1; i < widget.request.acceptedUser!.length; i++) {
+    if (widget.request.acceptedUser.length <= 1) return;
+    for (int i = 1; i < widget.request.acceptedUser.length; i++) {
      controller.reviewControllers[i].text = controller.reviewControllers[0].text;
      controller.hourControllers[i].text = controller.hourControllers[0].text;
      controller.selectedRatings[i].value = controller.selectedRatings[0].value;
@@ -77,7 +77,7 @@ class _AddFeedbackPageState extends State<AddFeedbackPage> {
               ),
             const SizedBox(height: 12),
             Obx(() {
-  final count = widget.request.acceptedUser?.length ?? 0;
+  final count = widget.request.acceptedUser.length;
 
   if (!controller.isFeedbackReady.value ||
       controller.reviewControllers.length < count ||
@@ -94,7 +94,7 @@ class _AddFeedbackPageState extends State<AddFeedbackPage> {
   return Column(
     children: [
       const SizedBox(height: 12),
-        if (widget.request.acceptedUser!.length > 1)
+        if (widget.request.acceptedUser.length > 1)
             CheckboxListTile(
               title: const Text("Apply first user's feedback to all"),
               value: applyFirstToAll,
@@ -111,9 +111,9 @@ class _AddFeedbackPageState extends State<AddFeedbackPage> {
             child:  ListView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  itemCount: widget.request.acceptedUser!.length,
+                  itemCount: widget.request.acceptedUser.length,
                   itemBuilder: (context, index) {
-                    final user = widget.request.acceptedUser![index];
+                    final user = widget.request.acceptedUser[index];
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 20),
                       child: Column(

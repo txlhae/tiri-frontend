@@ -42,17 +42,21 @@ class _MyHelpsState extends State<MyHelps> with SingleTickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       body: Column(
         children: [
           //  Top Header
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 1, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 30),
             decoration: const BoxDecoration(
               color: Color.fromRGBO(0, 140, 170, 1),
-              borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(20),
+                bottomRight: Radius.circular(20),
+              ),
             ),
-            height: 200,
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.start,
@@ -60,17 +64,16 @@ class _MyHelpsState extends State<MyHelps> with SingleTickerProviderStateMixin {
                     CustomBackButton(controller: requestController),
                   ],
                 ),
-                const SizedBox(height: 30),
                 const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
                       'My Helps',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: Colors.white),
                     ),
                   ],
                 ),
-                const SizedBox(height: 15),
+                const SizedBox(height: 10),
                 TabBar(
                   controller: _tabController,
                   indicator: const BoxDecoration(),

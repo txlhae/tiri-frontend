@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:tiri/controllers/auth_controller.dart';
 import 'package:tiri/infrastructure/routes.dart';
 import 'package:tiri/services/user_state_service.dart';
+import 'package:tiri/services/notification_permission_service.dart';
 
 /// Smart Splash Controller with State-Based Routing
 /// 
@@ -57,13 +58,17 @@ class SplashController extends GetxController {
       initializationStatus.value = 'Loading user state...';
       await _userStateService.initialize();
       
-      // Step 2: Load authentication tokens and user data
-      initializationStatus.value = 'Checking authentication...';
-      print('🔄 DEBUG: About to reload tokens...');
-      await _authController.reloadTokens(); // Load JWT tokens
-      print('🔄 DEBUG: Tokens reloaded. IsLoggedIn: ${_authController.isLoggedIn.value}');
+      // Step 2: Request notification permissions on first launch
+      initializationStatus.value = 'Checking permissions...';
+      await NotificationPermissionService.requestNotificationPermissionOnFirstLaunch();
       
-      // Step 3: Determine routing strategy based on current state
+      // Step 3: Load authentication tokens and user data
+      initializationStatus.value = 'Checking authentication...';
+      log('🔄 DEBUG: About to reload tokens...');
+      await _authController.reloadTokens(); // Load JWT tokens
+      log('🔄 DEBUG: Tokens reloaded. IsLoggedIn: ${_authController.isLoggedIn.value}');
+      
+      // Step 4: Determine routing strategy based on current state
       final currentState = _userStateService.currentApprovalState;
       log('📊 SplashController: Current user state: ${currentState.value}', name: 'SPLASH');
       
@@ -82,26 +87,26 @@ class SplashController extends GetxController {
   /// Route user based on their current approval state
   Future<void> _routeBasedOnState(UserApprovalState state) async {
     log('🗺️  SplashController: Routing for state: ${state.value}', name: 'SPLASH');
-    print('🗺️  DEBUG SplashController: Current state = ${state.value}');
+    log('🗺️  DEBUG SplashController: Current state = ${state.value}');
     
     switch (state) {
       case UserApprovalState.notLoggedIn:
-        print('🗺️  DEBUG: Handling notLoggedIn state');
+        log('🗺️  DEBUG: Handling notLoggedIn state');
         await _handleNotLoggedIn();
         break;
         
       case UserApprovalState.emailUnverified:
-        print('🗺️  DEBUG: Handling emailUnverified state');
+        log('🗺️  DEBUG: Handling emailUnverified state');
         await _handleEmailUnverified();
         break;
         
       case UserApprovalState.emailVerifiedPendingApproval:
-        print('🗺️  DEBUG: Handling emailVerifiedPendingApproval state');
+        log('🗺️  DEBUG: Handling emailVerifiedPendingApproval state');
         await _handlePendingApproval();
         break;
         
       case UserApprovalState.fullyApproved:
-        print('🗺️  DEBUG: Handling fullyApproved state - should go to home');
+        log('🗺️  DEBUG: Handling fullyApproved state - should go to home');
         await _handleFullyApproved();
         break;
         
@@ -115,10 +120,10 @@ class SplashController extends GetxController {
         
       case UserApprovalState.unknown:
       default:
-        print('🗺️  DEBUG: Handling unknown state - checking if user is actually logged in');
+        log('🗺️  DEBUG: Handling unknown state - checking if user is actually logged in');
         // Check if user is actually logged in despite unknown state
         if (_authController.isLoggedIn.value && _authController.currentUserStore.value != null) {
-          print('🗺️  DEBUG: User is logged in despite unknown state - going to home');
+          log('🗺️  DEBUG: User is logged in despite unknown state - going to home');
           await _handleFullyApproved();
         } else {
           await _handleUnknownState();

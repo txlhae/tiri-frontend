@@ -126,7 +126,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(20.0),
           child: Column(
             children: [
@@ -136,9 +136,9 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
               const SizedBox(height: 40),
               
               // Main content
-              Expanded(
-                child: _buildContent(),
-              ),
+              _buildContent(),
+              
+              const SizedBox(height: 40),
               
               // Bottom actions
               _buildActions(),
@@ -203,7 +203,6 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
   /// Build the main content section
   Widget _buildContent() {
     return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
       children: [
         // Success checkmark icon
         Container(

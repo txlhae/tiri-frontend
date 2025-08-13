@@ -96,7 +96,7 @@ class ChatWebSocketService {
     _updateConnectionState(ConnectionState.connecting);
     
     try {
-      print('🔌 Connecting WebSocket for room: $roomId');
+      log('🔌 Connecting WebSocket for room: $roomId');
       
       // Get JWT token from existing auth system
       final token = await _getAuthToken();
@@ -116,7 +116,7 @@ class ChatWebSocketService {
       
       // Set connection as ready immediately since backend is working fine
       _isConnected = true;
-      print('✅ WebSocket connection established and ready');
+      log('✅ WebSocket connection established and ready');
       
       // Start heartbeat
       _startHeartbeat();
@@ -129,7 +129,7 @@ class ChatWebSocketService {
       
     } catch (e) {
       _isConnected = false;
-      print('❌ WebSocket connection failed: $e');
+      log('❌ WebSocket connection failed: $e');
       log('❌ WebSocket connection failed: $e', name: 'WebSocket');
       _updateConnectionState(ConnectionState.error);
       _scheduleReconnect();
@@ -245,18 +245,18 @@ class ChatWebSocketService {
   static void _setupMessageListener() {
     _channel?.stream.listen(
       (data) {
-        print('🚨 RAW WebSocket data received: $data');
+        log('🚨 RAW WebSocket data received: $data');
         
         // First message received confirms connection is working
         if (!_isConnected) {
           _isConnected = true;
           _updateConnectionState(ConnectionState.connected);
-          print('✅ WebSocket connection confirmed via first message');
+          log('✅ WebSocket connection confirmed via first message');
         }
         
         try {
           final Map<String, dynamic> messageData = json.decode(data);
-          print('🚨 Parsed WebSocket data: $messageData');
+          log('🚨 Parsed WebSocket data: $messageData');
           _handleIncomingMessage(messageData);
         } catch (e) {
           log('❌ Error parsing WebSocket message: $e', name: 'WebSocket');

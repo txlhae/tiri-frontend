@@ -4,6 +4,7 @@ import 'package:tiri/controllers/auth_controller.dart';
 import 'package:tiri/models/approval_request_model.dart';
 import 'package:tiri/screens/widgets/approval_widgets/approval_card.dart';
 import 'package:tiri/screens/widgets/dialog_widgets/rejection_dialog.dart';
+import 'package:tiri/screens/widgets/custom_widgets/custom_back_button.dart';
 
 class ApprovalDashboardScreen extends StatefulWidget {
   const ApprovalDashboardScreen({super.key});
@@ -46,87 +47,86 @@ class _ApprovalDashboardScreenState extends State<ApprovalDashboardScreen>
       backgroundColor: Colors.white,
       body: Column(
         children: [
-          // Top Header with curved design like My Helps
-          SafeArea(
-            child: Container(
-              margin: const EdgeInsets.only(bottom: 5),
-              padding: const EdgeInsets.all(16),
-              decoration: const BoxDecoration(
-                color: Color.fromRGBO(0, 140, 170, 1),
-                borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+          // Top Header with curved design matching Feedbacks screen
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 30),
+            decoration: const BoxDecoration(
+              color: Color.fromRGBO(0, 140, 170, 1),
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(20),
+                bottomRight: Radius.circular(20),
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      IconButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                        icon: const Icon(Icons.arrow_back, color: Colors.white),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    CustomBackButton(controller: authController),
+                  ],
+                ),
+                const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Manage Approvals',
+                      style: TextStyle(
+                        fontSize: 22, 
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
                       ),
-                    ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                TabBar(
+                  controller: _tabController,
+                  indicator: const BoxDecoration(),
+                  labelColor: Colors.white,
+                  unselectedLabelColor: Colors.white70,
+                  labelStyle: const TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 14,
                   ),
-                  const SizedBox(height: 10),
-                  const Text(
-                    'Manage Approvals',
-                    style: TextStyle(
-                      fontSize: 18, 
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
+                  unselectedLabelStyle: const TextStyle(
+                    fontWeight: FontWeight.normal,
+                    fontSize: 14,
                   ),
-                  const SizedBox(height: 12),
-                  TabBar(
-                    controller: _tabController,
-                    indicator: const BoxDecoration(),
-                    labelColor: Colors.white,
-                    unselectedLabelColor: Colors.white70,
-                    labelStyle: const TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 14,
-                    ),
-                    unselectedLabelStyle: const TextStyle(
-                      fontWeight: FontWeight.normal,
-                      fontSize: 14,
-                    ),
-                    tabs: [
-                      Obx(() => Tab(
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Text('Pending'),
-                            if (authController.pendingApprovalsCount.value > 0) ...[
-                              const SizedBox(width: 6),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 1,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.red,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  '${authController.pendingApprovalsCount.value}',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                  tabs: [
+                    Obx(() => Tab(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text('Pending'),
+                          if (authController.pendingApprovalsCount.value > 0) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 1,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                '${authController.pendingApprovalsCount.value}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
-                            ],
+                            ),
                           ],
-                        ),
-                      )),
-                      const Tab(text: 'History'),
-                    ],
-                  ),
-                ],
-              ),
+                        ],
+                      ),
+                    )),
+                    const Tab(text: 'History'),
+                  ],
+                ),
+              ],
             ),
           ),
           
@@ -199,7 +199,9 @@ class _ApprovalDashboardScreenState extends State<ApprovalDashboardScreen>
       key: _historyRefreshKey,
       onRefresh: () => authController.fetchApprovalHistory(),
       child: Obx(() {
-        if (authController.isLoading.value && authController.approvalHistory.isEmpty) {
+        // Don't show loading indicator for history tab since it loads in the background
+        // Only show loading if explicitly refreshing and list is empty
+        if (authController.isLoading.value && authController.approvalHistory.isEmpty && authController.pendingApprovals.isNotEmpty) {
           return const Center(
             child: CircularProgressIndicator(),
           );
@@ -457,7 +459,7 @@ class _ApprovalDashboardScreenState extends State<ApprovalDashboardScreen>
             // Details row
             Row(
               children: [
-                Expanded(
+                Flexible(
                   child: _buildHistoryDetailItem(
                     Icons.location_on,
                     approval.newUserCountry,
@@ -465,10 +467,12 @@ class _ApprovalDashboardScreenState extends State<ApprovalDashboardScreen>
                   ),
                 ),
                 const SizedBox(width: 16),
-                _buildHistoryDetailItem(
-                  Icons.access_time,
-                  _formatDate(approval.decidedAt ?? approval.requestedAt),
-                  Colors.grey,
+                Flexible(
+                  child: _buildHistoryDetailItem(
+                    Icons.access_time,
+                    _formatDate(approval.decidedAt ?? approval.requestedAt),
+                    Colors.grey,
+                  ),
                 ),
               ],
             ),
@@ -515,10 +519,11 @@ class _ApprovalDashboardScreenState extends State<ApprovalDashboardScreen>
 
   Widget _buildHistoryDetailItem(IconData icon, String text, Color color) {
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Icon(icon, size: 14, color: color),
         const SizedBox(width: 6),
-        Expanded(
+        Flexible(
           child: Text(
             text,
             style: TextStyle(
