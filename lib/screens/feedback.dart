@@ -1,6 +1,7 @@
 import 'package:defer_pointer/defer_pointer.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:tiri/controllers/auth_controller.dart';
 import 'package:tiri/controllers/request_controller.dart';
 import 'package:intl/intl.dart';
 import 'package:tiri/models/feedback_model.dart';
@@ -21,9 +22,12 @@ class _FeedbackState extends State<Feedback> {
     super.initState();
     // Fetch feedback when screen loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // For now, we'll fetch feedback for the current user
-      // The userId parameter can be made dynamic based on requirements
-      requestController.fetchProfileFeedback('current_user');
+      // Use the current user's ID instead of 'current_user' string
+      final authController = Get.find<AuthController>();
+      final currentUserId = authController.currentUserStore.value?.userId;
+      if (currentUserId != null) {
+        requestController.fetchProfileFeedback(currentUserId);
+      }
     });
   }
 

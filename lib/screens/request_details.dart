@@ -11,6 +11,7 @@ import 'package:tiri/controllers/request_details_controller.dart';
 import 'package:tiri/infrastructure/routes.dart';
 import 'package:tiri/models/notification_model.dart';
 import 'package:tiri/models/request_model.dart';
+import 'package:tiri/models/user_model.dart';
 import 'package:tiri/screens/profile_screen.dart';
 import 'package:tiri/screens/widgets/custom_widgets/custom_back_button.dart';
 import 'package:tiri/screens/widgets/dialog_widgets/intrested_dialog.dart';
@@ -282,52 +283,6 @@ class _RequestDetailsState extends State<RequestDetails> {
                       icon:
                           SvgPicture.asset('assets/icons/edit_underscore.svg'),
                     ),
-                    if (currentUserId != request.userId)
-                             CircleAvatar(
-                               backgroundColor:  Colors.grey[300],
-                                 child: IconButton(
-                                 icon: SvgPicture.asset('assets/icons/message.svg'),
-                                 tooltip: "Chat with Poster",
-                                 onPressed: () async {
-                                   // Get or create chat room using the new API integration
-                                   final chatController = Get.put(ChatController());
-                                   
-                                   try {
-                                     log('🔍 [CHAT POSTER] Starting chat creation...');
-                                     log('🔍 [CHAT POSTER] Current User ID: $currentUserId');
-                                     log('🔍 [CHAT POSTER] Request User ID: ${request.userId}');
-                                     log('🔍 [CHAT POSTER] Service Request ID: ${request.requestId}');
-                                     log('🔍 [CHAT POSTER] Request Owner: ${request.requester?.username}');
-                                     
-                                     final roomId = await chatController.createOrGetChatRoom(
-                                       currentUserId,
-                                       request.userId,
-                                       serviceRequestId: request.requestId,
-                                     );
-                                     
-                                     log('✅ [CHAT POSTER] Chat room created successfully: $roomId');
-                                     
-                                     Get.toNamed(
-                                       Routes.chatPage,
-                                       arguments: {
-                                         'chatRoomId': roomId,
-                                         'receiverId': request.userId,
-                                         'receiverName': request.requester?.username ?? "User",
-                                         'receiverProfilePic': " ",
-                                       },
-                                     );
-                                   } catch (e) {
-                                     log('❌ [CHAT POSTER] Error creating chat room: $e');
-                                     Get.snackbar(
-                                       'Error',
-                                       'Failed to create chat room. Please try again.',
-                                       backgroundColor: Colors.red.shade100,
-                                       colorText: Colors.red.shade700,
-                                     );
-                                   }
-                                 },
-                       ),
-                      ),
                 ],
               ),
               const SizedBox(height: 10),
@@ -438,196 +393,13 @@ class _RequestDetailsState extends State<RequestDetails> {
               ],
             ),
           ),
-               // "Accepted By" section - Only show for volunteers, not requesters
-               if (request.acceptedUser.isNotEmpty &&
-            request.acceptedUser.any((user) => user.userId == currentUserId))
+               // Volunteer Status Section - Show status-based message for volunteers
+               if (request.userId != currentUserId && 
+                   (request.userRequestStatus.isNotEmpty || 
+                    request.acceptedUser.any((user) => user.userId == currentUserId)))
           Column(
             children: [
-              DetailsCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "Accepted By:",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                              ...request.acceptedUser.map((user) => Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Expanded(
-                                        child: DetailsRow(
-                                          icon: Icons.person,
-                                          label: "Name",
-                                          value: user.username,
-                                        ),
-                                      ),
-                                      if (user.userId != currentUserId)
-                                        Row(
-                                          children: [
-                                            IconButton(
-                                              icon: const Icon(Icons.account_circle, color: Colors.blue),
-                                              tooltip: "View Profile",
-                                              onPressed: () {
-                                                Get.to(() => ProfileScreen(user: user));
-                                              },
-                                            ),
-                                         if (currentUserId == request.userId)
-                                            IconButton(
-                                              icon: const Icon(Icons.chat_bubble_outline, color: Colors.blue),
-                                              tooltip: "Chat",
-                                              onPressed: () async {
-                                                // Get or create chat room using the new API integration
-                                                final chatController = Get.put(ChatController());
-                                                
-                                                try {
-                                                  log('🔍 [CHAT ACCEPTED] Starting chat with accepted volunteer...');
-                                                  log('🔍 [CHAT ACCEPTED] Current User ID: $currentUserId');
-                                                  log('🔍 [CHAT ACCEPTED] Volunteer ID: ${user.userId}');
-                                                  log('🔍 [CHAT ACCEPTED] Service Request ID: ${request.requestId}');
-                                                  
-                                                  final roomId = await chatController.createOrGetChatRoom(
-                                                    currentUserId,
-                                                    user.userId,
-                                                    serviceRequestId: request.requestId,
-                                                  );
-                                                  
-                                                  log('✅ [CHAT ACCEPTED] Chat room created: $roomId');
-                                                  
-                                                  Get.toNamed(
-                                                    Routes.chatPage,
-                                                    arguments: {
-                                                      'chatRoomId': roomId,
-                                                      'receiverId': user.userId,
-                                                      'receiverName': user.username,
-                                                      'receiverProfilePic': user.imageUrl ?? " ",
-                                                    },
-                                                  );
-                                                } catch (e) {
-                                                  log('❌ [CHAT ACCEPTED] Error: $e');
-                                                  Get.snackbar(
-                                                    'Error',
-                                                    'Failed to create chat room. Please try again.',
-                                                    backgroundColor: Colors.red.shade100,
-                                                    colorText: Colors.red.shade700,
-                                                  );
-                                                }
-                                              },
-                                            ),
-                                          ],
-                                        ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 12),
-                                  DetailsRow(
-                                    icon: Icons.email,
-                                    label: "Email",
-                                    value: user.email,
-                                  ),
-                                  const SizedBox(height: 12),
-                                  const Divider(thickness: 1, color: Colors.grey),
-                                  const SizedBox(height: 12),
-                                ],
-                              )),
-                    const SizedBox(height: 15),
-                    //completed and feedback button  
-                    if ((request.status == RequestStatus.accepted || 
-                         request.status == RequestStatus.inprogress || 
-                         request.status == RequestStatus.incomplete) &&
-                        authController.currentUserStore.value?.userId == request.userId &&
-                        (request.requestedTime ?? request.timestamp).isBefore(DateTime.now()))
-                      DeferPointer(
-                        child: GestureDetector(
-                          behavior: HitTestBehavior.translucent,
-                          onTap: () {
-                            if (request.feedbackList == null) {
-                              Get.toNamed(
-                                Routes.addfeedbackPage,
-                                arguments: {'request': request},
-                              )?.then((_) => detailsController.refreshData());
-                            }
-                          },
-                          child: Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(8),
-                              color: request.feedbackList == null
-                                  ? const Color.fromRGBO(3, 80, 135, 1)
-                                  : Colors.grey,
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(10.0),
-                              child: Text(
-                                request.feedbackList == null
-                                    ? "Complete/Add feedback"
-                                    : "Feedback added",
-                                style: const TextStyle(color: Colors.white),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    //reminder notification button
-                    if ((request.status == RequestStatus.accepted || 
-                         request.status == RequestStatus.inprogress || 
-                         request.status == RequestStatus.incomplete) &&
-                        request.acceptedUser.any((user) =>
-                            user.userId ==
-                                authController.currentUserStore.value?.userId &&
-                            (request.requestedTime ?? request.timestamp).isBefore(DateTime.now())))
-                      DeferPointer(
-                        child: GestureDetector(
-                          onTap: () {
-                            final newNotification = NotificationModel(
-                              notificationId: DateTime.now()
-                                  .millisecondsSinceEpoch
-                                  .toString(),
-                              status: "",
-                              body: 'Please provide feedback for "${request.title}" accepted by ${authController.currentUserStore.value?.username}',
-                              isUserWaiting: false,
-                              userId: request.userId,
-                              timestamp: DateTime.now(),
-                            );
-                            try {
-                              notificationController
-                                  .sendReminderNotification(newNotification);
-                              //  debugPrint("Reminder notification sent");
-                            } catch (e) {
-                              debugPrint("Error: $e");
-                            }
-
-                            Get.snackbar(
-                              'Reminder Sent',
-                              'Notification sent to the requester!',
-                              duration: const Duration(seconds: 3),
-                              snackPosition: SnackPosition.BOTTOM,
-                              backgroundColor: Colors.black87,
-                              colorText: Colors.white,
-                              margin: const EdgeInsets.all(16),
-                            );
-                          },
-                          child: Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(8),
-                              color: Colors.orange,
-                            ),
-                            padding: const EdgeInsets.all(10),
-                            child: const Text(
-                              "Reminder for feedback",
-                              style: TextStyle(color: Colors.white),
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
+              _buildVolunteerStatusSection(request),
               const SizedBox(height: 20),
             ],
           ),
@@ -723,6 +495,43 @@ class _RequestDetailsState extends State<RequestDetails> {
             return _buildVolunteerButton(request);
           },
         ),
+        
+        // Complete Request button for request owners at the bottom
+        if ((request.status == RequestStatus.pending ||
+             request.status == RequestStatus.accepted || 
+             request.status == RequestStatus.inprogress) &&
+            authController.currentUserStore.value?.userId == request.userId)
+          Padding(
+            padding: const EdgeInsets.only(top: 20.0),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: request.status != RequestStatus.complete ? () {
+                  _navigateToFeedbackScreen(request);
+                } : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: request.status != RequestStatus.complete
+                      ? const Color.fromRGBO(0, 140, 170, 1)
+                      : Colors.grey,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 2,
+                ),
+                child: Text(
+                  request.status != RequestStatus.complete
+                      ? "Complete Request"
+                      : "Request Completed",
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -794,6 +603,57 @@ class _RequestDetailsState extends State<RequestDetails> {
     // 🔍 NEW: Get the actual volunteer status from backend
     final actualVolunteerStatus = _getCurrentUserVolunteerStatus(request);
     
+    // For approved status, don't show the status card - the "Accepted by" section will handle it
+    if (actualVolunteerStatus?.toLowerCase() == 'approved') {
+      // Return the cancel button for approved volunteers
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 50.0),
+        child: Obx(() => SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: requestController.isLoading.value ? null : () async {
+              try {
+                await requestController.cancelVolunteerRequest(request.requestId);
+                
+                Get.snackbar(
+                  'Success',
+                  'Your volunteer request has been cancelled',
+                  backgroundColor: Colors.green.shade100,
+                  colorText: Colors.green.shade700,
+                  snackPosition: SnackPosition.BOTTOM,
+                  margin: const EdgeInsets.all(16),
+                  duration: const Duration(seconds: 3),
+                );
+              } catch (e) {
+                Get.snackbar(
+                  'Error',
+                  'Failed to cancel request. Please try again.',
+                  backgroundColor: Colors.red.shade100,
+                  colorText: Colors.red.shade700,
+                );
+              }
+            },
+            icon: requestController.isLoading.value
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.cancel_outlined),
+            label: Text(requestController.isLoading.value ? "Canceling..." : "Cancel Request"),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.red.shade700,
+              side: BorderSide(color: Colors.red.shade300),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        )),
+      );
+    }
+    
     // 🎯 Determine display based on actual backend status
     String statusTitle;
     String statusSubtitle;
@@ -801,12 +661,6 @@ class _RequestDetailsState extends State<RequestDetails> {
     IconData statusIcon;
     
     switch (actualVolunteerStatus?.toLowerCase()) {
-      case 'approved':
-        statusTitle = "Request Approved ✅";
-        statusSubtitle = "You have been approved as a volunteer!";
-        statusColor = Colors.green.shade700;
-        statusIcon = Icons.check_circle;
-        break;
       case 'rejected':
         statusTitle = "Request Rejected ❌";
         statusSubtitle = "Your volunteer request was not accepted";
@@ -1322,6 +1176,11 @@ class _RequestDetailsState extends State<RequestDetails> {
     final appliedAt = volunteer['applied_at'] ?? '';
     final status = volunteer['status']?.toString().toLowerCase() ?? 'pending';
     
+    // Get volunteer user data for profile navigation
+    final volunteerRating = volunteerData['rating']?.toDouble() ?? 0.0;
+    final volunteerHours = volunteerData['hours'] ?? 0;
+    final volunteerImageUrl = volunteerData['imageUrl'] ?? volunteerData['image_url'];
+    
     // Get status display info
     Color statusColor;
     Color statusBgColor;
@@ -1361,17 +1220,38 @@ class _RequestDetailsState extends State<RequestDetails> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Volunteer Info Header
+          // Volunteer Info Header with Profile Icon
           Row(
             children: [
-              CircleAvatar(
-                backgroundColor: Colors.blue.shade100,
-                child: Text(
-                  volunteerName.isNotEmpty ? volunteerName[0].toUpperCase() : '?',
-                  style: TextStyle(
-                    color: Colors.blue.shade700,
-                    fontWeight: FontWeight.bold,
-                  ),
+              GestureDetector(
+                onTap: () {
+                  // Create a UserModel from volunteer data to navigate to profile
+                  final volunteerUser = UserModel(
+                    userId: volunteerId,
+                    username: volunteerName,
+                    email: volunteerEmail,
+                    imageUrl: volunteerImageUrl,
+                    rating: volunteerRating,
+                    hours: volunteerHours,
+                    isVerified: volunteerData['isVerified'] ?? false,
+                    isApproved: volunteerData['isApproved'] ?? false,
+                  );
+                  Get.to(() => ProfileScreen(user: volunteerUser));
+                },
+                child: CircleAvatar(
+                  backgroundColor: Colors.blue.shade100,
+                  backgroundImage: volunteerImageUrl != null && volunteerImageUrl.isNotEmpty
+                      ? NetworkImage(volunteerImageUrl)
+                      : null,
+                  child: volunteerImageUrl == null || volunteerImageUrl.isEmpty
+                      ? Text(
+                          volunteerName.isNotEmpty ? volunteerName[0].toUpperCase() : '?',
+                          style: TextStyle(
+                            color: Colors.blue.shade700,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        )
+                      : null,
                 ),
               ),
               const SizedBox(width: 12),
@@ -1379,13 +1259,33 @@ class _RequestDetailsState extends State<RequestDetails> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      volunteerName,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black,
-                      ),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            volunteerName,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        // Rating display
+                        if (volunteerRating > 0) ...[
+                          Icon(Icons.star, color: Colors.amber, size: 16),
+                          Text(
+                            volunteerRating.toStringAsFixed(1),
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey.shade700,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                     if (volunteerEmail.isNotEmpty)
                       Text(
@@ -1394,29 +1294,8 @@ class _RequestDetailsState extends State<RequestDetails> {
                           fontSize: 14,
                           color: Colors.grey.shade600,
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: statusBgColor,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(statusIcon, size: 14, color: statusColor),
-                    const SizedBox(width: 4),
-                    Text(
-                      statusText,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: statusColor,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -1427,6 +1306,7 @@ class _RequestDetailsState extends State<RequestDetails> {
           if (volunteerMessage.isNotEmpty) ...[
             const SizedBox(height: 12),
             Container(
+              width: double.infinity,
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: Colors.blue.shade50,
@@ -1785,14 +1665,7 @@ class _RequestDetailsState extends State<RequestDetails> {
       // Show loading indicator
       Get.dialog(
         const Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 16),
-              Text('Opening chat...', style: TextStyle(color: Colors.white)),
-            ],
-          ),
+          child: CircularProgressIndicator(),
         ),
         barrierDismissible: false,
       );
@@ -1850,6 +1723,37 @@ class _RequestDetailsState extends State<RequestDetails> {
         duration: const Duration(seconds: 4),
       );
     }
+  }
+
+  /// Navigate to feedback screen with volunteer data
+  void _navigateToFeedbackScreen(RequestModel request) {
+    // Get volunteers from the request
+    final volunteers = request.acceptedUser;
+    
+    if (volunteers.isEmpty) {
+      Get.snackbar(
+        'No Volunteers',
+        'This request has no accepted volunteers to provide feedback for.',
+        backgroundColor: Colors.orange.shade600,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+      );
+      return;
+    }
+    
+    // Navigate to feedback page with request and volunteer data
+    Get.toNamed(
+      Routes.addfeedbackPage,
+      arguments: {
+        'request': request,
+        'volunteers': volunteers,
+        'isCompletion': true, // Flag to indicate this is for completion
+      },
+    )?.then((_) {
+      // Refresh request details after returning from feedback
+      requestController.loadRequestDetails(request.requestId);
+    });
   }
 
   /// 🚨 FIXED: Smart user data refresh state with retry mechanism
@@ -1954,6 +1858,184 @@ class _RequestDetailsState extends State<RequestDetails> {
         },
       );
     });
+  }
+
+  /// Build volunteer status section using the blue "Accepted By" design format
+  Widget _buildVolunteerStatusSection(RequestModel request) {
+    final currentUserId = authController.currentUserStore.value?.userId;
+    final userStatus = request.userRequestStatus.toLowerCase();
+    final requester = request.requester;
+    
+    // Determine the header title based on status
+    String headerTitle;
+    switch (userStatus) {
+      case 'pending':
+        headerTitle = "Request sent to:";
+        break;
+      case 'approved':
+      case 'accepted':
+        headerTitle = "Accepted by:";
+        break;
+      case 'rejected':
+        headerTitle = "Rejected by:";
+        break;
+      default:
+        // Check if user is in acceptedUser list (fallback)
+        if (request.acceptedUser.any((user) => user.userId == currentUserId)) {
+          headerTitle = "Accepted by:";
+        } else {
+          headerTitle = "Request sent to:";
+        }
+    }
+    
+    return DetailsCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            headerTitle,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: Colors.black,
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Requester Details
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Flexible(
+                    flex: 3,
+                    child: DetailsRow(
+                      icon: Icons.person,
+                      label: "Name",
+                      value: requester?.username ?? "Unknown User",
+                    ),
+                  ),
+                  // Profile view icon for requester
+                  if (requester != null)
+                    Flexible(
+                      flex: 1,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.account_circle, color: Colors.blue, size: 22),
+                            tooltip: "View Profile",
+                            padding: const EdgeInsets.all(4),
+                            constraints: const BoxConstraints(),
+                            onPressed: () {
+                              Get.to(() => ProfileScreen(user: requester));
+                            },
+                          ),
+                          // Chat button for accepted/approved volunteers
+                          if (userStatus == 'approved' || userStatus == 'accepted' || 
+                              request.acceptedUser.any((user) => user.userId == currentUserId))
+                            IconButton(
+                              icon: const Icon(Icons.chat_bubble_outline, color: Colors.blue, size: 22),
+                              tooltip: "Chat",
+                              padding: const EdgeInsets.all(4),
+                              constraints: const BoxConstraints(),
+                              onPressed: () async {
+                                final chatController = Get.put(ChatController());
+                                try {
+                                  final roomId = await chatController.createOrGetChatRoom(
+                                    currentUserId!,
+                                    request.userId,
+                                    serviceRequestId: request.requestId,
+                                  );
+                                  
+                                  Get.toNamed(
+                                    Routes.chatPage,
+                                    arguments: {
+                                      'chatRoomId': roomId,
+                                      'receiverId': request.userId,
+                                      'receiverName': requester.username,
+                                      'receiverProfilePic': requester.imageUrl ?? " ",
+                                    },
+                                  );
+                                } catch (e) {
+                                  Get.snackbar(
+                                    'Error',
+                                    'Failed to create chat room. Please try again.',
+                                    backgroundColor: Colors.red.shade100,
+                                    colorText: Colors.red.shade700,
+                                  );
+                                }
+                              },
+                            ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              DetailsRow(
+                icon: Icons.email,
+                label: "Email",
+                value: requester?.email ?? "Not available",
+              ),
+              const SizedBox(height: 12),
+              const Divider(thickness: 1, color: Colors.grey),
+              const SizedBox(height: 12),
+            ],
+          ),
+          
+          // Reminder notification button (only for accepted volunteers after request time)
+          if ((userStatus == 'approved' || userStatus == 'accepted' || 
+               request.acceptedUser.any((user) => user.userId == currentUserId)) &&
+              (request.requestedTime ?? request.timestamp).isBefore(DateTime.now()) &&
+              (request.status == RequestStatus.accepted || 
+               request.status == RequestStatus.inprogress || 
+               request.status == RequestStatus.incomplete))
+            DeferPointer(
+              child: GestureDetector(
+                onTap: () {
+                  final newNotification = NotificationModel(
+                    notificationId: DateTime.now().millisecondsSinceEpoch.toString(),
+                    status: "",
+                    body: 'Please provide feedback for "${request.title}" completed by ${authController.currentUserStore.value?.username}',
+                    isUserWaiting: false,
+                    userId: request.userId,
+                    timestamp: DateTime.now(),
+                  );
+
+                  try {
+                    notificationController.sendReminderNotification(newNotification);
+                  } catch (e) {
+                    debugPrint("Error: $e");
+                  }
+
+                  Get.snackbar(
+                    'Reminder Sent',
+                    'Notification sent to the requester!',
+                    duration: const Duration(seconds: 3),
+                    snackPosition: SnackPosition.BOTTOM,
+                    backgroundColor: Colors.black87,
+                    colorText: Colors.white,
+                    margin: const EdgeInsets.all(16),
+                  );
+                },
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    color: Colors.orange,
+                  ),
+                  padding: const EdgeInsets.all(10),
+                  child: const Text(
+                    "Reminder for feedback",
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }
 

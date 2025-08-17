@@ -77,6 +77,9 @@ class LogoutDialog extends StatelessWidget {
                 child: CustomButton(
                   buttonText: 'Logout',
                   onButtonPressed: () {
+                    // Close dialog immediately before logout
+                    Get.back();
+                    // Then perform logout
                     controller.logout();
                   },
                 ),

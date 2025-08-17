@@ -451,7 +451,10 @@ class ApiService {
     CancelToken? cancelToken,
   }) async {
     try {
-      await waitForConnection();
+      // Skip connectivity check for logout endpoint - it should work offline
+      if (!path.contains('/auth/logout/')) {
+        await waitForConnection();
+      }
       
       return await _dio.post<T>(
         path,

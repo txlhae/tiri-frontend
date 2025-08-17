@@ -457,10 +457,16 @@ class AuthController extends GetxController {
 
       if (result.isSuccess) {
         log('✅ Registration successful');
+        log('📊 User data received: ${result.user?.userId}');
+        log('🔑 User ID: ${result.user?.userId}');
         
         // ✅ SET AUTHENTICATION STATE
         isLoggedIn.value = true;
         currentUserStore.value = result.user;
+        
+        // ✅ SAVE USER TO STORAGE (FIX FOR MISSING UUID)
+        await _saveUserToStorage(result.user!);
+        log('💾 User data saved to storage after registration');
         
         // ✅ UPDATE USER STATE: Set initial state after registration
         final usedReferralCode = referredUid.value.isNotEmpty ? referredUid.value : referralCodeController.value.text.trim();
@@ -602,8 +608,13 @@ class AuthController extends GetxController {
       if (response.statusCode == 200 && response.data != null) {
         // Apply user field mapping for Django compatibility
         final userData = response.data as Map<String, dynamic>;
+        log('📊 Raw API response for user $userId: ${userData.toString()}');
+        
         final flutterUserData = _mapDjangoUserToFlutter(userData);
+        log('🔄 Mapped Flutter data: ${flutterUserData.toString()}');
+        
         final UserModel user = UserModel.fromJson(flutterUserData);
+        log('👤 Created UserModel - hours: ${user.hours}, rating: ${user.rating}');
         
         log('✅ AuthController: Fetched user $userId successfully');
         return user;
@@ -622,22 +633,32 @@ class AuthController extends GetxController {
     if (djangoUser is! Map) return {};
     
     final userMap = djangoUser as Map<String, dynamic>;
-    return {
-      'userId': userMap['id']?.toString() ?? '',
-      'username': userMap['username'] ?? userMap['full_name'] ?? 'Unknown',
+    
+    log('🔍 Mapping Django user data: ${userMap.toString()}');
+    log('📊 total_hours_helped: ${userMap['total_hours_helped']}');
+    log('⭐ average_rating: ${userMap['average_rating']}');
+    log('👤 full_name: ${userMap['full_name']}');
+    log('👤 username: ${userMap['username']}');
+    
+    final mappedData = {
+      'userId': userMap['userId']?.toString() ?? '',
+      'username': userMap['full_name'] ?? userMap['username'] ?? 'Unknown',
       'email': userMap['email']?.toString() ?? '',
-      'imageUrl': userMap['profile_image_url'] ?? userMap['profile_image'],
+      'imageUrl': userMap['profile_image'],
       'referralUserId': userMap['referral_user_id']?.toString(),
       'phoneNumber': userMap['phone_number']?.toString(),
-      'country': userMap['country'] ?? userMap['location_display'],
-      'referralCode': userMap['referral_code'] ?? userMap['full_name'],
+      'country': userMap['country'],
+      'referralCode': userMap['referral_code'],
       'rating': (userMap['average_rating'] as num?)?.toDouble(),
-      'hours': userMap['total_hours_helped'] as int?,
+      'hours': (userMap['total_hours_helped'] as num?)?.toInt(),
       'createdAt': userMap['created_at'] != null 
           ? DateTime.parse(userMap['created_at']) 
           : null,
       'isVerified': userMap['is_verified'] ?? false,
     };
+    
+    log('✅ Mapped data - hours: ${mappedData['hours']}, rating: ${mappedData['rating']}');
+    return mappedData;
   }
 
   /// Fetch user by referral code (Updated for approval system)
@@ -1945,7 +1966,24 @@ class AuthController extends GetxController {
   Future<void> _saveUserToStorage(UserModel user) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('user', jsonEncode(user.toJson()));
+      await prefs.setString('user', jsonEncode({
+        'userId': user.userId,
+        'email': user.email,
+        'username': user.username,
+        'imageUrl': user.imageUrl,
+        'referralUserId': user.referralUserId,
+        'phoneNumber': user.phoneNumber,
+        'country': user.country,
+        'referralCode': user.referralCode,
+        'rating': user.rating,
+        'hours': user.hours,
+        'createdAt': user.createdAt?.toIso8601String(),
+        'isVerified': user.isVerified,
+        'isApproved': user.isApproved,
+        'approvalStatus': user.approvalStatus,
+        'rejectionReason': user.rejectionReason,
+        'approvalExpiresAt': user.approvalExpiresAt?.toIso8601String(),
+      }));
       log('💾 User data saved to storage');
     } catch (e) {
       log('❌ Error saving user to storage: $e');

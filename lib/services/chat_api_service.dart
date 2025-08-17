@@ -339,13 +339,17 @@ class ChatApiService {
         if (serviceRequestId != null) 'service_request_id': serviceRequestId,
       };
       
+      // Use the get_or_create endpoint for all chat room creation for consistency
       final response = await _apiService.post(
-        '/api/chat/rooms/',
+        '/api/chat/rooms/get_or_create/',
         data: roomData,
       );
       
-      if (response.statusCode == 201 || response.statusCode == 200) {
-        final chatRoom = _mapChatRoomFromBackend(response.data as Map<String, dynamic>);
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // Handle the nested chat_room structure from get_or_create endpoint
+        final responseData = response.data as Map<String, dynamic>;
+        final chatRoomData = responseData['chat_room'] as Map<String, dynamic>;
+        final chatRoom = _mapChatRoomFromBackend(chatRoomData);
         log('✅ Chat room created: ${chatRoom.chatRoomId}', name: 'ChatAPI');
         return chatRoom;
       } else {

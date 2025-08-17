@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:tiri/controllers/auth_controller.dart';
 import 'package:tiri/controllers/request_controller.dart';
+import 'package:tiri/infrastructure/routes.dart';
 import 'package:tiri/screens/widgets/custom_widgets/custom_button.dart';
 import 'package:tiri/screens/widgets/custom_widgets/custom_form_field.dart';
 import 'package:tiri/screens/widgets/navigate_row.dart';
@@ -26,24 +27,10 @@ class _RefferalDialogState extends State<RefferalDialog> {
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 15.0),
         child: SizedBox(
-          height: MediaQuery.of(context).size.height * 0.3,
+          height: MediaQuery.of(context).size.height * 0.4,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              // Row(
-              //   mainAxisAlignment: MainAxisAlignment.end,
-              //   children: [
-              //     GestureDetector(
-              //       onTap: () => Get.back(),
-              //       child: SvgPicture.asset(
-              //                   'assets/icons/close_icon.svg',
-              //                   fit: BoxFit.cover,
-              //                   height: 20,
-              //                   width: 20,
-              //                 ),
-              //     ),
-              //   ],
-              // ),
               const Text(
                 'Got a referral code from a friend or recruiter? Enter it here.',
                 textAlign: TextAlign.center,
@@ -95,6 +82,52 @@ class _RefferalDialogState extends State<RefferalDialog> {
                       },
                     );
                   },
+                ),
+              ),
+              // OR divider
+              const Row(
+                children: [
+                  Expanded(child: Divider(color: Colors.grey)),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Text(
+                      'OR',
+                      style: TextStyle(
+                        color: Colors.grey,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  Expanded(child: Divider(color: Colors.grey)),
+                ],
+              ),
+              // QR Scanner Button
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 40.0),
+                child: Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    border: Border.all(color: const Color.fromRGBO(0, 140, 170, 1), width: 2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: TextButton.icon(
+                    onPressed: () {
+                      Get.back();
+                      Get.toNamed(Routes.qrScannerPage);
+                    },
+                    icon: const Icon(
+                      Icons.qr_code_scanner,
+                      color: Color.fromRGBO(0, 140, 170, 1),
+                    ),
+                    label: const Text(
+                      'SCAN QR CODE',
+                      style: TextStyle(
+                        color: Color.fromRGBO(0, 140, 170, 1),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
                 ),
               ),
               NavigateRow(

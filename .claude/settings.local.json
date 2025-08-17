@@ -12,8 +12,10 @@
       "Bash(findstr:*)",
       "Bash(timeout 10 flutter analyze)",
       "Bash(timeout 30 flutter analyze)",
-      "Bash(move kind_clockMainActivity.kt tiriMainActivity.kt)"
+      "Bash(move kind_clockMainActivity.kt tiriMainActivity.kt)",
+      "Bash(find:*)"
     ],
-    "deny": []
+    "deny": [],
+    "defaultMode": "acceptEdits"
   }
 }

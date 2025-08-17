@@ -132,4 +132,9 @@ class Routes {
   static Future<String> get approvalDashboardPageRoute async {
     return approvalDashboardPage;
   }
+
+  static const qrScannerPage = "/qrScanner";
+  static Future<String> get qrScannerPageRoute async {
+    return qrScannerPage;
+  }
 }

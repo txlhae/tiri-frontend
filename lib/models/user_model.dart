@@ -4,6 +4,7 @@ part 'user_model.freezed.dart';
 part 'user_model.g.dart';
 
 @freezed
+@JsonSerializable(explicitToJson: true)
 class UserModel with _$UserModel {
   const factory UserModel({
     required String userId,
@@ -25,14 +26,19 @@ class UserModel with _$UserModel {
     @Default(null) DateTime? approvalExpiresAt,
   }) = _UserModel;
 
-  factory UserModel.fromJson(Map<String, dynamic> json) =>
-      _$UserModelFromJson(json);
+  factory UserModel.fromJson(Map<String, dynamic> json) {
+    print('🔧 UserModel.fromJson called with: ${json.toString()}');
+    print('🔧 hours field: ${json['hours']}, rating field: ${json['rating']}');
+    final userModel = _$UserModelFromJson(json);
+    print('🔧 Created UserModel - hours: ${userModel.hours}, rating: ${userModel.rating}');
+    return userModel;
+  }
 
   // Factory method specifically for parsing requester objects from API
   factory UserModel.fromRequesterJson(Map<String, dynamic> json) {
     return UserModel(
       userId: json['id'] ?? '',
-      email: '', // Requester doesn't have email, use empty string
+      email: json['email'] ?? '', // Use the email from backend requester object
       username: json['username'] ?? '',
       imageUrl: json['profile_image_url'],
       rating: (json['average_rating'] as num?)?.toDouble(),

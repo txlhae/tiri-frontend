@@ -67,9 +67,7 @@ class HomeScreen extends StatelessWidget {
                           behavior: HitTestBehavior.opaque,
                           onTap: () {
                             if (authController.currentUserStore.value != null) {
-                              log(authController.currentUserStore.value!
-                                  .toJson()
-                                  .toString());
+                              log('User ID: ${authController.currentUserStore.value!.userId}');
                               homeController.navigateToProfile();
                             }
                           },
@@ -140,19 +138,9 @@ class HomeScreen extends StatelessWidget {
                             margin: const EdgeInsets.all(16),
                           );
                         },
-                        child: const Row(
-                          children: [
-                            Text(
-                              "Location",
-                              style:
-                                  TextStyle(fontSize: 12, color: Colors.white),
-                            ),
-                            SizedBox(width: 6),
-                            Icon(
-                              Icons.location_on,
-                              color: Colors.white,
-                            ),
-                          ],
+                        child: const Icon(
+                          Icons.location_on,
+                          color: Colors.white,
                         ),
                       ),
                       const SizedBox(width: 15),

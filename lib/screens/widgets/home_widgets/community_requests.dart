@@ -145,14 +145,18 @@ class _CommunityRequestsState extends State<CommunityRequests> {
                                                   style: TextStyle(
                                                       fontSize: 12,
                                                       color: Colors.black)),
-                                              Text(
-                                                DateFormat('dd MMM yyyy')
-                                                    .format(
-                                                        request.requestedTime ?? request.timestamp),
-                                                style: const TextStyle(
-                                                  color: Color.fromRGBO(
-                                                      22, 178, 217, 1),
-                                                  fontWeight: FontWeight.bold,
+                                              Flexible(
+                                                child: Text(
+                                                  DateFormat('dd MMM yyyy')
+                                                      .format(
+                                                          request.requestedTime ?? request.timestamp),
+                                                  style: const TextStyle(
+                                                    color: Color.fromRGBO(
+                                                        22, 178, 217, 1),
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 12,
+                                                  ),
+                                                  overflow: TextOverflow.ellipsis,
                                                 ),
                                               ),
                                             ],
@@ -163,13 +167,17 @@ class _CommunityRequestsState extends State<CommunityRequests> {
                                                   style: TextStyle(
                                                       fontSize: 12,
                                                       color: Colors.black)),
-                                              Text(
-                                                DateFormat('h:mm a').format(
-                                                    request.requestedTime ?? request.timestamp),
-                                                style: const TextStyle(
-                                                  color: Color.fromRGBO(
-                                                      22, 178, 217, 1),
-                                                  fontWeight: FontWeight.bold,
+                                              Flexible(
+                                                child: Text(
+                                                  DateFormat('h:mm a').format(
+                                                      request.requestedTime ?? request.timestamp),
+                                                  style: const TextStyle(
+                                                    color: Color.fromRGBO(
+                                                        22, 178, 217, 1),
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 12,
+                                                  ),
+                                                  overflow: TextOverflow.ellipsis,
                                                 ),
                                               ),
                                             ],
@@ -186,6 +194,7 @@ class _CommunityRequestsState extends State<CommunityRequests> {
                                                   style: const TextStyle(
                                                     color: Colors.black,
                                                     fontWeight: FontWeight.bold,
+                                                    fontSize: 12,
                                                   ),
                                                   overflow: TextOverflow.ellipsis,
                                                   maxLines: 1,

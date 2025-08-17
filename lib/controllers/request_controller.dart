@@ -53,6 +53,64 @@ class RequestController extends GetxController {
       isLoading.value = false;
     }
   }
+
+  /// Submit feedback and complete request
+  Future<void> submitFeedbackAndCompleteRequest({
+    required String requestId,
+    required List<Map<String, dynamic>> feedbackList,
+  }) async {
+    try {
+      isLoading.value = true;
+      debugLog('🔄 RequestController: Submitting feedback $requestId');
+      
+      // Submit feedback (this is working - 201 success)
+      final feedbackResult = await requestService.submitBulkFeedback(
+        requestId: requestId,
+        feedbackList: feedbackList,
+      );
+      
+      debugLog('✅ RequestController: Feedback submitted successfully');
+      
+      // Refresh request details to get updated status
+      try {
+        await loadRequestDetails(requestId);
+        debugLog('✅ RequestController: Request details refreshed');
+      } catch (refreshError) {
+        debugLog('⚠️ RequestController: Could not refresh request details - $refreshError');
+        // Don't fail the overall operation just because refresh failed
+      }
+      
+      // Success! The feedback API handles completion automatically
+      debugLog('✅ RequestController: Operation completed successfully');
+      
+    } catch (e) {
+      debugLog('❌ RequestController: Error in feedback submission - $e');
+      rethrow;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  /// Complete a request (mark as completed)
+  Future<void> completeRequest(String requestId, {String? notes}) async {
+    try {
+      isLoading.value = true;
+      debugLog('🔄 RequestController: Completing request $requestId');
+      
+      final result = await requestService.completeRequest(requestId, notes: notes);
+      
+      if (result != null) {
+        debugLog('✅ RequestController: Request completed successfully');
+        // Update the current request details if available
+        await loadRequestDetails(requestId);
+      }
+    } catch (e) {
+      debugLog('❌ RequestController: Error completing request - $e');
+      rethrow;
+    } finally {
+      isLoading.value = false;
+    }
+  }
   
   // =============================================================================
   // 🚨 DEBUG: Enhanced debugging properties
@@ -1319,23 +1377,64 @@ class RequestController extends GetxController {
         return false;
       }
       
+      // Prepare feedback list for all volunteers
+      List<Map<String, dynamic>> feedbackList = [];
+      
       for (int i = 0; i < request.acceptedUser.length; i++) {
         if (i < reviewControllers.length && i < hourControllers.length && i < selectedRatings.length) {
           final feedbackData = {
             'to_user_id': request.acceptedUser[i].userId,
-            'request_id': request.requestId,
             'hours': int.tryParse(hourControllers[i].text) ?? 1,
-            'rating': selectedRatings[i].value,
+            'rating': selectedRatings[i].value.toDouble(),
             'review': reviewControllers[i].text.trim(),
           };
           
-          debugLog("📝 Submitting feedback: $feedbackData");
+          feedbackList.add(feedbackData);
+          debugLog("📝 Prepared feedback: $feedbackData");
         }
       }
+      
+      debugLog("📤 Submitting ${feedbackList.length} feedback items for request ${request.requestId}");
+      
+      // Submit feedback and complete request using the new workflow
+      await submitFeedbackAndCompleteRequest(
+        requestId: request.requestId,
+        feedbackList: feedbackList,
+      );
+      
+      debugLog("✅ Feedback submission completed successfully");
+      
+      // Navigate back first, then show success message
+      Get.back(); // Close feedback screen immediately
+      
+      // Show success message after navigation
+      Future.delayed(const Duration(milliseconds: 300), () {
+        Get.snackbar(
+          'Success!', 
+          'Feedback submitted and request completed successfully!',
+          backgroundColor: Colors.green.shade600,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 4),
+          snackPosition: SnackPosition.TOP,
+          margin: const EdgeInsets.all(16),
+          borderRadius: 8,
+          icon: const Icon(Icons.check_circle, color: Colors.white),
+        );
+      });
       
       return true;
     } catch (e) {
       debugLog("❌ handleFeedbackSubmission error: $e");
+      
+      // Show error message
+      Get.snackbar(
+        'Error', 
+        'Failed to complete request. Please try again.',
+        backgroundColor: Colors.red.shade100,
+        colorText: Colors.red.shade700,
+        duration: const Duration(seconds: 3),
+      );
+      
       return false;
     }
   }
@@ -1493,7 +1592,7 @@ class RequestController extends GetxController {
   }
 
   /// Fetch profile feedback from Django API
-  /// Transforms Django response to match frontend expected format
+  /// Uses the user profile endpoint to get comprehensive user data including feedback
   Future<void> fetchProfileFeedback(String userId) async {
     try {
       isFeedbackLoading.value = true;
@@ -1506,23 +1605,28 @@ class RequestController extends GetxController {
       // Get ApiService singleton instance
       final apiService = Get.find<ApiService>();
       
-      // Call Django feedback API
-      final response = await apiService.get('/api/feedback/');
+      // Call Django user profile API that includes feedback
+      final response = await apiService.get('/api/profile/users/$userId/');
       
       if (response.statusCode == 200 && response.data != null) {
         final responseData = response.data as Map<String, dynamic>;
         debugLog("📥 fetchProfileFeedback: Raw API response: $responseData");
         
         // Extract feedback array from Django response
-        final List<dynamic> feedbackArray = responseData['feedback'] ?? [];
-        final Map<String, dynamic>? stats = responseData['stats'];
+        final List<dynamic> feedbackArray = responseData['recent_feedback'] ?? [];
+        final totalHours = responseData['total_hours_helped'] ?? 0;
+        final averageRating = (responseData['average_rating'] as num?)?.toDouble() ?? 0.0;
+        final totalFeedback = responseData['total_feedback_count'] ?? 0;
         
         debugLog("📊 fetchProfileFeedback: Found ${feedbackArray.length} feedback items");
-        if (stats != null) {
-          debugLog("📊 fetchProfileFeedback: Stats - Total: ${stats['total_feedback']}, Hours: ${stats['total_hours']}, Rating: ${stats['average_rating']}");
-          // Store stats for UI display
-          feedbackStats.value = stats;
-        }
+        debugLog("📊 fetchProfileFeedback: Stats - Total: $totalFeedback, Hours: $totalHours, Rating: $averageRating");
+        
+        // Store stats for UI display
+        feedbackStats.value = {
+          'total_feedback': totalFeedback,
+          'total_hours': totalHours,
+          'average_rating': averageRating,
+        };
         
         // Transform Django response to expected frontend format
         final List<Map<String, dynamic>> transformedFeedback = [];
@@ -1539,8 +1643,8 @@ class RequestController extends GetxController {
               review: feedbackData['review'] ?? '',
               rating: (feedbackData['rating'] as num?)?.toDouble() ?? 0.0,
               hours: (feedbackData['hours'] as num?)?.toInt() ?? 0,
-              timestamp: feedbackData['timestamp'] != null 
-                ? DateTime.parse(feedbackData['timestamp'])
+              timestamp: feedbackData['created_at'] != null 
+                ? DateTime.parse(feedbackData['created_at'])
                 : DateTime.now(),
             );
             
@@ -1550,7 +1654,7 @@ class RequestController extends GetxController {
             // Transform to expected frontend format with rich user data
             final transformedItem = {
               'feedback': feedback,
-              'username': fromUser['username'] ?? 'Unknown User',
+              'username': fromUser['full_name'] ?? fromUser['username'] ?? 'Unknown User',
               'firstName': fromUser['first_name'] ?? '',
               'lastName': fromUser['last_name'] ?? '',
               'imageUrl': fromUser['profile_picture'],
@@ -1576,16 +1680,17 @@ class RequestController extends GetxController {
         profileFeedbackList.assignAll(transformedFeedback);
         
         debugLog("✅ fetchProfileFeedback: Successfully loaded ${transformedFeedback.length} feedback items");
+        debugLog("📝 fetchProfileFeedback: profileFeedbackList now has ${profileFeedbackList.length} items");
         
       } else {
         debugLog("❌ fetchProfileFeedback: API returned status ${response.statusCode}");
         debugLog("❌ fetchProfileFeedback: Response data: ${response.data}");
-        Get.snackbar('Error', 'Failed to load feedback');
+        Get.snackbar('Error', 'Failed to load user profile feedback');
       }
       
     } catch (e) {
       debugLog("❌ fetchProfileFeedback error: $e");
-      Get.snackbar('Error', 'Failed to load feedback');
+      Get.snackbar('Error', 'Failed to load user profile feedback');
       profileFeedbackList.clear();
     } finally {
       isFeedbackLoading.value = false;

@@ -6,8 +6,7 @@ part of 'user_model.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$UserModelImpl _$$UserModelImplFromJson(Map<String, dynamic> json) =>
-    _$UserModelImpl(
+UserModel _$UserModelFromJson(Map<String, dynamic> json) => UserModel(
       userId: json['userId'] as String,
       email: json['email'] as String,
       username: json['username'] as String,
@@ -21,8 +20,8 @@ _$UserModelImpl _$$UserModelImplFromJson(Map<String, dynamic> json) =>
       createdAt: json['createdAt'] == null
           ? null
           : DateTime.parse(json['createdAt'] as String),
-      isVerified: json['isVerified'] as bool? ?? false,
-      isApproved: json['isApproved'] as bool? ?? false,
+      isVerified: json['isVerified'] as bool,
+      isApproved: json['isApproved'] as bool,
       approvalStatus: json['approvalStatus'] as String?,
       rejectionReason: json['rejectionReason'] as String?,
       approvalExpiresAt: json['approvalExpiresAt'] == null
@@ -30,8 +29,7 @@ _$UserModelImpl _$$UserModelImplFromJson(Map<String, dynamic> json) =>
           : DateTime.parse(json['approvalExpiresAt'] as String),
     );
 
-Map<String, dynamic> _$$UserModelImplToJson(_$UserModelImpl instance) =>
-    <String, dynamic>{
+Map<String, dynamic> _$UserModelToJson(UserModel instance) => <String, dynamic>{
       'userId': instance.userId,
       'email': instance.email,
       'username': instance.username,

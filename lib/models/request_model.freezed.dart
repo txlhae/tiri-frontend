@@ -30,7 +30,9 @@ mixin _$RequestModel {
   DateTime? get requestedTime =>
       throw _privateConstructorUsedError; // Made nullable - might not always be set
   RequestStatus get status => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
   List<UserModel> get acceptedUser => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
   List<FeedbackModel>? get feedbackList => throw _privateConstructorUsedError;
   int get numberOfPeople =>
       throw _privateConstructorUsedError; // Removed required for @Default fields
@@ -61,8 +63,8 @@ abstract class $RequestModelCopyWith<$Res> {
       DateTime timestamp,
       DateTime? requestedTime,
       RequestStatus status,
-      List<UserModel> acceptedUser,
-      List<FeedbackModel>? feedbackList,
+      @JsonKey(ignore: true) List<UserModel> acceptedUser,
+      @JsonKey(ignore: true) List<FeedbackModel>? feedbackList,
       int numberOfPeople,
       int hoursNeeded});
 }
@@ -165,8 +167,8 @@ abstract class _$$RequestModelImplCopyWith<$Res>
       DateTime timestamp,
       DateTime? requestedTime,
       RequestStatus status,
-      List<UserModel> acceptedUser,
-      List<FeedbackModel>? feedbackList,
+      @JsonKey(ignore: true) List<UserModel> acceptedUser,
+      @JsonKey(ignore: true) List<FeedbackModel>? feedbackList,
       int numberOfPeople,
       int hoursNeeded});
 }
@@ -262,8 +264,8 @@ class _$RequestModelImpl implements _RequestModel {
       required this.timestamp,
       this.requestedTime,
       required this.status,
-      final List<UserModel> acceptedUser = const [],
-      final List<FeedbackModel>? feedbackList,
+      @JsonKey(ignore: true) final List<UserModel> acceptedUser = const [],
+      @JsonKey(ignore: true) final List<FeedbackModel>? feedbackList,
       this.numberOfPeople = 1,
       this.hoursNeeded = 1})
       : _acceptedUser = acceptedUser,
@@ -292,7 +294,7 @@ class _$RequestModelImpl implements _RequestModel {
   final RequestStatus status;
   final List<UserModel> _acceptedUser;
   @override
-  @JsonKey()
+  @JsonKey(ignore: true)
   List<UserModel> get acceptedUser {
     if (_acceptedUser is EqualUnmodifiableListView) return _acceptedUser;
     // ignore: implicit_dynamic_type
@@ -301,6 +303,7 @@ class _$RequestModelImpl implements _RequestModel {
 
   final List<FeedbackModel>? _feedbackList;
   @override
+  @JsonKey(ignore: true)
   List<FeedbackModel>? get feedbackList {
     final value = _feedbackList;
     if (value == null) return null;
@@ -393,8 +396,8 @@ abstract class _RequestModel implements RequestModel {
       required final DateTime timestamp,
       final DateTime? requestedTime,
       required final RequestStatus status,
-      final List<UserModel> acceptedUser,
-      final List<FeedbackModel>? feedbackList,
+      @JsonKey(ignore: true) final List<UserModel> acceptedUser,
+      @JsonKey(ignore: true) final List<FeedbackModel>? feedbackList,
       final int numberOfPeople,
       final int hoursNeeded}) = _$RequestModelImpl;
 
@@ -418,8 +421,10 @@ abstract class _RequestModel implements RequestModel {
   @override
   RequestStatus get status;
   @override
+  @JsonKey(ignore: true)
   List<UserModel> get acceptedUser;
   @override
+  @JsonKey(ignore: true)
   List<FeedbackModel>? get feedbackList;
   @override
   int get numberOfPeople; // Removed required for @Default fields

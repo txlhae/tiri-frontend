@@ -14,6 +14,7 @@ import 'package:tiri/screens/widgets/custom_widgets/custom_back_button.dart';
 import 'package:tiri/screens/widgets/dialog_widgets/delete_dialog.dart';
 import 'package:tiri/screens/widgets/dialog_widgets/edit_dialog.dart';
 import 'package:tiri/screens/widgets/dialog_widgets/logout_dialog.dart';
+import 'package:tiri/screens/widgets/dialog_widgets/qr_code_dialog.dart';
 import 'package:tiri/screens/widgets/profile_nav_button.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -34,19 +35,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.initState();
     final currentUser = authController.currentUserStore.value!;
     final initialUser = widget.user ?? currentUser;
+    
+    // Always set initial user first
     shownUser.value = initialUser;
 
-    // Fetch fresh data for other users
-    if (widget.user != null && widget.user!.userId != currentUser.userId) {
-      authController.fetchUser(widget.user!.userId).then((freshUser) {
-        if (freshUser != null) {
-          shownUser.value = freshUser;
-          requestController.fetchProfileFeedback(freshUser.userId);
-        }
-      });
-    } else {
-      requestController.fetchProfileFeedback(currentUser.userId);
-    }
+    // Always fetch fresh data, even for current user to ensure we have latest profile data
+    final targetUserId = widget.user?.userId ?? currentUser.userId;
+    log('📱 Profile Screen: Fetching fresh data for user $targetUserId');
+    log('📱 Profile Screen: Initial user data - hours: ${initialUser.hours}, rating: ${initialUser.rating}, name: ${initialUser.username}');
+    
+    // Fetch fresh user profile data
+    authController.fetchUser(targetUserId).then((freshUser) {
+      if (freshUser != null) {
+        log('✅ Profile Screen: Received fresh user data - hours: ${freshUser.hours}, rating: ${freshUser.rating}, name: ${freshUser.username}');
+        shownUser.value = freshUser;
+        // Fetch feedback after updating user data
+        requestController.fetchProfileFeedback(freshUser.userId);
+      } else {
+        log('❌ Profile Screen: fetchUser returned null for $targetUserId');
+        // Fallback: still try to fetch feedback with current data
+        requestController.fetchProfileFeedback(targetUserId);
+      }
+    }).catchError((error) {
+      log('💥 Profile Screen: Error fetching user data: $error');
+      // Fallback: still try to fetch feedback with current data
+      requestController.fetchProfileFeedback(targetUserId);
+    });
   }
 
   @override
@@ -149,13 +163,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         const SizedBox(height: 10),
                         buildAvatar(user.imageUrl, context),
                         const SizedBox(height: 20),
-                        // Username display fix: prefer name/fullName if available, else username
-                        // ...existing code...
+                        // Display user's full name
+                        Text(
+                          user.username ?? 'Unknown User',
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
                         const SizedBox(height: 5),
                         AnimatedSwitcher(
                           duration: const Duration(milliseconds: 300),
-                          child: buildStatsRow(user.hours, user.rating,
-                              key: ValueKey("${user.hours}_${user.rating}")),
+                          child: Builder(
+                            builder: (context) {
+                              log('🏠 Profile Screen - User hours: ${user.hours}, rating: ${user.rating}');
+                              log('🏠 Profile Screen - Full user data: userId=${user.userId}, hours=${user.hours}, rating=${user.rating}');
+                              
+                              return buildStatsRow(user.hours, user.rating,
+                                  key: ValueKey("${user.hours}_${user.rating}"));
+                            }
+                          ),
                         ),
                         const SizedBox(height: 15),
                         // CURRENT USER LAYOUT
@@ -196,56 +224,106 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   child: Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Text(
-                                        user.referralCode?.toString() ?? 'null',
-                                        style: TextStyle(
-                                          fontSize: 22,
-                                          fontWeight: FontWeight.bold,
-                                          color: Theme.of(context).colorScheme.primary,
-                                          letterSpacing: 2.5,
+                                      Expanded(
+                                        child: FittedBox(
+                                          fit: BoxFit.scaleDown,
+                                          alignment: Alignment.centerLeft,
+                                          child: Text(
+                                            user.referralCode?.toString() ?? 'null',
+                                            style: TextStyle(
+                                              fontSize: 22,
+                                              fontWeight: FontWeight.bold,
+                                              color: Theme.of(context).colorScheme.primary,
+                                              letterSpacing: 2.5,
+                                            ),
+                                            maxLines: 1,
+                                          ),
                                         ),
                                       ),
-                                      GestureDetector(
-                                        onTap: () async {
-                                          await Clipboard.setData(ClipboardData(text: user.referralCode?.toString() ?? 'null'));
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            SnackBar(
-                                              content: const Text(
-                                                'Referral code copied to clipboard!',
-                                                style: TextStyle(color: Colors.white),
+                                      Row(
+                                        children: [
+                                          GestureDetector(
+                                            onTap: () {
+                                              // Debug logging
+                                              log('Profile Screen - Opening QR Dialog');
+                                              log('User data: userId=${user.userId}, referralCode=${user.referralCode}');
+                                              log('User ID: ${user.userId}');
+                                              log('Referral Code: ${user.referralCode}');
+                                              
+                                              Get.dialog(QrCodeDialog(
+                                                referralCode: user.referralCode?.toString() ?? 'null',
+                                                username: user.username,
+                                                userId: user.userId,
+                                              ));
+                                            },
+                                            child: Container(
+                                              padding: const EdgeInsets.all(8),
+                                              decoration: BoxDecoration(
+                                                color: Colors.white,
+                                                border: Border.all(
+                                                  color: Theme.of(context).colorScheme.primary,
+                                                  width: 1,
+                                                ),
+                                                borderRadius: BorderRadius.circular(6),
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: Colors.black.withOpacity(0.08),
+                                                    blurRadius: 2,
+                                                    offset: const Offset(0, 1),
+                                                  ),
+                                                ],
                                               ),
-                                              backgroundColor: Theme.of(context).colorScheme.primary,
-                                              duration: const Duration(seconds: 2),
-                                              behavior: SnackBarBehavior.floating,
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(8),
+                                              child: Icon(
+                                                Icons.qr_code,
+                                                color: Theme.of(context).colorScheme.primary,
+                                                size: 20,
                                               ),
                                             ),
-                                          );
-                                        },
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                                          decoration: BoxDecoration(
-                                            color: Theme.of(context).colorScheme.primary,
-                                            borderRadius: BorderRadius.circular(6),
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: Colors.black.withOpacity(0.08),
-                                                blurRadius: 2,
-                                                offset: const Offset(0, 1),
-                                              ),
-                                            ],
                                           ),
-                                          child: const Text(
-                                            'Copy',
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.w600,
-                                              fontSize: 15,
-                                              letterSpacing: 1.2,
+                                          const SizedBox(width: 8),
+                                          GestureDetector(
+                                            onTap: () async {
+                                              await Clipboard.setData(ClipboardData(text: user.referralCode?.toString() ?? 'null'));
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                SnackBar(
+                                                  content: const Text(
+                                                    'Referral code copied to clipboard!',
+                                                    style: TextStyle(color: Colors.white),
+                                                  ),
+                                                  backgroundColor: Theme.of(context).colorScheme.primary,
+                                                  duration: const Duration(seconds: 2),
+                                                  behavior: SnackBarBehavior.floating,
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius.circular(8),
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                                              decoration: BoxDecoration(
+                                                color: Theme.of(context).colorScheme.primary,
+                                                borderRadius: BorderRadius.circular(6),
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: Colors.black.withOpacity(0.08),
+                                                    blurRadius: 2,
+                                                    offset: const Offset(0, 1),
+                                                  ),
+                                                ],
+                                              ),
+                                              child: const Text(
+                                                'Copy',
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 15,
+                                                  letterSpacing: 1.2,
+                                                ),
+                                              ),
                                             ),
                                           ),
-                                        ),
+                                        ],
                                       ),
                                     ],
                                   ),
@@ -382,9 +460,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                         fontSize: 16, fontWeight: FontWeight.bold),
                                   ),
                                   const SizedBox(height: 10),
-                                  Obx(() => Column(
-                                    children: requestController.profileFeedbackList.map((item) {
-                                      final feedback = item['feedback'] as FeedbackModel;
+                                  Obx(() {
+                                    log('📝 Profile Screen: profileFeedbackList length: ${requestController.profileFeedbackList.length}');
+                                    
+                                    if (requestController.profileFeedbackList.isEmpty) {
+                                      return const Padding(
+                                        padding: EdgeInsets.all(20.0),
+                                        child: Text(
+                                          'No feedback yet',
+                                          style: TextStyle(
+                                            color: Colors.grey,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                    
+                                    return Column(
+                                      children: requestController.profileFeedbackList.map((item) {
+                                        final feedback = item['feedback'] as FeedbackModel;
                                       final username = item['username'];
                                       final title = item['title'];
                                       return Card(
@@ -447,8 +541,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                           ),
                                         ),
                                       );
-                                    }).toList(),
-                                  )),
+                                      }).toList(),
+                                    );
+                                  }),
                                 ],
                               ),
                             ),
@@ -555,18 +650,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       // Show loading indicator
       Get.dialog(
         const Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-              ),
-              SizedBox(height: 16),
-              Text(
-                'Opening chat...',
-                style: TextStyle(color: Colors.white),
-              ),
-            ],
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
           ),
         ),
         barrierDismissible: false,

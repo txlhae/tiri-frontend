@@ -25,6 +25,7 @@ import 'package:tiri/screens/auth_screens/rejection_screen.dart';
 import 'package:tiri/screens/auth_screens/expired_screen.dart';
 import 'package:tiri/screens/my_applications_screen.dart';
 import 'package:tiri/screens/approval_dashboard_screen.dart';
+import 'package:tiri/screens/qr_scanner_screen.dart';
 
 class Navigation {
   static List<GetPage> routes = [
@@ -143,6 +144,10 @@ class Navigation {
     GetPage(
       name: Routes.approvalDashboardPage,
       page: () => const ApprovalDashboardScreen(),
+    ),
+    GetPage(
+      name: Routes.qrScannerPage,
+      page: () => const QrScannerScreen(),
     ),
 
   ];

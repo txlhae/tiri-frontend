@@ -87,8 +87,8 @@ class RequestModel with _$RequestModel {
   required DateTime timestamp,
   DateTime? requestedTime, // Made nullable - might not always be set
   required RequestStatus status,
-  @Default([]) List<UserModel> acceptedUser, 
-  List<FeedbackModel>? feedbackList,
+  @JsonKey(ignore: true) @Default([]) List<UserModel> acceptedUser, 
+  @JsonKey(ignore: true) List<FeedbackModel>? feedbackList,
   @Default(1) int numberOfPeople, // Removed required for @Default fields
   @Default(1) int hoursNeeded, // Removed required for @Default fields
 }) = _RequestModel;

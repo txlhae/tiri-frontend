@@ -89,14 +89,7 @@ class _MyApplicationsScreenState extends State<MyApplicationsScreen> {
       // Show loading
       Get.dialog(
         const Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 16),
-              Text('Opening chat...', style: TextStyle(color: Colors.white)),
-            ],
-          ),
+          child: CircularProgressIndicator(),
         ),
         barrierDismissible: false,
       );

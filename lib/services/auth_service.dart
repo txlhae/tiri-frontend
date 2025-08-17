@@ -2,6 +2,7 @@
 
 import 'dart:convert';
 import 'dart:developer';
+import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../config/api_config.dart';
 import '../models/user_model.dart';
@@ -161,9 +162,19 @@ class AuthService {
         final userData = data['user'] ?? data['data'];
         final tokens = data['tokens'];
         
+        if (ApiConfig.enableLogging) {
+          log('Registration response raw user data: $userData', name: 'AUTH');
+        }
+        
         if (userData != null && tokens != null) {
           // Create user model with field mapping
-          final user = UserModel.fromJson(_mapUserSnakeToCamel(userData));
+          final mappedData = _mapUserSnakeToCamel(userData);
+          if (ApiConfig.enableLogging) {
+            log('Mapped user data: $mappedData', name: 'AUTH');
+            log('User ID from mapping: ${mappedData['userId']}', name: 'AUTH');
+          }
+          
+          final user = UserModel.fromJson(mappedData);
           
           // Save tokens
           await _apiService.saveTokens(
@@ -177,6 +188,7 @@ class AuthService {
           
           if (ApiConfig.enableLogging) {
             log('Registration successful for: ${user.email}', name: 'AUTH');
+            log('User ID saved: ${user.userId}', name: 'AUTH');
           }
           
           return AuthResult.success(
@@ -229,9 +241,19 @@ class AuthService {
         final userData = data['user'] ?? data['data'];
         final tokens = data['tokens'];
         
+        if (ApiConfig.enableLogging) {
+          log('Login response raw user data: $userData', name: 'AUTH');
+        }
+        
         if (userData != null && tokens != null) {
           // Create user model with field mapping
-          final user = UserModel.fromJson(_mapUserSnakeToCamel(userData));
+          final mappedData = _mapUserSnakeToCamel(userData);
+          if (ApiConfig.enableLogging) {
+            log('Login mapped user data: $mappedData', name: 'AUTH');
+            log('Login User ID from mapping: ${mappedData['userId']}', name: 'AUTH');
+          }
+          
+          final user = UserModel.fromJson(mappedData);
           
           // Save tokens
           await _apiService.saveTokens(
@@ -245,6 +267,7 @@ class AuthService {
           
           if (ApiConfig.enableLogging) {
             log('Login successful for: ${user.email}', name: 'AUTH');
+            log('Login User ID saved: ${user.userId}', name: 'AUTH');
           }
           
           return AuthResult.success(
@@ -966,7 +989,13 @@ class AuthService {
   /// Save user data to secure storage
   Future<void> _saveUserToStorage(UserModel user) async {
     try {
-      final userDataString = jsonEncode(user.toJson());
+      final userDataString = jsonEncode({
+        'userId': user.userId,
+        'email': user.email,
+        'username': user.username,
+        'rating': user.rating,
+        'hours': user.hours,
+      });
       await _secureStorage.write(key: _userDataKey, value: userDataString);
       
       if (ApiConfig.enableLogging) {
@@ -1003,6 +1032,81 @@ class AuthService {
   
   /// Extract user-friendly error message from exception
   String _extractErrorMessage(dynamic error) {
+    // Handle DioException to extract proper Django error messages
+    if (error is DioException) {
+      final response = error.response;
+      final data = response?.data;
+      
+      if (data != null) {
+        // Handle Django serializer errors format
+        if (data is Map) {
+          final Map<String, dynamic> errorData = Map<String, dynamic>.from(data);
+          
+          // Check for non_field_errors (common in Django login errors)
+          if (errorData.containsKey('non_field_errors')) {
+            final nonFieldErrors = errorData['non_field_errors'];
+            if (nonFieldErrors is List && nonFieldErrors.isNotEmpty) {
+              final firstError = nonFieldErrors.first;
+              if (firstError is Map && firstError.containsKey('string')) {
+                return firstError['string'];
+              } else {
+                return firstError.toString();
+              }
+            }
+          }
+          
+          // Check for field-specific errors
+          if (errorData.containsKey('email')) {
+            final emailErrors = errorData['email'];
+            if (emailErrors is List && emailErrors.isNotEmpty) {
+              return emailErrors.first.toString();
+            }
+          }
+          
+          if (errorData.containsKey('password')) {
+            final passwordErrors = errorData['password'];
+            if (passwordErrors is List && passwordErrors.isNotEmpty) {
+              return passwordErrors.first.toString();
+            }
+          }
+          
+          // Check for detail field (common in DRF responses)
+          if (errorData.containsKey('detail')) {
+            return errorData['detail'].toString();
+          }
+          
+          // Check for message field
+          if (errorData.containsKey('message')) {
+            return errorData['message'].toString();
+          }
+          
+          // Check for error field
+          if (errorData.containsKey('error')) {
+            return errorData['error'].toString();
+          }
+        }
+        
+        // If data is a string, return it directly
+        if (data is String) {
+          return data;
+        }
+      }
+      
+      // Fallback to HTTP status message
+      switch (response?.statusCode) {
+        case 400:
+          return 'Invalid email or password.';
+        case 401:
+          return 'Authentication failed. Please check your credentials.';
+        case 404:
+          return 'Service not found. Please try again.';
+        case 500:
+          return 'Server error. Please try again later.';
+        default:
+          return 'Network error. Please check your connection.';
+      }
+    }
+    
     if (error is Exception) {
       final message = error.toString();
       

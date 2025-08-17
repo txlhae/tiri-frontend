@@ -26,6 +26,77 @@ import 'package:tiri/services/api_service.dart';
 /// - Real-time data from Django backend
 /// - Django-to-Flutter JSON transformation
 class RequestService extends GetxController {
+  /// Submit bulk feedback for multiple volunteers
+  Future<Map<String, dynamic>?> submitBulkFeedback({
+    required String requestId,
+    required List<Map<String, dynamic>> feedbackList,
+  }) async {
+    try {
+      log('✅ RequestService: Submitting bulk feedback for request $requestId');
+      
+      final requestData = {
+        'request_id': requestId,
+        'feedback_list': feedbackList,
+      };
+      
+      log('📤 Feedback payload: $requestData');
+      
+      final response = await _apiService.post(
+        '/api/feedback/bulk_submit/',
+        data: requestData,
+      );
+      
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        log('✅ RequestService: Bulk feedback submitted successfully');
+        return response.data;
+      } else {
+        log('❌ RequestService: Failed to submit feedback - Status: ${response.statusCode}');
+        throw Exception('Failed to submit feedback: ${response.statusMessage}');
+      }
+    } catch (e) {
+      log('💥 RequestService: Error submitting bulk feedback - $e');
+      rethrow;
+    }
+  }
+
+  /// Complete a request (mark as completed)
+  Future<Map<String, dynamic>?> completeRequest(String requestId, {String? notes}) async {
+    try {
+      log('✅ RequestService: Completing request $requestId');
+      
+      // Try with empty JSON object (some APIs expect valid JSON)
+      final response = await _apiService.post(
+        '/api/requests/$requestId/complete/',
+        data: <String, dynamic>{},
+      );
+      
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        log('✅ RequestService: Request completed successfully');
+        return response.data;
+      } else {
+        log('❌ RequestService: Failed to complete request - Status: ${response.statusCode}');
+        log('❌ RequestService: Response headers: ${response.headers}');
+        log('❌ RequestService: Response data: ${response.data}');
+        log('❌ RequestService: Status message: ${response.statusMessage}');
+        
+        // Extract error message from response if available
+        String errorMessage = 'Failed to complete request';
+        if (response.data is Map && response.data['detail'] != null) {
+          errorMessage = response.data['detail'];
+        } else if (response.data is Map && response.data['error'] != null) {
+          errorMessage = response.data['error'];
+        } else if (response.data is String) {
+          errorMessage = response.data;
+        }
+        
+        throw Exception('$errorMessage (Status: ${response.statusCode})');
+      }
+    } catch (e) {
+      log('💥 RequestService: Error completing request - $e');
+      rethrow;
+    }
+  }
+
   /// Fetch requests where the current user is a volunteer (My Helps)
   Future<List<RequestModel>> fetchMyVolunteeredRequests() async {
     try {
@@ -208,6 +279,8 @@ class RequestService extends GetxController {
       case 'open':
       case 'pending':
         return 'pending';
+      case 'accepted':
+        return 'accepted';
       case 'in_progress':
       case 'inprogress':
         return 'inprogress';
@@ -218,7 +291,10 @@ class RequestService extends GetxController {
         return 'cancelled';
       case 'expired':
         return 'expired';
+      case 'incomplete':
+        return 'incomplete';
       default:
+        log('⚠️ Unknown status from Django: $status, defaulting to pending');
         return 'pending';
     }
   }
@@ -226,10 +302,16 @@ class RequestService extends GetxController {
   /// Map accepted users/volunteers from Django format
   List<Map<String, dynamic>> _mapAcceptedUsers(Map<String, dynamic> djangoJson) {
     try {
-      // Handle various Django volunteer structures
+      // Handle Django volunteers_assigned structure: [{"volunteer": {...}}]
       if (djangoJson['volunteers_assigned'] is List) {
         return (djangoJson['volunteers_assigned'] as List)
-            .map((v) => _mapDjangoUserToFlutter(v))
+            .map((volunteerAssignment) {
+              // Extract the actual volunteer object from the assignment
+              final volunteerData = volunteerAssignment is Map 
+                ? volunteerAssignment['volunteer']
+                : volunteerAssignment;
+              return _mapDjangoUserToFlutter(volunteerData);
+            })
             .toList();
       }
       if (djangoJson['volunteers'] is List) {
@@ -245,22 +327,32 @@ class RequestService extends GetxController {
       return [];
     } catch (e) {
       log('⚠️ Error mapping accepted users: $e');
+      log('⚠️ Django JSON structure: ${djangoJson['volunteers_assigned']}');
       return [];
     }
   }
   
   /// Map Django user object to Flutter UserModel format
   Map<String, dynamic> _mapDjangoUserToFlutter(dynamic djangoUser) {
-    if (djangoUser is! Map) return {};
+    if (djangoUser is! Map) {
+      log('⚠️ _mapDjangoUserToFlutter: djangoUser is not a Map: $djangoUser');
+      return {};
+    }
     
     final userMap = djangoUser as Map<String, dynamic>;
-    return {
+    log('🔍 Mapping Django user: ${userMap.keys.toList()}');
+    log('🔍 Username: ${userMap['username']}, Full name: ${userMap['full_name']}');
+    
+    final mappedUser = {
       'userId': userMap['id']?.toString() ?? '',
       'username': userMap['username'] ?? userMap['full_name'] ?? 'Unknown', // Fixed: Use 'username' key
       'email': userMap['email']?.toString() ?? '', // Fixed: Handle null email properly
       'imageUrl': userMap['profile_image_url'] ?? userMap['profile_image'],
       // Add other UserModel fields as needed
     };
+    
+    log('✅ Mapped user: $mappedUser');
+    return mappedUser;
   }
   
   /// Create fallback request when mapping fails
@@ -815,6 +907,53 @@ class RequestService extends GetxController {
       }
       
       return [];
+    }
+  }
+  
+  /// Complete request and submit feedback for all volunteers
+  /// POST /api/requests/{request_id}/complete/
+  Future<Map<String, dynamic>?> completeRequestWithFeedback(
+    String requestId, 
+    List<Map<String, dynamic>> feedbackList,
+    {String? completionNotes}
+  ) async {
+    try {
+      log('✅ RequestService: Completing request $requestId with feedback');
+      
+      final requestData = {
+        'feedback_list': feedbackList,
+        if (completionNotes?.isNotEmpty == true) 'completion_notes': completionNotes,
+      };
+      
+      log('📝 Request completion data: $requestData');
+      
+      final response = await _apiService.post(
+        '/api/requests/$requestId/complete/', 
+        data: requestData
+      );
+      
+      log('🌐 Complete request response status: ${response.statusCode}');
+      log('🌐 Complete request response data: ${response.data}');
+      
+      if (response.statusCode == 200) {
+        log('✅ RequestService: Successfully completed request $requestId');
+        return response.data as Map<String, dynamic>?;
+      } else {
+        log('❌ RequestService: Failed to complete request $requestId - Status: ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      log('💥 RequestService: Error completing request $requestId - $e');
+      
+      // Enhanced error logging for debugging
+      if (e is DioException) {
+        log('🚨 [SERVICE DEBUG] Complete request error:');
+        log('🚨 [SERVICE DEBUG] - Status Code: ${e.response?.statusCode}');
+        log('🚨 [SERVICE DEBUG] - Response Data: ${e.response?.data}');
+        log('🚨 [SERVICE DEBUG] - Error Message: ${e.message}');
+      }
+      
+      return null;
     }
   }
   
