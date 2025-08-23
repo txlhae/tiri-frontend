@@ -110,10 +110,11 @@ class ApiService {
   Interceptor _createAuthInterceptor() {
     return InterceptorsWrapper(
       onRequest: (RequestOptions options, RequestInterceptorHandler handler) async {
-        // Don't add auth header to token refresh requests
+        // Don't add auth header to token refresh requests and verification status
         if (options.path == ApiConfig.authTokenRefresh || 
             options.path == ApiConfig.authLogin ||
-            options.path == ApiConfig.authRegister) {
+            options.path == ApiConfig.authRegister ||
+            options.path == ApiConfig.authVerificationStatus) {
           log('🔓 Skipping auth header for: ${options.path}', name: 'API');
           handler.next(options);
           return;
@@ -136,6 +137,15 @@ class ApiService {
         // Handle token expiration (401 Unauthorized)
         if (error.response?.statusCode == 401) {
           log('🔄 401 Unauthorized - attempting token refresh', name: 'API');
+          
+          // Prevent endless token refresh loops for protected endpoints
+          // that should not be accessible by unverified/unapproved users
+          if (error.requestOptions.path.contains('/api/requests/')) {
+            log('⚠️ 401 on protected endpoint - clearing tokens and stopping refresh loop', name: 'API');
+            await clearTokens();
+            handler.next(error);
+            return;
+          }
           
           if (await refreshTokenIfNeeded()) {
             log('✅ Token refreshed - retrying original request', name: 'API');

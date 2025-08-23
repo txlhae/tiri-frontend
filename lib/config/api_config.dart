@@ -26,14 +26,14 @@ class ApiConfig {
   /// Base URLs for different environments
   /// 🔧 UPDATED: Using your computer's IP address for physical device testing
   static const Map<String, String> _baseUrls = {
-    'development': 'http://192.168.0.229:8000',  // Your computer's IP address
+    'development': 'http://192.168.1.15:8000',  // Your computer's IP address
     'staging': 'https://staging-api.tiri.com',
     'production': 'https://api.tiri.com',
   };
 
   /// WebSocket URLs for different environments
   static const Map<String, String> _webSocketUrls = {
-    'development': 'ws://192.168.0.229:8000',   // WebSocket for development
+    'development': 'ws://192.168.1.15:8000',   // WebSocket for development
     'staging': 'wss://staging-api.tiri.com',    // Secure WebSocket for staging
     'production': 'wss://api.tiri.com',         // Secure WebSocket for production
   };
@@ -64,6 +64,7 @@ class ApiConfig {
   static const String authTokenRefresh = '/api/auth/token/refresh/';
   static const String authVerifyEmail = '/api/auth/verify-email/';
   static const String authVerificationStatus = '/api/auth/verification-status/';
+  static const String authRegistrationStatus = '/api/auth/registration-status/';
   static const String authPasswordReset = '/api/auth/password-reset/';
 
   /// Profile endpoints

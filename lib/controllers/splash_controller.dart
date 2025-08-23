@@ -6,6 +6,9 @@ import 'package:tiri/controllers/auth_controller.dart';
 import 'package:tiri/infrastructure/routes.dart';
 import 'package:tiri/services/user_state_service.dart';
 import 'package:tiri/services/notification_permission_service.dart';
+import 'package:tiri/services/auth_service.dart';
+import 'package:tiri/services/account_status_service.dart';
+import 'package:tiri/models/auth_models.dart';
 
 /// Smart Splash Controller with State-Based Routing
 /// 
@@ -20,6 +23,8 @@ class SplashController extends GetxController {
   // =============================================================================
   
   late final AuthController _authController;
+  late final AuthService _authService;
+  late final AccountStatusService _accountStatusService;
   late final UserStateService _userStateService;
   
   // =============================================================================
@@ -37,17 +42,174 @@ class SplashController extends GetxController {
   void onInit() {
     super.onInit();
     _authController = Get.find<AuthController>();
+    _authService = Get.find<AuthService>();
+    _accountStatusService = AccountStatusService.instance;
     _userStateService = Get.find<UserStateService>();
     
     // Start smart initialization after splash delay
     Timer(const Duration(seconds: 2), () {
-      _performSmartInitialization();
+      _performEnhancedInitialization();
     });
   }
 
   // =============================================================================
   // SMART INITIALIZATION LOGIC
   // =============================================================================
+
+  /// Enhanced app initialization with new account status system
+  Future<void> _performEnhancedInitialization() async {
+    try {
+      log('🚀 SplashController: Starting enhanced initialization', name: 'SPLASH');
+      
+      // Step 1: Initialize services
+      initializationStatus.value = 'Loading services...';
+      await _authService.initialize();
+      await _userStateService.initialize();
+      
+      // Step 2: Request notification permissions on first launch
+      initializationStatus.value = 'Checking permissions...';
+      await NotificationPermissionService.requestNotificationPermissionOnFirstLaunch();
+      
+      // Step 3: Check for stored tokens
+      initializationStatus.value = 'Checking authentication...';
+      final hasTokens = _authService.hasValidTokens;
+      
+      if (!hasTokens) {
+        log('🔓 SplashController: No tokens found - routing to onboarding', name: 'SPLASH');
+        _routeToOnboarding();
+        return;
+      }
+      
+      // Step 4: Check account status with registration status endpoint
+      initializationStatus.value = 'Checking account status...';
+      log('📡 SplashController: Fetching registration status', name: 'SPLASH');
+      
+      final registrationStatus = await _authService.getRegistrationStatus();
+      
+      if (registrationStatus == null) {
+        log('❌ SplashController: Failed to get registration status', name: 'SPLASH');
+        await _handleTokenExpiry();
+        return;
+      }
+      
+      // Step 5: Cache the status locally
+      await _accountStatusService.storeAccountStatus(registrationStatus);
+      
+      // Step 6: Show deletion warning if needed
+      if (_accountStatusService.shouldShowDeletionWarning(registrationStatus.warning)) {
+        _showDeletionWarning(registrationStatus.warning!);
+      }
+      
+      // Step 7: Route based on next step
+      await _routeBasedOnNextStep(registrationStatus);
+      
+    } catch (e, stackTrace) {
+      log('❌ SplashController: Enhanced initialization failed: $e', stackTrace: stackTrace, name: 'SPLASH');
+      await _handleEnhancedInitializationError();
+    } finally {
+      isInitializing.value = false;
+    }
+  }
+
+  /// Route user based on the next step from registration status
+  Future<void> _routeBasedOnNextStep(RegistrationStatusResponse status) async {
+    final nextStep = status.nextStep;
+    log('🗺️ SplashController: Routing for next step: $nextStep', name: 'SPLASH');
+    
+    final message = _accountStatusService.getStatusMessage(status.accountStatus, nextStep);
+    
+    initializationStatus.value = message;
+    await Future.delayed(const Duration(milliseconds: 500));
+    
+    switch (nextStep) {
+      case 'verify_email':
+        Get.offAllNamed(Routes.emailVerificationPage);
+        break;
+      case 'waiting_for_approval':
+        Get.offAllNamed(Routes.pendingApprovalPage);
+        break;
+      case 'approval_rejected':
+        Get.offAllNamed(Routes.rejectionScreen);
+        break;
+      case 'complete_profile':
+        // TODO: Add profile completion route when available
+        Get.offAllNamed(Routes.homePage);
+        break;
+      case 'ready':
+        Get.offAllNamed(Routes.homePage);
+        break;
+      default:
+        log('⚠️ Unknown next step: $nextStep', name: 'SPLASH');
+        Get.offAllNamed(Routes.onboardingPage);
+    }
+  }
+
+  /// Handle token expiry by clearing data and routing to onboarding
+  Future<void> _handleTokenExpiry() async {
+    log('🚨 SplashController: Tokens appear to be expired', name: 'SPLASH');
+    initializationStatus.value = 'Session expired...';
+    
+    // Clear all cached data
+    await _authService.logout();
+    await _accountStatusService.clearAccountStatus();
+    
+    await Future.delayed(const Duration(milliseconds: 500));
+    _routeToOnboarding();
+  }
+
+  /// Route to onboarding screen
+  void _routeToOnboarding() {
+    initializationStatus.value = 'Welcome!';
+    Get.offAllNamed(Routes.onboardingPage);
+  }
+
+  /// Show deletion warning to user
+  void _showDeletionWarning(AuthWarning warning) {
+    final timeRemaining = _accountStatusService.getTimeUntilDeletion(warning);
+    
+    Get.snackbar(
+      '⚠️ Action Required',
+      'Your account will be deleted in $timeRemaining. ${warning.message}',
+      snackPosition: SnackPosition.TOP,
+      backgroundColor: Colors.red.shade600,
+      colorText: Colors.white,
+      duration: const Duration(seconds: 8),
+      icon: const Icon(Icons.warning, color: Colors.white),
+      margin: const EdgeInsets.all(16),
+      borderRadius: 12,
+      isDismissible: true,
+    );
+  }
+
+  /// Handle enhanced initialization errors
+  Future<void> _handleEnhancedInitializationError() async {
+    log('🚨 SplashController: Handling enhanced initialization error', name: 'SPLASH');
+    
+    initializationStatus.value = 'Loading...';
+    
+    try {
+      // Try to use cached account status
+      final cachedStatus = await _accountStatusService.getStoredAccountStatus();
+      
+      if (cachedStatus != null) {
+        log('📱 SplashController: Using cached account status', name: 'SPLASH');
+        final nextStep = cachedStatus['next_step'] as String;
+        final route = _accountStatusService.getRouteForStatus(nextStep);
+        
+        await Future.delayed(const Duration(milliseconds: 500));
+        Get.offAllNamed(route);
+        return;
+      }
+      
+      // Fall back to legacy initialization
+      await _performSmartInitialization();
+      
+    } catch (e) {
+      log('❌ SplashController: Even enhanced error handling failed: $e', name: 'SPLASH');
+      // Ultimate fallback
+      _routeToOnboarding();
+    }
+  }
 
   /// Perform optimized app initialization with state-based routing
   Future<void> _performSmartInitialization() async {

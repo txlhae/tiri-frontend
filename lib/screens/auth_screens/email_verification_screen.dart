@@ -3,6 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:tiri/controllers/auth_controller.dart';
 import 'package:tiri/screens/widgets/custom_widgets/custom_button.dart';
+import 'package:tiri/services/auth_service.dart';
+import 'package:tiri/services/account_status_service.dart';
+import 'package:tiri/models/auth_models.dart';
+import 'package:tiri/screens/widgets/account_status_widgets/account_status_indicator.dart';
+import 'package:tiri/screens/widgets/account_status_widgets/deletion_warning.dart';
 
 /// Dedicated Email Verification Screen
 /// 
@@ -23,43 +28,114 @@ class EmailVerificationScreen extends StatefulWidget {
 
 class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
   late final AuthController authController;
+  late final AuthService authService;
+  late final AccountStatusService accountStatusService;
   final RxBool isCheckingVerification = false.obs;
+  final Rx<RegistrationStatusResponse?> currentStatus = Rx<RegistrationStatusResponse?>(null);
 
   @override
   void initState() {
     super.initState();
     authController = Get.find<AuthController>();
+    authService = Get.find<AuthService>();
+    accountStatusService = AccountStatusService.instance;
+    
+    // Load current status on screen load
+    _loadCurrentStatus();
   }
 
-  /// Handle "I have verified" button press
+  /// Load current registration status
+  Future<void> _loadCurrentStatus() async {
+    try {
+      // Try to get cached status first
+      final cachedStatus = await accountStatusService.getStoredAccountStatus();
+      
+      if (cachedStatus != null) {
+        log('📱 EmailVerificationScreen: Using cached status', name: 'EMAIL_VERIFICATION');
+        return;
+      }
+      
+      // Fetch fresh status from server
+      final status = await authService.getRegistrationStatus();
+      if (status != null) {
+        currentStatus.value = status;
+        await accountStatusService.storeAccountStatus(status);
+      }
+    } catch (e) {
+      log('❌ EmailVerificationScreen: Error loading status: $e', name: 'EMAIL_VERIFICATION');
+    }
+  }
+
+  /// Handle "I have verified" button press with enhanced status checking
   Future<void> handleVerificationCheck() async {
     try {
       log('🔍 EmailVerificationScreen: User clicked "I have verified"');
       
       isCheckingVerification.value = true;
       
-      // Call the enhanced verification check method
-      final success = await authController.checkVerificationStatus();
+      // Get fresh registration status from server
+      final status = await authService.getRegistrationStatus();
       
-      if (success) {
-        log('✅ EmailVerificationScreen: Verification successful - navigating to home');
-        
-        // Success is handled by AuthController - it navigates to home and shows success message
-        // No additional action needed here
-        
-      } else {
-        log('❌ EmailVerificationScreen: Verification failed - staying on screen');
-        
-        // Show additional guidance for failed verification
-        Get.snackbar(
-          'Verification Pending',
-          'Please check your email and click the verification link. If you can\'t find it, check your spam folder.',
-          snackPosition: SnackPosition.TOP,
-          backgroundColor: Colors.orange,
-          colorText: Colors.white,
-          duration: const Duration(seconds: 5),
-          icon: const Icon(Icons.email_outlined, color: Colors.white),
-        );
+      if (status == null) {
+        throw Exception('Unable to check verification status. Please try again.');
+      }
+      
+      // Update current status
+      currentStatus.value = status;
+      await accountStatusService.storeAccountStatus(status);
+      
+      // Handle different verification states
+      switch (status.nextStep) {
+        case 'waiting_for_approval':
+          log('✅ EmailVerificationScreen: Email verified - now waiting for approval');
+          
+          Get.snackbar(
+            'Email Verified!',
+            'Your email has been verified! Now waiting for referrer approval.',
+            snackPosition: SnackPosition.TOP,
+            backgroundColor: Colors.green,
+            colorText: Colors.white,
+            duration: const Duration(seconds: 3),
+            icon: const Icon(Icons.check_circle, color: Colors.white),
+          );
+          
+          // Route to approval waiting screen
+          await Future.delayed(const Duration(seconds: 1));
+          Get.offAllNamed('/pending-approval');
+          break;
+          
+        case 'ready':
+          log('✅ EmailVerificationScreen: Email verified and fully approved - going to home');
+          
+          Get.snackbar(
+            'Welcome to TIRI!',
+            'Your account is fully set up and ready to use!',
+            snackPosition: SnackPosition.TOP,
+            backgroundColor: Colors.green,
+            colorText: Colors.white,
+            duration: const Duration(seconds: 3),
+            icon: const Icon(Icons.celebration, color: Colors.white),
+          );
+          
+          // Route to home
+          await Future.delayed(const Duration(seconds: 1));
+          Get.offAllNamed('/home');
+          break;
+          
+        case 'verify_email':
+        default:
+          log('❌ EmailVerificationScreen: Email still not verified');
+          
+          Get.snackbar(
+            'Email Not Verified Yet',
+            'Please check your email and click the verification link first. If you can\'t find it, check your spam folder.',
+            snackPosition: SnackPosition.TOP,
+            backgroundColor: Colors.orange,
+            colorText: Colors.white,
+            duration: const Duration(seconds: 5),
+            icon: const Icon(Icons.email_outlined, color: Colors.white),
+          );
+          break;
       }
       
     } catch (e) {
@@ -130,10 +206,39 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
           padding: const EdgeInsets.all(20.0),
           child: Column(
             children: [
+              // Deletion warning if needed
+              Obx(() {
+                final status = currentStatus.value;
+                if (status?.warning != null && 
+                    accountStatusService.shouldShowDeletionWarning(status!.warning)) {
+                  return DeletionWarning(
+                    warning: status.warning!,
+                    onActionPressed: handleVerificationCheck,
+                    isDismissible: true,
+                  );
+                }
+                return const SizedBox.shrink();
+              }),
+              
               // Header
               _buildHeader(),
               
               const SizedBox(height: 40),
+              
+              // Account status indicator
+              Obx(() {
+                final status = currentStatus.value;
+                if (status?.registrationStage != null) {
+                  return AccountStatusIndicator(
+                    registrationStage: status!.registrationStage,
+                    showProgress: true,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  );
+                }
+                return const SizedBox.shrink();
+              }),
+              
+              const SizedBox(height: 20),
               
               // Main content
               _buildContent(),

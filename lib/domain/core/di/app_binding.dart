@@ -13,6 +13,7 @@ import 'package:tiri/services/auth_service.dart';
 import 'package:tiri/services/request_service.dart';
 import 'package:tiri/services/deep_link_service.dart';
 import 'package:tiri/services/user_state_service.dart';
+import 'package:tiri/services/account_status_service.dart';
 
 class AppBinding extends Bindings {
   @override
@@ -23,6 +24,7 @@ class AppBinding extends Bindings {
     Get.put<RequestService>(RequestService());
     Get.put<DeepLinkService>(DeepLinkService(), permanent: true);
     Get.put<UserStateService>(UserStateService(), permanent: true);
+    Get.put<AccountStatusService>(AccountStatusService.instance, permanent: true);
     
     // PHASE 3: All controllers with Django integration
     Get.put<AuthController>(AuthController());

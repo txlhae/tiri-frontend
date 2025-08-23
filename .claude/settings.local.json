@@ -13,9 +13,14 @@
       "Bash(timeout 10 flutter analyze)",
       "Bash(timeout 30 flutter analyze)",
       "Bash(move kind_clockMainActivity.kt tiriMainActivity.kt)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(\"C:\\Users\\Talha\\AppData\\Local\\Android\\sdk\\cmdline-tools\\latest\\bin\\sdkmanager.bat\" --install \"platforms;android-35\")",
+      "Bash(set JAVA_HOME=\"C:\\Program Files\\Android\\Android Studio\\jbr\")"
     ],
     "deny": [],
-    "defaultMode": "acceptEdits"
+    "defaultMode": "acceptEdits",
+    "additionalDirectories": [
+      "C:\\Users\\Talha\\AppData\\Local\\Android\\sdk\\tools"
+    ]
   }
 }

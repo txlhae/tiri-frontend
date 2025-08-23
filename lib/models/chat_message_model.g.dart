@@ -7,6 +7,19 @@ part of 'chat_message_model.dart';
 // **************************************************************************
 
 
+Map<String, dynamic> _$ChatMessageModelToJson(ChatMessageModel instance) =>
+    <String, dynamic>{
+      'messageId': instance.messageId,
+      'chatRoomId': instance.chatRoomId,
+      'senderId': instance.senderId,
+      'receiverId': instance.receiverId,
+      'message': instance.message,
+      'isSeen': instance.isSeen,
+      'timestamp': instance.timestamp.toIso8601String(),
+      'senderName': instance.senderName,
+      'senderProfilePic': instance.senderProfilePic,
+    };
+
 _$ChatMessageModelImpl _$$ChatMessageModelImplFromJson(
         Map<String, dynamic> json) =>
     _$ChatMessageModelImpl(

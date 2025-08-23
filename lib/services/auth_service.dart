@@ -6,6 +6,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../config/api_config.dart';
 import '../models/user_model.dart';
+import '../models/auth_models.dart';
 import 'api_service.dart';
 
 /// Authentication Service for TIRI application
@@ -125,8 +126,8 @@ class AuthService {
   /// - [referralCode]: Referral code from existing user
   /// - [imageUrl]: Optional profile image URL
   /// 
-  /// Returns: AuthResult with user data and tokens
-  Future<AuthResult> register({
+  /// Returns: Enhanced AuthResult with account status and next steps
+  Future<EnhancedAuthResult> register({
     required String name,
     required String email,
     required String phoneNumber,
@@ -158,53 +159,64 @@ class AuthService {
       if (response.statusCode == 201) {
         final data = response.data;
         
-        // Extract user data and tokens
-        final userData = data['user'] ?? data['data'];
-        final tokens = data['tokens'];
-        
         if (ApiConfig.enableLogging) {
-          log('Registration response raw user data: $userData', name: 'AUTH');
+          log('Enhanced registration response: ${data.toString()}', name: 'AUTH');
         }
         
-        if (userData != null && tokens != null) {
-          // Create user model with field mapping
-          final mappedData = _mapUserSnakeToCamel(userData);
-          if (ApiConfig.enableLogging) {
-            log('Mapped user data: $mappedData', name: 'AUTH');
-            log('User ID from mapping: ${mappedData['userId']}', name: 'AUTH');
-          }
-          
-          final user = UserModel.fromJson(mappedData);
+        try {
+          // Parse the enhanced auth response
+          final authResponse = AuthResponse.fromJson(data);
           
           // Save tokens
           await _apiService.saveTokens(
-            tokens['access'],
-            tokens['refresh'],
+            authResponse.tokens.access,
+            authResponse.tokens.refresh,
           );
           
           // Save user data
-          await _saveUserToStorage(user);
-          _currentUser = user;
+          await _saveUserToStorage(authResponse.user);
+          _currentUser = authResponse.user;
           
           if (ApiConfig.enableLogging) {
-            log('Registration successful for: ${user.email}', name: 'AUTH');
-            log('User ID saved: ${user.userId}', name: 'AUTH');
+            log('Enhanced registration successful for: ${authResponse.user.email}', name: 'AUTH');
+            log('Account status: ${authResponse.accountStatus}', name: 'AUTH');
+            log('Next step: ${authResponse.nextStep}', name: 'AUTH');
           }
           
-          return AuthResult.success(
-            user: user,
-            message: data['message'] ?? 'Registration successful',
+          return EnhancedAuthResult.success(
+            authResponse: authResponse,
+            message: authResponse.message,
           );
+        } catch (e) {
+          // Fallback to legacy format if new format parsing fails
+          log('Failed to parse enhanced response, falling back to legacy format: $e', name: 'AUTH');
+          
+          final userData = data['user'] ?? data['data'];
+          final tokens = data['tokens'];
+          
+          if (userData != null && tokens != null) {
+            final mappedData = _mapUserSnakeToCamel(userData);
+            final user = UserModel.fromJson(mappedData);
+            
+            await _apiService.saveTokens(tokens['access'], tokens['refresh']);
+            await _saveUserToStorage(user);
+            _currentUser = user;
+            
+            return EnhancedAuthResult.legacy(
+              user: user,
+              message: data['message'] ?? 'Registration successful',
+            );
+          }
         }
       }
       
-      return AuthResult.failure(
+      return EnhancedAuthResult.failure(
         message: 'Registration failed: Invalid response format',
       );
       
     } catch (e) {
       log('Registration error: $e', name: 'AUTH');
-      return AuthResult.failure(
+      return EnhancedAuthResult.failure(
         message: _extractErrorMessage(e),
       );
     }
@@ -216,8 +228,8 @@ class AuthService {
   /// - [email]: User's email address
   /// - [password]: User's password
   /// 
-  /// Returns: AuthResult with user data and tokens
-  Future<AuthResult> login({
+  /// Returns: Enhanced AuthResult with account status and next steps
+  Future<EnhancedAuthResult> login({
     required String email,
     required String password,
   }) async {
@@ -237,53 +249,64 @@ class AuthService {
       if (response.statusCode == 200) {
         final data = response.data;
         
-        // Extract user data and tokens
-        final userData = data['user'] ?? data['data'];
-        final tokens = data['tokens'];
-        
         if (ApiConfig.enableLogging) {
-          log('Login response raw user data: $userData', name: 'AUTH');
+          log('Enhanced login response: ${data.toString()}', name: 'AUTH');
         }
         
-        if (userData != null && tokens != null) {
-          // Create user model with field mapping
-          final mappedData = _mapUserSnakeToCamel(userData);
-          if (ApiConfig.enableLogging) {
-            log('Login mapped user data: $mappedData', name: 'AUTH');
-            log('Login User ID from mapping: ${mappedData['userId']}', name: 'AUTH');
-          }
-          
-          final user = UserModel.fromJson(mappedData);
+        try {
+          // Parse the enhanced auth response
+          final authResponse = AuthResponse.fromJson(data);
           
           // Save tokens
           await _apiService.saveTokens(
-            tokens['access'],
-            tokens['refresh'],
+            authResponse.tokens.access,
+            authResponse.tokens.refresh,
           );
           
           // Save user data
-          await _saveUserToStorage(user);
-          _currentUser = user;
+          await _saveUserToStorage(authResponse.user);
+          _currentUser = authResponse.user;
           
           if (ApiConfig.enableLogging) {
-            log('Login successful for: ${user.email}', name: 'AUTH');
-            log('Login User ID saved: ${user.userId}', name: 'AUTH');
+            log('Enhanced login successful for: ${authResponse.user.email}', name: 'AUTH');
+            log('Account status: ${authResponse.accountStatus}', name: 'AUTH');
+            log('Next step: ${authResponse.nextStep}', name: 'AUTH');
           }
           
-          return AuthResult.success(
-            user: user,
-            message: data['message'] ?? 'Login successful',
+          return EnhancedAuthResult.success(
+            authResponse: authResponse,
+            message: authResponse.message,
           );
+        } catch (e) {
+          // Fallback to legacy format if new format parsing fails
+          log('Failed to parse enhanced response, falling back to legacy format: $e', name: 'AUTH');
+          
+          final userData = data['user'] ?? data['data'];
+          final tokens = data['tokens'];
+          
+          if (userData != null && tokens != null) {
+            final mappedData = _mapUserSnakeToCamel(userData);
+            final user = UserModel.fromJson(mappedData);
+            
+            await _apiService.saveTokens(tokens['access'], tokens['refresh']);
+            await _saveUserToStorage(user);
+            _currentUser = user;
+            
+            return EnhancedAuthResult.legacy(
+              user: user,
+              message: data['message'] ?? 'Login successful',
+            );
+          }
         }
       }
       
-      return AuthResult.failure(
+      return EnhancedAuthResult.failure(
         message: 'Login failed: Invalid response format',
       );
       
     } catch (e) {
       log('Login error: $e', name: 'AUTH');
-      return AuthResult.failure(
+      return EnhancedAuthResult.failure(
         message: _extractErrorMessage(e),
       );
     }
@@ -540,6 +563,7 @@ class AuthService {
   /// Get current user profile from server
   Future<UserModel?> getCurrentUserProfile() async {
     try {
+      // This requires full authentication (verified + approved)
       if (!isAuthenticated) {
         return null;
       }
@@ -575,6 +599,7 @@ class AuthService {
   /// Returns: Updated UserModel or null if failed
   Future<UserModel?> updateProfile(Map<String, dynamic> updates) async {
     try {
+      // This requires full authentication (verified + approved)
       if (!isAuthenticated) {
         return null;
       }
@@ -658,27 +683,10 @@ class AuthService {
   /// Returns: List of approval requests
   Future<List<Map<String, dynamic>>> getPendingApprovals() async {
     try {
-      // 🚨 DEBUG: Log authentication status
-      log('🔍 DEBUG: Checking authentication status...', name: 'AUTH');
-      log('🔍 DEBUG: isAuthenticated = $isAuthenticated', name: 'AUTH');
-      log('🔍 DEBUG: _apiService.isAuthenticated = ${_apiService.isAuthenticated}', name: 'AUTH');
-      log('🔍 DEBUG: _currentUser = ${_currentUser?.email ?? 'null'}', name: 'AUTH');
-      log('🔍 DEBUG: isAuthenticated = $isAuthenticated');
-      log('🔍 DEBUG: _apiService.isAuthenticated = ${_apiService.isAuthenticated}');
-      log('🔍 DEBUG: _currentUser = ${_currentUser?.email ?? 'null'}');
-      
-      // 🚨 FIX: Use API service authentication for approval requests
-      // The API service has tokens even if user data isn't loaded yet
-      if (!_apiService.isAuthenticated) {
-        log('❌ DEBUG: API Service not authenticated - throwing exception', name: 'AUTH');
-        log('❌ DEBUG: API Service not authenticated - throwing exception');
+      // Use hasValidTokens for approval operations since they work for verified users
+      if (!hasValidTokens) {
+        log('❌ No valid tokens for approval requests', name: 'AUTH');
         throw Exception('User not authenticated');
-      }
-      
-      // Log the bypass for debugging
-      if (!isAuthenticated) {
-        log('⚠️ DEBUG: Full isAuthenticated=false but _apiService.isAuthenticated=true, proceeding with API call', name: 'AUTH');
-        log('⚠️ DEBUG: Full isAuthenticated=false but _apiService.isAuthenticated=true, proceeding with API call');
       }
 
       if (ApiConfig.enableLogging) {
@@ -725,8 +733,8 @@ class AuthService {
   /// Returns: AuthResult with approval status
   Future<AuthResult> approveUser(String approvalId) async {
     try {
-      // Use API service authentication check for consistency
-      if (!_apiService.isAuthenticated) {
+      // Use hasValidTokens for approval operations
+      if (!hasValidTokens) {
         throw Exception('User not authenticated');
       }
 
@@ -772,8 +780,8 @@ class AuthService {
   /// Returns: AuthResult with rejection status
   Future<AuthResult> rejectUser(String approvalId, [String? reason]) async {
     try {
-      // Use API service authentication check for consistency
-      if (!_apiService.isAuthenticated) {
+      // Use hasValidTokens for approval operations
+      if (!hasValidTokens) {
         throw Exception('User not authenticated');
       }
 
@@ -817,21 +825,10 @@ class AuthService {
   /// Returns: List of approval history
   Future<List<Map<String, dynamic>>> getApprovalHistory() async {
     try {
-      // 🚨 DEBUG: Log authentication status
-      log('🔍 DEBUG: getApprovalHistory - isAuthenticated = $isAuthenticated', name: 'AUTH');
-      log('🔍 DEBUG: getApprovalHistory - isAuthenticated = $isAuthenticated');
-      
-      // 🚨 FIX: Use API service authentication for approval requests
-      if (!_apiService.isAuthenticated) {
-        log('❌ DEBUG: getApprovalHistory - API Service not authenticated', name: 'AUTH');
-        log('❌ DEBUG: getApprovalHistory - API Service not authenticated');
+      // Use hasValidTokens for approval operations
+      if (!hasValidTokens) {
+        log('❌ No valid tokens for approval history', name: 'AUTH');
         throw Exception('User not authenticated');
-      }
-      
-      // Log the bypass for debugging
-      if (!isAuthenticated) {
-        log('⚠️ DEBUG: getApprovalHistory - Full isAuthenticated=false but proceeding', name: 'AUTH');
-        log('⚠️ DEBUG: getApprovalHistory - Full isAuthenticated=false but proceeding');
       }
 
       if (ApiConfig.enableLogging) {
@@ -898,6 +895,35 @@ class AuthService {
     } catch (e) {
       log('Get approval history error: $e', name: 'AUTH');
       throw e;
+    }
+  }
+
+  /// Get current registration status with comprehensive account information
+  /// 
+  /// Returns: RegistrationStatusResponse with full account state
+  Future<RegistrationStatusResponse?> getRegistrationStatus() async {
+    try {
+      if (ApiConfig.enableLogging) {
+        log('Fetching registration status', name: 'AUTH');
+      }
+
+      final response = await _apiService.get(ApiConfig.authRegistrationStatus);
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        
+        if (ApiConfig.enableLogging) {
+          log('Registration status response: ${data.toString()}', name: 'AUTH');
+        }
+        
+        return RegistrationStatusResponse.fromJson(data);
+      }
+      
+      throw Exception('Failed to fetch registration status - HTTP ${response.statusCode}');
+      
+    } catch (e) {
+      log('Get registration status error: $e', name: 'AUTH');
+      return null;
     }
   }
 
@@ -1125,8 +1151,31 @@ class AuthService {
   // GETTERS
   // =============================================================================
   
-  /// Check if user is authenticated
-  bool get isAuthenticated => _apiService.isAuthenticated && _currentUser != null;
+  /// Check if user is authenticated AND fully approved
+  /// This prevents routing to protected screens for users who have tokens
+  /// but are not yet verified or approved
+  bool get isAuthenticated {
+    // Must have valid API tokens
+    if (!_apiService.isAuthenticated) {
+      return false;
+    }
+    
+    // Must have user data loaded
+    if (_currentUser == null) {
+      return false;
+    }
+    
+    // Must be email verified AND approved to access protected resources
+    // This prevents unverified/unapproved users from accessing home page
+    final isVerified = _currentUser?.isVerified ?? false;
+    final isApproved = _currentUser?.isApproved ?? false;
+    
+    return isVerified && isApproved;
+  }
+  
+  /// Check if user has valid tokens (but may not be fully approved yet)
+  /// Use this for API calls that work for verified but not yet approved users
+  bool get hasValidTokens => _apiService.isAuthenticated && _currentUser != null;
   
   /// Get current user
   UserModel? get currentUser => _currentUser;
@@ -1198,4 +1247,79 @@ class AuthResult {
   /// Parameters:
   /// - [referralCode]: The referral code to verify
   /// 
+}
+
+// =============================================================================
+// ENHANCED AUTH RESULT CLASS
+// =============================================================================
+
+/// Enhanced result class for authentication operations with account status
+class EnhancedAuthResult {
+  final bool isSuccess;
+  final AuthResponse? authResponse;
+  final UserModel? user;
+  final String message;
+  final String? accountStatus;
+  final String? nextStep;
+  final Map<String, dynamic>? data;
+
+  EnhancedAuthResult._({
+    required this.isSuccess,
+    this.authResponse,
+    this.user,
+    required this.message,
+    this.accountStatus,
+    this.nextStep,
+    this.data,
+  });
+
+  /// Create successful enhanced auth result with full response
+  factory EnhancedAuthResult.success({
+    required AuthResponse authResponse,
+    required String message,
+    Map<String, dynamic>? data,
+  }) {
+    return EnhancedAuthResult._(
+      isSuccess: true,
+      authResponse: authResponse,
+      user: authResponse.user,
+      message: message,
+      accountStatus: authResponse.accountStatus,
+      nextStep: authResponse.nextStep,
+      data: data,
+    );
+  }
+
+  /// Create successful result for legacy format compatibility
+  factory EnhancedAuthResult.legacy({
+    required UserModel user,
+    required String message,
+    Map<String, dynamic>? data,
+  }) {
+    return EnhancedAuthResult._(
+      isSuccess: true,
+      user: user,
+      message: message,
+      accountStatus: 'active', // Assume active for legacy
+      nextStep: 'ready', // Assume ready for legacy
+      data: data,
+    );
+  }
+
+  /// Create failed enhanced auth result
+  factory EnhancedAuthResult.failure({
+    required String message,
+    Map<String, dynamic>? data,
+  }) {
+    return EnhancedAuthResult._(
+      isSuccess: false,
+      message: message,
+      data: data,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'EnhancedAuthResult(isSuccess: $isSuccess, message: $message, accountStatus: $accountStatus, nextStep: $nextStep, user: ${user?.email})';
+  }
 }

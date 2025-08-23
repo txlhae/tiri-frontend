@@ -101,9 +101,12 @@ class RequestService extends GetxController {
   Future<List<RequestModel>> fetchMyVolunteeredRequests() async {
     try {
       log('🔍 [MyHelps] fetchMyVolunteeredRequests called');
-      // Defensive: Check for auth token if possible
-      // If you have an AuthService or token check, add it here
-      // Example: if (!AuthService.isLoggedIn) { log('❌ Not logged in'); return []; }
+      
+      // Check if API service is authenticated before making request
+      if (!_apiService.isAuthenticated) {
+        log('❌ [MyHelps] No authentication tokens - returning empty list');
+        return [];
+      }
 
       final response = await _apiService.get('/api/requests/?view=my_volunteering');
       log('🔍 [MyHelps] API called: /api/requests/?view=my_volunteering, status: ${response.statusCode}');
@@ -383,6 +386,12 @@ class RequestService extends GetxController {
     try {
       log('🔍 RequestService: Fetching community requests from Django API');
       
+      // Check if API service is authenticated before making request
+      if (!_apiService.isAuthenticated) {
+        log('❌ RequestService: No authentication tokens - returning empty list');
+        return [];
+      }
+      
       final response = await _apiService.get('/api/requests/');
       
       if (response.statusCode == 200 && response.data != null) {
@@ -420,6 +429,12 @@ class RequestService extends GetxController {
   Future<List<RequestModel>> fetchMyRequests() async {
     try {
       log('🔍 RequestService: Fetching user requests from Django API');
+      
+      // Check if API service is authenticated before making request
+      if (!_apiService.isAuthenticated) {
+        log('❌ RequestService: No authentication tokens - returning empty list');
+        return [];
+      }
       
       final response = await _apiService.get('/api/requests/?view=my_requests');
       
