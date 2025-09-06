@@ -47,3 +47,4 @@ Map<String, dynamic> _$$ChatMessageModelImplToJson(
       'senderName': instance.senderName,
       'senderProfilePic': instance.senderProfilePic,
     };
+  

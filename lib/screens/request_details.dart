@@ -367,34 +367,14 @@ class _RequestDetailsState extends State<RequestDetails> {
           ),
         ),
         const SizedBox(height: 20),
-        if (requestController.isHelper.value)
-          const DetailsCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                DetailsRow(
-                  icon: Icons.feedback,
-                  label: "Feedback",
-                  value:
-                      "You have been amazing in this program. I had lot of fun",
-                ),
-                SizedBox(height: 12),
-                DetailsRow(
-                  icon: Icons.timer,
-                  label: "Hours helped",
-                  value: "5 hours helped",
-                ),
-                SizedBox(height: 12),
-                DetailsRow(
-                  icon: Icons.star,
-                  label: "Rating",
-                  value: "4/5",
-                ),
-              ],
-            ),
-          ),
+        // Show feedback section if request is completed
+        if (request.status == RequestStatus.complete && request.feedback != null)
+          _buildFeedbackSection(request),
                // Volunteer Status Section - Show status-based message for volunteers
-               if (request.userId != currentUserId && 
+               // Only show if request is NOT completed AND no feedback exists
+               if (request.status != RequestStatus.complete &&
+                   request.feedback == null &&
+                   request.userId != currentUserId && 
                    (request.userRequestStatus.isNotEmpty || 
                     request.acceptedUser.any((user) => user.userId == currentUserId)))
           Column(
@@ -1858,6 +1838,336 @@ class _RequestDetailsState extends State<RequestDetails> {
         },
       );
     });
+  }
+
+  /// Build feedback section for completed requests
+  Widget _buildFeedbackSection(RequestModel request) {
+    final currentUserId = authController.currentUserStore.value?.userId;
+    
+    // Check if we have feedback data
+    if (request.feedback == null) {
+      return Container();
+    }
+    
+    final feedbackData = request.feedback as Map<String, dynamic>;
+    final receivedByMe = feedbackData['received_by_me'] as List<dynamic>?;
+    final role = feedbackData['role'] as String?;
+    
+    // If current user is a volunteer and has received feedback, show it
+    if (role == 'volunteer' && receivedByMe != null && receivedByMe.isNotEmpty) {
+      // Show feedback received by volunteer
+      final feedback = receivedByMe.first;
+      final rating = feedback['rating']?.toDouble() ?? 0.0;
+      final hours = feedback['hours'] ?? 0;
+      final review = feedback['review'] ?? "";
+      final fromUser = feedback['from_user'];
+      
+      return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.green.shade50,
+            Colors.blue.shade50,
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.green.shade200, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.green.shade100.withOpacity(0.3),
+            spreadRadius: 2,
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header with icon
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.star,
+                    color: Colors.green.shade700,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Feedback Received",
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      Text(
+                        "Your work has been reviewed",
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Rating badge
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade100,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.amber.shade300),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.star, color: Colors.amber.shade700, size: 16),
+                      const SizedBox(width: 4),
+                      Text(
+                        "${rating.toStringAsFixed(1)}/5",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.amber.shade800,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            
+            // Feedback text if available
+            if (review.isNotEmpty) ...[
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.format_quote, color: Colors.blue.shade600, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          "Review",
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: Colors.blue.shade700,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      review,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        height: 1.5,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+            
+            // Details row
+            Row(
+              children: [
+                // Hours
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.blue.shade200),
+                    ),
+                    child: Column(
+                      children: [
+                        Icon(Icons.timer, color: Colors.blue.shade700, size: 20),
+                        const SizedBox(height: 4),
+                        Text(
+                          "$hours hours",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue.shade800,
+                          ),
+                        ),
+                        Text(
+                          "contributed",
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.blue.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                
+                // From user
+                if (fromUser != null)
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.purple.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.purple.shade200),
+                      ),
+                      child: Column(
+                        children: [
+                          Icon(Icons.person, color: Colors.purple.shade700, size: 20),
+                          const SizedBox(height: 4),
+                          Text(
+                            fromUser['username'] ?? fromUser['full_name'] ?? "Unknown",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.purple.shade800,
+                              fontSize: 13,
+                            ),
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            "reviewed by",
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.purple.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+    }
+    
+    // If current user is the requester, show feedback given section
+    if (request.userId == currentUserId) {
+      return _buildFeedbackGivenSection(request);
+    }
+    
+    // Default: no feedback to show
+    return Container();
+  }
+  
+  /// Build feedback given section for request owners
+  Widget _buildFeedbackGivenSection(RequestModel request) {
+    // Look for feedback in volunteers_assigned data
+    final volunteers = request.acceptedUser;
+    
+    if (volunteers.isEmpty) {
+      return Container();
+    }
+    
+    return DetailsCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Request Completed",
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: Colors.black,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.green.shade700, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  "This request has been successfully completed",
+                  style: TextStyle(
+                    color: Colors.green.shade700,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (request.completedAt != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              "Completed on: ${_formatDateTime(request.completedAt!)}",
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontSize: 12,
+              ),
+            ),
+          ],
+          const SizedBox(height: 16),
+          const Text(
+            "Volunteers who helped:",
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 8),
+          ...volunteers.map((volunteer) => Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.person, size: 16, color: Colors.grey.shade600),
+                const SizedBox(width: 8),
+                Text(
+                  volunteer.username,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Colors.black87,
+                  ),
+                ),
+              ],
+            ),
+          )),
+        ],
+      ),
+    );
   }
 
   /// Build volunteer status section using the blue "Accepted By" design format

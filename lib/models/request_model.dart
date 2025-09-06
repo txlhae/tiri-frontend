@@ -127,6 +127,27 @@ extension RequestModelExtension on RequestModel {
           UserRequestStatus.fromJson(userRequestStatusData);
     }
     
+    // Store feedback data if available
+    if (json['feedback'] != null) {
+      RequestModelExtension._feedbackCache[requestModel.requestId] = json['feedback'];
+    }
+    
+    // Store completion data if available
+    if (json['completed_at'] != null) {
+      try {
+        RequestModelExtension._completedAtCache[requestModel.requestId] = 
+            DateTime.parse(json['completed_at']);
+      } catch (e) {
+        log('⚠️ Error parsing completed_at: $e');
+        RequestModelExtension._completedAtCache[requestModel.requestId] = null;
+      }
+    }
+    
+    if (json['completion_confirmed_by_requester'] != null) {
+      RequestModelExtension._completionConfirmedCache[requestModel.requestId] = 
+          json['completion_confirmed_by_requester'] as bool? ?? false;
+    }
+    
     return requestModel;
   }
   
@@ -135,6 +156,13 @@ extension RequestModelExtension on RequestModel {
   
   // Enhanced cache to store UserRequestStatus objects
   static final Map<String, UserRequestStatus> _userRequestStatusCache = {};
+  
+  // Cache to store feedback data
+  static final Map<String, dynamic> _feedbackCache = {};
+  
+  // Cache to store completion data
+  static final Map<String, DateTime?> _completedAtCache = {};
+  static final Map<String, bool> _completionConfirmedCache = {};
   
   // Cache management methods
   /// Clear user request status cache for a specific request
@@ -174,4 +202,9 @@ extension RequestModelExtension on RequestModel {
   bool get hasVolunteered => userRequestStatusObject?.hasVolunteered ?? false;
   DateTime? get requestedAt => userRequestStatusObject?.requestedAt;
   DateTime? get acceptedAt => userRequestStatusObject?.acceptedAt;
+  
+  // Feedback and completion data accessors
+  dynamic get feedback => _feedbackCache[requestId];
+  DateTime? get completedAt => _completedAtCache[requestId];
+  bool get completionConfirmedByRequester => _completionConfirmedCache[requestId] ?? false;
 }

@@ -196,6 +196,11 @@ class RequestService extends GetxController {
         
         // 🎯 CRITICAL: Preserve user_request_status for volunteer workflow
         'user_request_status': djangoJson['user_request_status'],
+        
+        // Add feedback and completion data
+        'feedback': djangoJson['feedback'],
+        'completed_at': djangoJson['completed_at']?.toString(),
+        'completion_confirmed_by_requester': djangoJson['completion_confirmed_by_requester'],
       };
       
       log('✅ MAPPED to Flutter: ${flutterJson.keys.toList()}');

@@ -26,14 +26,16 @@ class ApiConfig {
   /// Base URLs for different environments
   /// 🔧 UPDATED: Using your computer's IP address for physical device testing
   static const Map<String, String> _baseUrls = {
-    'development': 'http://192.168.1.15:8000',  // Your computer's IP address
+    'development': 'http://10.19.218.200:8000',  // New network IP address
+    // 'development': 'http://192.168.1.15:8000',  // Previous network IP (commented for reference)
     'staging': 'https://staging-api.tiri.com',
     'production': 'https://api.tiri.com',
   };
 
   /// WebSocket URLs for different environments
   static const Map<String, String> _webSocketUrls = {
-    'development': 'ws://192.168.1.15:8000',   // WebSocket for development
+    'development': 'ws://10.19.218.200:8000',   // New network WebSocket
+    // 'development': 'ws://192.168.1.15:8000',   // Previous network WebSocket (commented for reference)
     'staging': 'wss://staging-api.tiri.com',    // Secure WebSocket for staging
     'production': 'wss://api.tiri.com',         // Secure WebSocket for production
   };

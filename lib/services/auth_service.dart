@@ -1175,7 +1175,7 @@ class AuthService {
   
   /// Check if user has valid tokens (but may not be fully approved yet)
   /// Use this for API calls that work for verified but not yet approved users
-  bool get hasValidTokens => _apiService.isAuthenticated && _currentUser != null;
+  bool get hasValidTokens => _apiService.isAuthenticated;
   
   /// Get current user
   UserModel? get currentUser => _currentUser;
