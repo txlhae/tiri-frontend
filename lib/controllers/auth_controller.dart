@@ -1006,11 +1006,15 @@ class AuthController extends GetxController {
         log('   - Email: ${updatedUser.email}');
         log('   - Verified: ${updatedUser.isVerified}');
         
-        // Update local state
+        // Update local state with reactive notifications
         currentUserStore.value = updatedUser;
+        currentUserStore.refresh(); // Force reactive update
         
         // Save to storage
         await _saveUserToStorage(updatedUser);
+        
+        // Trigger update notification for any observers
+        update();
         
       } else {
         log('⚠️ AuthController: Failed to refresh user profile - no data returned');
@@ -2164,4 +2168,11 @@ class AuthController extends GetxController {
       Get.offAllNamed(Routes.homePage);
     });
   }
+  
+  // =============================================================================
+  // GETTERS FOR EXTERNAL ACCESS
+  // =============================================================================
+  
+  /// Provide access to the API service for other controllers
+  ApiService get apiService => _apiService;
 }

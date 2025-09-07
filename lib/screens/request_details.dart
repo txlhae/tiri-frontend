@@ -371,9 +371,8 @@ class _RequestDetailsState extends State<RequestDetails> {
         if (request.status == RequestStatus.complete && request.feedback != null)
           _buildFeedbackSection(request),
                // Volunteer Status Section - Show status-based message for volunteers
-               // Only show if request is NOT completed AND no feedback exists
+               // Only show if request is NOT completed (regardless of feedback)
                if (request.status != RequestStatus.complete &&
-                   request.feedback == null &&
                    request.userId != currentUserId && 
                    (request.userRequestStatus.isNotEmpty || 
                     request.acceptedUser.any((user) => user.userId == currentUserId)))
@@ -469,12 +468,13 @@ class _RequestDetailsState extends State<RequestDetails> {
             ],
           )),
 
-        //volunteer button with dynamic states
-        Builder(
-          builder: (context) {
-            return _buildVolunteerButton(request);
-          },
-        ),
+        //volunteer button with dynamic states - hide for completed requests
+        if (request.status != RequestStatus.complete)
+          Builder(
+            builder: (context) {
+              return _buildVolunteerButton(request);
+            },
+          ),
         
         // Complete Request button for request owners at the bottom
         if ((request.status == RequestStatus.pending ||
@@ -519,6 +519,11 @@ class _RequestDetailsState extends State<RequestDetails> {
   /// Builds dynamic volunteer button based on user request status
   Widget _buildVolunteerButton(RequestModel request) {
     final currentUser = authController.currentUserStore.value;
+    
+    // Don't show any buttons for completed requests
+    if (request.status == RequestStatus.complete) {
+      return Container();
+    }
     
     // 1. Show delete button if user owns the request ✅
     if (request.userId == currentUser?.userId) {
@@ -1862,30 +1867,7 @@ class _RequestDetailsState extends State<RequestDetails> {
       final review = feedback['review'] ?? "";
       final fromUser = feedback['from_user'];
       
-      return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Colors.green.shade50,
-            Colors.blue.shade50,
-          ],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.green.shade200, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.green.shade100.withOpacity(0.3),
-            spreadRadius: 2,
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
+      return DetailsCard(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1927,74 +1909,81 @@ class _RequestDetailsState extends State<RequestDetails> {
                     ],
                   ),
                 ),
-                // Rating badge
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.amber.shade100,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.amber.shade300),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.star, color: Colors.amber.shade700, size: 16),
-                      const SizedBox(width: 4),
-                      Text(
-                        "${rating.toStringAsFixed(1)}/5",
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.amber.shade800,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
               ],
             ),
             const SizedBox(height: 20),
             
-            // Feedback text if available
+            // Feedback text section with proper spacing
             if (review.isNotEmpty) ...[
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade200),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.format_quote, color: Colors.blue.shade600, size: 20),
-                        const SizedBox(width: 8),
-                        Text(
-                          "Review",
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: Colors.blue.shade700,
-                            fontSize: 16,
-                          ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.format_quote, color: Colors.blue.shade600, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        "Feedback:",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue.shade700,
+                          fontSize: 17,
                         ),
-                      ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.blue.shade100),
                     ),
-                    const SizedBox(height: 12),
-                    Text(
+                    child: Text(
                       review,
                       style: const TextStyle(
                         fontSize: 15,
-                        height: 1.5,
+                        height: 1.7,
                         color: Colors.black87,
+                        letterSpacing: 0.3,
+                        wordSpacing: 1.0,
                       ),
+                      textAlign: TextAlign.left,
+                      softWrap: true,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
             ],
+            
+            // Rating display
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.amber.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.amber.shade200),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.star, color: Colors.amber.shade700, size: 24),
+                  const SizedBox(width: 8),
+                  Text(
+                    "Rating: ${rating.toStringAsFixed(1)}/5",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.amber.shade800,
+                      fontSize: 18,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
             
             // Details row
             Row(
@@ -2072,8 +2061,7 @@ class _RequestDetailsState extends State<RequestDetails> {
             ),
           ],
         ),
-      ),
-    );
+      );
     }
     
     // If current user is the requester, show feedback given section
@@ -2295,10 +2283,11 @@ class _RequestDetailsState extends State<RequestDetails> {
             ],
           ),
           
-          // Reminder notification button (only for accepted volunteers after request time)
+          // Reminder notification button (only for accepted volunteers after request time and NOT completed)
           if ((userStatus == 'approved' || userStatus == 'accepted' || 
                request.acceptedUser.any((user) => user.userId == currentUserId)) &&
               (request.requestedTime ?? request.timestamp).isBefore(DateTime.now()) &&
+              request.status != RequestStatus.complete &&
               (request.status == RequestStatus.accepted || 
                request.status == RequestStatus.inprogress || 
                request.status == RequestStatus.incomplete))

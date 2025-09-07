@@ -7,7 +7,8 @@ import 'package:tiri/controllers/image_controller.dart';
 import 'package:tiri/controllers/notification_controller.dart';
 import 'package:tiri/controllers/request_controller.dart';
 import 'package:tiri/controllers/request_details_controller.dart';
-import 'package:tiri/controllers/splash_controller.dart';
+// Splash controller is created directly by SplashScreen, not via AppBinding
+// import 'package:tiri/controllers/splash_controller.dart';
 import 'package:tiri/services/api_service.dart';
 import 'package:tiri/services/auth_service.dart';
 import 'package:tiri/services/request_service.dart';
@@ -29,12 +30,13 @@ class AppBinding extends Bindings {
     // PHASE 3: All controllers with Django integration
     Get.put<AuthController>(AuthController());
     Get.put<ChatController>(ChatController());
-    Get.put<SplashController>(SplashController());
+    // SplashController is created by SplashScreen, not here
     Get.put<EmailSentController>(EmailSentController());
     Get.put<HomeController>(HomeController());
     Get.put<ImageController>(ImageController());
-    Get.put<RequestController>(RequestController());
-    Get.put<NotificationController>(NotificationController());
+    // Use lazyPut for controllers that make API calls - they only initialize when first accessed
+    Get.lazyPut<RequestController>(() => RequestController());
+    Get.lazyPut<NotificationController>(() => NotificationController());
     Get.put<RequestDetailsController>(RequestDetailsController());
   }
 }

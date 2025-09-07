@@ -48,6 +48,8 @@ class DetailsRow extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                     color: Colors.black,
                   ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
         ),
           if (trailing != null) ...[

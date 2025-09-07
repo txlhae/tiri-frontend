@@ -7,6 +7,7 @@ import 'package:tiri/infrastructure/routes.dart';
 import 'package:tiri/services/user_state_service.dart';
 import 'package:tiri/services/notification_permission_service.dart';
 import 'package:tiri/services/auth_service.dart';
+import 'package:tiri/services/api_service.dart';
 import 'package:tiri/services/account_status_service.dart';
 import 'package:tiri/models/auth_models.dart';
 
@@ -48,7 +49,8 @@ class SplashController extends GetxController {
     
     // Start smart initialization after splash delay
     Timer(const Duration(seconds: 2), () {
-      _performEnhancedInitialization();
+      // Use legacy initialization since enhanced flow depends on endpoint that doesn't exist yet
+      _performSmartInitialization();
     });
   }
 
@@ -56,8 +58,12 @@ class SplashController extends GetxController {
   // SMART INITIALIZATION LOGIC
   // =============================================================================
 
-  /// Enhanced app initialization with new account status system
+  /// TEMPORARILY DISABLED: Enhanced app initialization with new account status system
   Future<void> _performEnhancedInitialization() async {
+    log('🚨 ALERT: Enhanced initialization was called - this should not happen!', name: 'SPLASH');
+    // Immediately fall back to legacy flow instead of trying the enhanced flow
+    await _performSmartInitialization();
+    return;
     try {
       log('🚀 SplashController: Starting enhanced initialization', name: 'SPLASH');
       
@@ -66,13 +72,45 @@ class SplashController extends GetxController {
       await _authService.initialize();
       await _userStateService.initialize();
       
-      // Step 2: Request notification permissions on first launch
+      // Step 2: Load tokens from storage FIRST (this was missing!)
+      initializationStatus.value = 'Loading stored tokens...';
+      final apiService = Get.find<ApiService>();
+      await apiService.loadTokensFromStorage();
+      log('🔐 Tokens loaded from storage - isAuthenticated: ${apiService.isAuthenticated}', name: 'SPLASH');
+      
+      // Step 2a: Try to refresh tokens if they exist but might be expired
+      if (apiService.isAuthenticated) {
+        initializationStatus.value = 'Refreshing tokens...';
+        log('🔄 Attempting token refresh...', name: 'SPLASH');
+        final refreshSuccess = await apiService.refreshTokenIfNeeded();
+        log('🔄 Token refresh result: $refreshSuccess', name: 'SPLASH');
+        
+        // 🚨 FIX: If token refresh succeeds, update auth state and user data
+        if (refreshSuccess) {
+          log('✅ Token refreshed successfully - updating authentication state', name: 'SPLASH');
+          
+          // Load user data from storage and mark as logged in
+          await _authController.reloadTokens();
+          
+          // If user is now authenticated, route to home page immediately
+          if (_authController.isLoggedIn.value && _authController.currentUserStore.value != null) {
+            log('🏠 User authenticated after token refresh - routing to home', name: 'SPLASH');
+            initializationStatus.value = 'Welcome back!';
+            await Future.delayed(const Duration(milliseconds: 500));
+            Get.offAllNamed(Routes.homePage);
+            return;
+          }
+        }
+      }
+      
+      // Step 3: Request notification permissions on first launch
       initializationStatus.value = 'Checking permissions...';
       await NotificationPermissionService.requestNotificationPermissionOnFirstLaunch();
       
-      // Step 3: Check for stored tokens
+      // Step 4: Check for stored tokens (now they should be loaded!)
       initializationStatus.value = 'Checking authentication...';
       final hasTokens = _authService.hasValidTokens;
+      log('🔍 hasValidTokens result: $hasTokens', name: 'SPLASH');
       
       if (!hasTokens) {
         log('🔓 SplashController: No tokens found - routing to onboarding', name: 'SPLASH');
@@ -80,28 +118,23 @@ class SplashController extends GetxController {
         return;
       }
       
-      // Step 4: Check account status with registration status endpoint
-      initializationStatus.value = 'Checking account status...';
-      log('📡 SplashController: Fetching registration status', name: 'SPLASH');
+      // TEMPORARILY DISABLED: Check account status with registration status endpoint (endpoint doesn't exist)
+      log('⚠️ SplashController: Registration status endpoint disabled - falling back to legacy flow', name: 'SPLASH');
+      // Don't try to call the non-existent endpoint, go straight to legacy flow
+      await _performSmartInitialization();
+      return;
       
-      final registrationStatus = await _authService.getRegistrationStatus();
-      
-      if (registrationStatus == null) {
-        log('❌ SplashController: Failed to get registration status', name: 'SPLASH');
-        await _handleTokenExpiry();
-        return;
-      }
-      
-      // Step 5: Cache the status locally
-      await _accountStatusService.storeAccountStatus(registrationStatus);
-      
-      // Step 6: Show deletion warning if needed
-      if (_accountStatusService.shouldShowDeletionWarning(registrationStatus.warning)) {
-        _showDeletionWarning(registrationStatus.warning!);
-      }
-      
-      // Step 7: Route based on next step
-      await _routeBasedOnNextStep(registrationStatus);
+      // UNREACHABLE CODE - COMMENTED OUT
+      // // Step 5: Cache the status locally
+      // await _accountStatusService.storeAccountStatus(registrationStatus);
+      // 
+      // // Step 6: Show deletion warning if needed
+      // if (_accountStatusService.shouldShowDeletionWarning(registrationStatus.warning)) {
+      //   _showDeletionWarning(registrationStatus.warning!);
+      // }
+      // 
+      // // Step 7: Route based on next step
+      // await _routeBasedOnNextStep(registrationStatus);
       
     } catch (e, stackTrace) {
       log('❌ SplashController: Enhanced initialization failed: $e', stackTrace: stackTrace, name: 'SPLASH');
@@ -181,8 +214,12 @@ class SplashController extends GetxController {
     );
   }
 
-  /// Handle enhanced initialization errors
+  /// TEMPORARILY DISABLED: Handle enhanced initialization errors
   Future<void> _handleEnhancedInitializationError() async {
+    log('🚨 ALERT: Enhanced initialization error handler was called - this should not happen!', name: 'SPLASH');
+    // Fall back to regular error handling instead
+    await _handleInitializationError();
+    return;
     log('🚨 SplashController: Handling enhanced initialization error', name: 'SPLASH');
     
     initializationStatus.value = 'Loading...';
@@ -229,6 +266,15 @@ class SplashController extends GetxController {
       log('🔄 DEBUG: About to reload tokens...');
       await _authController.reloadTokens(); // Load JWT tokens
       log('🔄 DEBUG: Tokens reloaded. IsLoggedIn: ${_authController.isLoggedIn.value}');
+      
+      // 🚨 FIX: If user is authenticated after token reload, route directly to home
+      if (_authController.isLoggedIn.value && _authController.currentUserStore.value != null) {
+        log('🏠 User authenticated after reload - routing to home', name: 'SPLASH');
+        initializationStatus.value = 'Welcome back!';
+        await Future.delayed(const Duration(milliseconds: 500));
+        Get.offAllNamed(Routes.homePage);
+        return;
+      }
       
       // Step 4: Determine routing strategy based on current state
       final currentState = _userStateService.currentApprovalState;

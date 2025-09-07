@@ -167,25 +167,43 @@ class _MyHelpsState extends State<MyHelps> with SingleTickerProviderStateMixin {
                           Row(
                             children: [
                               const Text("Required date: ", style: TextStyle(fontSize: 12, color: Colors.black)),
-                              Text(DateFormat('dd MMM yyyy', 'en_US').format(request.requestedTime ?? request.timestamp),
-                                  style: const TextStyle(color: Color.fromRGBO(22, 178, 217, 1), fontWeight: FontWeight.bold)),
+                              Flexible(
+                                child: Text(DateFormat('dd MMM yyyy', 'en_US').format(request.requestedTime ?? request.timestamp),
+                                    style: const TextStyle(color: Color.fromRGBO(22, 178, 217, 1), fontWeight: FontWeight.bold),
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1),
+                              ),
                             ],
                           ),
                           const SizedBox(height: 5),
                           Row(
                             children: [
                               const Text("Time: ", style: TextStyle(fontSize: 12, color: Colors.black)),
-                              Text(
-                                requestController.formatDateTime(request.requestedTime ?? request.timestamp).split(", ").last,
-                                style: const TextStyle(color: Color.fromRGBO(22, 178, 217, 1), fontWeight: FontWeight.w600, fontSize: 13),
+                              Expanded(
+                                child: Text(
+                                  (requestController.formatDateTime(request.requestedTime ?? request.timestamp).split(", ").last).length > 15 
+                                    ? '${(requestController.formatDateTime(request.requestedTime ?? request.timestamp).split(", ").last).substring(0, 15)}...'
+                                    : requestController.formatDateTime(request.requestedTime ?? request.timestamp).split(", ").last,
+                                  style: const TextStyle(color: Color.fromRGBO(22, 178, 217, 1), fontWeight: FontWeight.w600, fontSize: 13),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
                               ),
                             ],
                           ),
                           Row(
                             children: [
                               const Text("Location: ", style: TextStyle(fontSize: 12, color: Colors.black)),
-                              Text(request.location ?? 'Not specified',
-                                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
+                              Expanded(
+                                child: Text(
+                                  (request.location ?? 'Not specified').length > 15
+                                    ? '${(request.location ?? 'Not specified').substring(0, 15)}...'
+                                    : request.location ?? 'Not specified',
+                                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
+                              ),
                             ],
                           ),
                         ],

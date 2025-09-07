@@ -55,12 +55,13 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
         return;
       }
       
-      // Fetch fresh status from server
-      final status = await authService.getRegistrationStatus();
-      if (status != null) {
-        currentStatus.value = status;
-        await accountStatusService.storeAccountStatus(status);
-      }
+      // TEMPORARILY DISABLED: Fetch fresh status from server (endpoint doesn't exist)
+      // final status = await authService.getRegistrationStatus();
+      // if (status != null) {
+      //   currentStatus.value = status;
+      //   await accountStatusService.storeAccountStatus(status);
+      // }
+      log('⚠️ EmailVerificationScreen: Registration status check disabled (endpoint not available)', name: 'EMAIL_VERIFICATION');
     } catch (e) {
       log('❌ EmailVerificationScreen: Error loading status: $e', name: 'EMAIL_VERIFICATION');
     }
@@ -73,70 +74,81 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
       
       isCheckingVerification.value = true;
       
-      // Get fresh registration status from server
-      final status = await authService.getRegistrationStatus();
+      // TEMPORARILY DISABLED: Get fresh registration status from server (endpoint doesn't exist)
+      // final status = await authService.getRegistrationStatus();
+      // 
+      // if (status == null) {
+      //   throw Exception('Unable to check verification status. Please try again.');
+      // }
+      // 
+      // // Update current status
+      // currentStatus.value = status;
+      // await accountStatusService.storeAccountStatus(status);
       
-      if (status == null) {
-        throw Exception('Unable to check verification status. Please try again.');
+      log('⚠️ EmailVerificationScreen: Registration status check disabled - using legacy verification check', name: 'EMAIL_VERIFICATION');
+      
+      // Use the legacy verification check instead
+      final success = await authController.checkVerificationStatus();
+      if (!success) {
+        throw Exception('Email verification failed. Please try again.');
       }
       
-      // Update current status
-      currentStatus.value = status;
-      await accountStatusService.storeAccountStatus(status);
+      return; // Exit early since we're using legacy verification
       
-      // Handle different verification states
-      switch (status.nextStep) {
-        case 'waiting_for_approval':
-          log('✅ EmailVerificationScreen: Email verified - now waiting for approval');
-          
-          Get.snackbar(
-            'Email Verified!',
-            'Your email has been verified! Now waiting for referrer approval.',
-            snackPosition: SnackPosition.TOP,
-            backgroundColor: Colors.green,
-            colorText: Colors.white,
-            duration: const Duration(seconds: 3),
-            icon: const Icon(Icons.check_circle, color: Colors.white),
-          );
-          
-          // Route to approval waiting screen
-          await Future.delayed(const Duration(seconds: 1));
-          Get.offAllNamed('/pending-approval');
-          break;
-          
-        case 'ready':
-          log('✅ EmailVerificationScreen: Email verified and fully approved - going to home');
-          
-          Get.snackbar(
-            'Welcome to TIRI!',
-            'Your account is fully set up and ready to use!',
-            snackPosition: SnackPosition.TOP,
-            backgroundColor: Colors.green,
-            colorText: Colors.white,
-            duration: const Duration(seconds: 3),
-            icon: const Icon(Icons.celebration, color: Colors.white),
-          );
-          
-          // Route to home
-          await Future.delayed(const Duration(seconds: 1));
-          Get.offAllNamed('/home');
-          break;
-          
-        case 'verify_email':
-        default:
-          log('❌ EmailVerificationScreen: Email still not verified');
-          
-          Get.snackbar(
-            'Email Not Verified Yet',
-            'Please check your email and click the verification link first. If you can\'t find it, check your spam folder.',
-            snackPosition: SnackPosition.TOP,
-            backgroundColor: Colors.orange,
-            colorText: Colors.white,
-            duration: const Duration(seconds: 5),
-            icon: const Icon(Icons.email_outlined, color: Colors.white),
-          );
-          break;
-      }
+      // UNREACHABLE CODE - COMMENTED OUT
+      // // Handle different verification states
+      // switch (status.nextStep) {
+      //   case 'waiting_for_approval':
+      //     log('✅ EmailVerificationScreen: Email verified - now waiting for approval');
+      //     
+      //     Get.snackbar(
+      //       'Email Verified!',
+      //       'Your email has been verified! Now waiting for referrer approval.',
+      //       snackPosition: SnackPosition.TOP,
+      //       backgroundColor: Colors.green,
+      //       colorText: Colors.white,
+      //       duration: const Duration(seconds: 3),
+      //       icon: const Icon(Icons.check_circle, color: Colors.white),
+      //     );
+      //     
+      //     // Route to approval waiting screen
+      //     await Future.delayed(const Duration(seconds: 1));
+      //     Get.offAllNamed('/pending-approval');
+      //     break;
+      //     
+      //   case 'ready':
+      //     log('✅ EmailVerificationScreen: Email verified and fully approved - going to home');
+      //     
+      //     Get.snackbar(
+      //       'Welcome to TIRI!',
+      //       'Your account is fully set up and ready to use!',
+      //       snackPosition: SnackPosition.TOP,
+      //       backgroundColor: Colors.green,
+      //       colorText: Colors.white,
+      //       duration: const Duration(seconds: 3),
+      //       icon: const Icon(Icons.celebration, color: Colors.white),
+      //     );
+      //     
+      //     // Route to home
+      //     await Future.delayed(const Duration(seconds: 1));
+      //     Get.offAllNamed('/home');
+      //     break;
+      //     
+      //   case 'verify_email':
+      //   default:
+      //     log('❌ EmailVerificationScreen: Email still not verified');
+      //     
+      //     Get.snackbar(
+      //       'Email Not Verified Yet',
+      //       'Please check your email and click the verification link first. If you can\'t find it, check your spam folder.',
+      //       snackPosition: SnackPosition.TOP,
+      //       backgroundColor: Colors.orange,
+      //       colorText: Colors.white,
+      //       duration: const Duration(seconds: 5),
+      //       icon: const Icon(Icons.email_outlined, color: Colors.white),
+      //     );
+      //     break;
+      // }
       
     } catch (e) {
       log('❌ EmailVerificationScreen: Error during verification check: $e');
