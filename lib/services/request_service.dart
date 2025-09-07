@@ -672,21 +672,60 @@ class RequestService extends GetxController {
   
   /// Cancel volunteer request for a request
   /// Cancels an existing volunteer request via Django backend
-  Future<bool> cancelVolunteerRequest(String requestId) async {
+  Future<bool> cancelVolunteerRequest(String requestId, {String? reason}) async {
     try {
       log('❌ RequestService: Canceling volunteer request for request $requestId via Django API');
+      log('🔍 RequestService: Full URL will be: /api/requests/$requestId/cancel_acceptance/');
+      if (reason != null) {
+        log('📝 Cancellation reason: "$reason"');
+      }
       
-      final response = await _apiService.post('/api/requests/$requestId/cancel-acceptance/');
+      // Prepare request data with optional reason
+      final Map<String, dynamic> requestData = {};
+      if (reason != null && reason.isNotEmpty) {
+        requestData['reason'] = reason;
+      }
+      
+      log('📤 RequestService: Sending data: $requestData');
+      log('🌐 RequestService: About to make POST request...');
+      
+      final response = await _apiService.post(
+        '/api/requests/$requestId/cancel_acceptance/',
+        data: requestData.isNotEmpty ? requestData : null,
+      );
+      
+      log('📥 RequestService: Received response - Status: ${response.statusCode}');
+      log('📥 RequestService: Response data: ${response.data}');
+      log('📥 RequestService: Response headers: ${response.headers}');
       
       if (response.statusCode == 200) {
         log('✅ RequestService: Successfully canceled volunteer request for request $requestId');
         return true;
       } else {
         log('❌ RequestService: Failed to cancel volunteer request for request $requestId - Status: ${response.statusCode}');
+        log('❌ RequestService: Response body: ${response.data}');
         return false;
       }
     } catch (e) {
       log('💥 RequestService: Error canceling volunteer request for request $requestId - $e');
+      log('💥 RequestService: Error type: ${e.runtimeType}');
+      
+      // Enhanced error logging for Dio errors
+      if (e.toString().contains('DioError') || e.runtimeType.toString().contains('Dio')) {
+        log('🚨 RequestService: Dio error details:');
+        try {
+          final dioError = e as dynamic;
+          log('🚨 RequestService: - Status Code: ${dioError.response?.statusCode}');
+          log('🚨 RequestService: - Response Data: ${dioError.response?.data}');
+          log('🚨 RequestService: - Request URL: ${dioError.requestOptions?.path}');
+          log('🚨 RequestService: - Request Method: ${dioError.requestOptions?.method}');
+          log('🚨 RequestService: - Request Data: ${dioError.requestOptions?.data}');
+          log('🚨 RequestService: - Error Message: ${dioError.message}');
+        } catch (castError) {
+          log('🚨 RequestService: Could not cast to Dio error, raw error: $e');
+        }
+      }
+      
       return false;
     }
   }

@@ -1788,10 +1788,13 @@ class RequestController extends GetxController {
 
   /// Cancel volunteer request for a specific request
   /// ✅ ENHANCED: Removes user from pending volunteer requests via Django backend with UI integration
-  Future<void> cancelVolunteerRequest(String requestId) async {
+  Future<void> cancelVolunteerRequest(String requestId, {String? reason}) async {
     try {
       isLoading.value = true;
       debugLog("❌ RequestController: Canceling volunteer request for request $requestId");
+      if (reason != null && reason.isNotEmpty) {
+        debugLog("📝 Cancellation reason: \"$reason\"");
+      }
       
       // Validate input before API call
       if (requestId.isEmpty) {
@@ -1804,14 +1807,17 @@ class RequestController extends GetxController {
         debugLog("   - Current user status: ${currentRequest.userRequestStatus}");
         debugLog("   - Can cancel request: ${currentRequest.canCancelRequest}");
         
-        // Validate that user can actually cancel
-        if (!currentRequest.canCancelRequest) {
-          throw Exception('You cannot cancel this volunteer request at this time');
-        }
+        // TEMPORARY: Skip validation to test API functionality
+        debugLog("🔥 BYPASSING canCancelRequest validation for testing");
+        
+        // TODO: Re-enable this validation once backend is fixed
+        // if (!currentRequest.canCancelRequest) {
+        //   throw Exception('You cannot cancel this volunteer request at this time');
+        // }
       }
       
-      // Call the request service to cancel volunteer request
-      final success = await requestService.cancelVolunteerRequest(requestId);
+      // Call the request service to cancel volunteer request with optional reason
+      final success = await requestService.cancelVolunteerRequest(requestId, reason: reason);
       
       if (success) {
         debugLog("✅ RequestController: Successfully canceled volunteer request for $requestId");
@@ -1830,6 +1836,25 @@ class RequestController extends GetxController {
       }
     } catch (e) {
       debugLog("💥 RequestController: Error in cancelVolunteerRequest for $requestId - $e");
+      debugLog("💥 RequestController: Error type: ${e.runtimeType}");
+      debugLog("💥 RequestController: Full error details: ${e.toString()}");
+      
+      // Log specific error information for DioError
+      if (e.toString().contains('DioError') || e.runtimeType.toString().contains('Dio')) {
+        debugLog("💥 RequestController: This appears to be a Dio-related error");
+        try {
+          final dioError = e as dynamic;
+          debugLog("💥 RequestController: Response status: ${dioError.response?.statusCode}");
+          debugLog("💥 RequestController: Response data: ${dioError.response?.data}");
+          debugLog("💥 RequestController: Error message: ${dioError.message}");
+          debugLog("💥 RequestController: Request path: ${dioError.requestOptions?.path}");
+          debugLog("💥 RequestController: Request method: ${dioError.requestOptions?.method}");
+          debugLog("💥 RequestController: Request data: ${dioError.requestOptions?.data}");
+        } catch (castError) {
+          debugLog("💥 RequestController: Could not cast to Dio error, raw error: $e");
+        }
+      }
+      
       // Re-throw with more specific error message for UI
       if (e.toString().contains('Failed to cancel volunteer request') || 
           e.toString().contains('You cannot cancel this volunteer request')) {

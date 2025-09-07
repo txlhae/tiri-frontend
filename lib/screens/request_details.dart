@@ -126,6 +126,8 @@ class _RequestDetailsState extends State<RequestDetails> {
 
   @override
   Widget build(BuildContext context) {
+    print('🔍 RequestDetails: build() called');
+    log('🔍 RequestDetails: build() called');
     // final request = detailsController.requestModel.value ?? widget.request;
     return Scaffold(
       backgroundColor: Colors.white,
@@ -218,6 +220,11 @@ class _RequestDetailsState extends State<RequestDetails> {
   Widget _buildLoadedContent() {
     final request = requestController.currentRequestDetails.value;
     final currentUser = authController.currentUserStore.value;
+    
+    print('🔍 _buildLoadedContent: called');
+    log('🔍 _buildLoadedContent: called');
+    print('🔍 _buildLoadedContent: request ID = ${request?.requestId}');
+    log('🔍 _buildLoadedContent: request ID = ${request?.requestId}');
     
     // Enhanced error state handling with multiple scenarios
     if (request == null) {
@@ -468,6 +475,8 @@ class _RequestDetailsState extends State<RequestDetails> {
             ],
           )),
 
+
+
         //volunteer button with dynamic states - hide for completed requests
         if (request.status != RequestStatus.complete)
           Builder(
@@ -597,25 +606,42 @@ class _RequestDetailsState extends State<RequestDetails> {
           width: double.infinity,
           child: OutlinedButton.icon(
             onPressed: requestController.isLoading.value ? null : () async {
-              try {
-                await requestController.cancelVolunteerRequest(request.requestId);
-                
-                Get.snackbar(
-                  'Success',
-                  'Your volunteer request has been cancelled',
-                  backgroundColor: Colors.green.shade100,
-                  colorText: Colors.green.shade700,
-                  snackPosition: SnackPosition.BOTTOM,
-                  margin: const EdgeInsets.all(16),
-                  duration: const Duration(seconds: 3),
-                );
-              } catch (e) {
-                Get.snackbar(
-                  'Error',
-                  'Failed to cancel request. Please try again.',
-                  backgroundColor: Colors.red.shade100,
-                  colorText: Colors.red.shade700,
-                );
+              log('🔍 UI: Cancel button pressed for request ${request.requestId}');
+              
+              // Show cancel reason dialog
+              log('🔍 UI: Showing cancel reason dialog...');
+              final String? reason = await _showCancelReasonDialog();
+              
+              log('🔍 UI: Dialog result - reason: $reason');
+              
+              // If user didn't cancel the dialog
+              if (reason != null) {
+                log('🔍 UI: User provided reason, calling controller...');
+                try {
+                  log('🔍 UI: About to call cancelVolunteerRequest with requestId: ${request.requestId}, reason: $reason');
+                  await requestController.cancelVolunteerRequest(request.requestId, reason: reason);
+                  
+                  log('✅ UI: Successfully canceled volunteer request');
+                  Get.snackbar(
+                    'Success',
+                    'Your volunteer request has been cancelled',
+                    backgroundColor: Colors.green.shade100,
+                    colorText: Colors.green.shade700,
+                    snackPosition: SnackPosition.BOTTOM,
+                    margin: const EdgeInsets.all(16),
+                    duration: const Duration(seconds: 3),
+                  );
+                } catch (e) {
+                  log('❌ UI: Error canceling volunteer request - $e');
+                  Get.snackbar(
+                    'Error',
+                    'Failed to cancel request. Please try again.',
+                    backgroundColor: Colors.red.shade100,
+                    colorText: Colors.red.shade700,
+                  );
+                }
+              } else {
+                log('🔍 UI: User canceled the dialog');
               }
             },
             icon: requestController.isLoading.value
@@ -720,27 +746,45 @@ class _RequestDetailsState extends State<RequestDetails> {
           width: double.infinity,
           child: OutlinedButton.icon(
             onPressed: requestController.isLoading.value ? null : () async {
-              try {
-                await requestController.cancelVolunteerRequest(request.requestId);
-                Get.snackbar(
-                  'Success',
-                  'Volunteer request canceled successfully',
-                  snackPosition: SnackPosition.BOTTOM,
-                  backgroundColor: Colors.orange,
-                  colorText: Colors.white,
-                  margin: const EdgeInsets.all(16),
-                );
-                // Reload request details to get updated status
-                await requestController.loadRequestDetails(request.requestId);
-              } catch (e) {
-                Get.snackbar(
-                  'Error',
-                  'Failed to cancel volunteer request: $e',
-                  snackPosition: SnackPosition.BOTTOM,
-                  backgroundColor: Colors.red,
-                  colorText: Colors.white,
-                  margin: const EdgeInsets.all(16),
-                );
+              log('🔍 UI: Cancel button pressed for request ${request.requestId} (second handler)');
+              
+              // Show cancel reason dialog
+              log('🔍 UI: Showing cancel reason dialog...');
+              final String? reason = await _showCancelReasonDialog();
+              
+              log('🔍 UI: Dialog result - reason: $reason');
+              
+              // If user didn't cancel the dialog
+              if (reason != null) {
+                log('🔍 UI: User provided reason, calling controller...');
+                try {
+                  log('🔍 UI: About to call cancelVolunteerRequest with requestId: ${request.requestId}, reason: $reason');
+                  await requestController.cancelVolunteerRequest(request.requestId, reason: reason);
+                  
+                  log('✅ UI: Successfully canceled volunteer request');
+                  Get.snackbar(
+                    'Success',
+                    'Volunteer request canceled successfully',
+                    snackPosition: SnackPosition.BOTTOM,
+                    backgroundColor: Colors.orange,
+                    colorText: Colors.white,
+                    margin: const EdgeInsets.all(16),
+                  );
+                  // Reload request details to get updated status
+                  await requestController.loadRequestDetails(request.requestId);
+                } catch (e) {
+                  log('❌ UI: Error canceling volunteer request - $e');
+                  Get.snackbar(
+                    'Error',
+                    'Failed to cancel volunteer request: $e',
+                    snackPosition: SnackPosition.BOTTOM,
+                    backgroundColor: Colors.red,
+                    colorText: Colors.white,
+                    margin: const EdgeInsets.all(16),
+                  );
+                }
+              } else {
+                log('🔍 UI: User canceled the dialog');
               }
             },
             icon: requestController.isLoading.value 
@@ -919,53 +963,122 @@ class _RequestDetailsState extends State<RequestDetails> {
 
   /// Builds the approved request state UI
   Widget _buildApprovedRequestState(RequestModel request) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.green.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.green.withOpacity(0.3)),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.check_circle, color: Colors.green.shade700, size: 28),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Request Approved! 🎉",
-                  style: TextStyle(
-                    color: Colors.green.shade700,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  "You are confirmed as a volunteer for this request",
-                  style: TextStyle(
-                    color: Colors.green.shade600,
-                    fontSize: 14,
-                  ),
-                ),
-                if (request.acceptedAt != null) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    "Approved: ${_formatDateTime(request.acceptedAt!)}",
-                    style: TextStyle(
-                      color: Colors.grey.shade600,
-                      fontSize: 12,
+    return Column(
+      children: [
+        // Success message
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.green.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.green.withOpacity(0.3)),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.green.shade700, size: 28),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Request Approved! 🎉",
+                      style: TextStyle(
+                        color: Colors.green.shade700,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
                     ),
-                  ),
-                ],
-              ],
+                    const SizedBox(height: 4),
+                    Text(
+                      "You are confirmed as a volunteer for this request",
+                      style: TextStyle(
+                        color: Colors.green.shade600,
+                        fontSize: 14,
+                      ),
+                    ),
+                    if (request.acceptedAt != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        "Approved: ${_formatDateTime(request.acceptedAt!)}",
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        const SizedBox(height: 16),
+        
+        // Cancel Request button for approved volunteers
+        Obx(() => SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: requestController.isLoading.value ? null : () async {
+              log('🔍 UI: Cancel button pressed for request ${request.requestId} (approved state)');
+              
+              // Show cancel reason dialog
+              log('🔍 UI: Showing cancel reason dialog...');
+              final String? reason = await _showCancelReasonDialog();
+              
+              log('🔍 UI: Dialog result - reason: $reason');
+              
+              // If user didn't cancel the dialog
+              if (reason != null) {
+                log('🔍 UI: User provided reason, calling controller...');
+                try {
+                  log('🔍 UI: About to call cancelVolunteerRequest with requestId: ${request.requestId}, reason: $reason');
+                  await requestController.cancelVolunteerRequest(request.requestId, reason: reason);
+                  
+                  log('✅ UI: Successfully canceled volunteer request');
+                  Get.snackbar(
+                    'Success',
+                    'Your volunteer request has been cancelled',
+                    backgroundColor: Colors.green.shade100,
+                    colorText: Colors.green.shade700,
+                    snackPosition: SnackPosition.BOTTOM,
+                    margin: const EdgeInsets.all(16),
+                    duration: const Duration(seconds: 3),
+                  );
+                } catch (e) {
+                  log('❌ UI: Error canceling volunteer request - $e');
+                  Get.snackbar(
+                    'Error',
+                    'Failed to cancel request. Please try again.',
+                    backgroundColor: Colors.red.shade100,
+                    colorText: Colors.red.shade700,
+                  );
+                }
+              } else {
+                log('🔍 UI: User canceled the dialog');
+              }
+            },
+            icon: requestController.isLoading.value
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.cancel_outlined),
+            label: Text(requestController.isLoading.value ? "Canceling..." : "Cancel Request"),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.red.shade700,
+              side: BorderSide(color: Colors.red.shade300),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
           ),
-        ],
-      ),
+        )),
+      ],
     );
   }
 
@@ -1093,6 +1206,77 @@ class _RequestDetailsState extends State<RequestDetails> {
   /// Helper method to format DateTime for display
   String _formatDateTime(DateTime dateTime) {
     return "${dateTime.day}/${dateTime.month}/${dateTime.year} at ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}";
+  }
+
+  /// Show cancel request reason dialog
+  Future<String?> _showCancelReasonDialog() async {
+    final TextEditingController reasonController = TextEditingController();
+    
+    return await Get.dialog<String>(
+      AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(Icons.cancel_outlined, color: Colors.red.shade600, size: 24),
+            const SizedBox(width: 8),
+            const Text("Cancel Request"),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "Are you sure you want to cancel your volunteer request?",
+              style: TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              "Please provide a reason (optional):",
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey,
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: reasonController,
+              maxLines: 3,
+              decoration: InputDecoration(
+                hintText: "e.g., No longer available, Plans changed, etc.",
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Colors.red.shade400),
+                ),
+                contentPadding: const EdgeInsets.all(12),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: null),
+            child: const Text("Keep Request"),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final reason = reasonController.text.trim();
+              Get.back(result: reason.isEmpty ? "No longer available" : reason);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.shade600,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text("Cancel Request"),
+          ),
+        ],
+      ),
+    );
   }
 
   /// Enhanced error state widget for better user experience
