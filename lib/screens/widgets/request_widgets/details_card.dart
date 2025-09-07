@@ -8,6 +8,7 @@ class DetailsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 6.0),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: const Color.fromRGBO(251, 252, 254, 1),
