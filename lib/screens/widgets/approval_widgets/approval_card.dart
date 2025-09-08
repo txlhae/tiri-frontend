@@ -9,13 +9,13 @@ class ApprovalCard extends StatelessWidget {
   final VoidCallback? onTap;
 
   const ApprovalCard({
-    Key? key,
+    super.key,
     required this.approval,
     required this.onApprove,
     required this.onReject,
     this.isExpanded = false,
     this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

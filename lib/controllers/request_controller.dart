@@ -354,7 +354,7 @@ class RequestController extends GetxController {
       debugLog("   - Requests before filtering: ${communityRequestsFromApi.length}");
       debugLog("   - Requests after filtering: ${rawFilteredRequests.length}");
       
-      if (communityRequestsFromApi.length > 0 && rawFilteredRequests.length == 0) {
+      if (communityRequestsFromApi.isNotEmpty && rawFilteredRequests.isEmpty) {
         debugLog("   - 🚨 ALL REQUESTS FILTERED OUT! Using raw data for debugging...");
         // Temporarily show all requests to debug filtering issue
         requestList.assignAll(communityRequestsFromApi);
@@ -1698,9 +1698,7 @@ class RequestController extends GetxController {
   }
 
   String getChatRoomId(String requestId, String userId1, [String? userId2]) {
-    if (userId2 == null) {
-      userId2 = authController.currentUserStore.value?.userId ?? 'unknown';
-    }
+    userId2 ??= authController.currentUserStore.value?.userId ?? 'unknown';
     
     final sortedIds = [userId1, userId2]..sort();
     return '${requestId}_${sortedIds[0]}_${sortedIds[1]}';

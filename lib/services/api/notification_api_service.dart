@@ -1,5 +1,6 @@
 /// Notification API Service for Django Backend Integration
 /// Provides methods for all notification-related API operations
+library;
 
 import 'package:dio/dio.dart';
 import '../api/api_client.dart';

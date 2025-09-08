@@ -104,7 +104,7 @@ class AuthService {
       
       if (ApiConfig.enableLogging) {
         log('AuthService initialized', name: 'AUTH');
-        log('User authenticated: ${isAuthenticated}', name: 'AUTH');
+        log('User authenticated: $isAuthenticated', name: 'AUTH');
       }
     } catch (e) {
       log('Error initializing AuthService: $e', name: 'AUTH');
@@ -721,7 +721,7 @@ class AuthService {
       
     } catch (e) {
       log('Get pending approvals error: $e', name: 'AUTH');
-      throw e;
+      rethrow;
     }
   }
 
@@ -894,7 +894,7 @@ class AuthService {
       
     } catch (e) {
       log('Get approval history error: $e', name: 'AUTH');
-      throw e;
+      rethrow;
     }
   }
 

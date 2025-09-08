@@ -1,5 +1,6 @@
 /// API Exception Classes for Django Backend Integration
 /// Provides comprehensive error handling for HTTP operations
+library;
 
 /// Abstract base class for all API-related exceptions
 /// Provides common properties and behavior for error handling
@@ -30,7 +31,7 @@ abstract class ApiException implements Exception {
   @override
   String toString() {
     final buffer = StringBuffer();
-    buffer.write('${runtimeType}: $message');
+    buffer.write('$runtimeType: $message');
     if (statusCode != null) {
       buffer.write(' (Status: $statusCode)');
     }
@@ -59,15 +60,11 @@ class NetworkException extends ApiException {
   final NetworkErrorType errorType;
   
   NetworkException(
-    String message, {
+    super.message, {
     this.errorType = NetworkErrorType.unknown,
-    dynamic originalError,
-    Map<String, dynamic>? context,
-  }) : super(
-          message,
-          originalError: originalError,
-          context: context,
-        );
+    super.originalError,
+    super.context,
+  });
 
   /// Factory constructor for connection timeout
   factory NetworkException.timeout({String? customMessage}) {
@@ -112,16 +109,13 @@ class AuthenticationException extends ApiException {
   final bool canRetryWithRefresh;
 
   AuthenticationException(
-    String message, {
+    super.message, {
     this.isTokenExpired = false,
     this.canRetryWithRefresh = true,
-    dynamic originalError,
-    Map<String, dynamic>? context,
+    super.originalError,
+    super.context,
   }) : super(
-          message,
           statusCode: 401,
-          originalError: originalError,
-          context: context,
         );
 
   /// Factory constructor for expired token
@@ -153,16 +147,13 @@ class AuthorizationException extends ApiException {
   final String? currentPermission;
 
   AuthorizationException(
-    String message, {
+    super.message, {
     this.requiredPermission,
     this.currentPermission,
-    dynamic originalError,
-    Map<String, dynamic>? context,
+    super.originalError,
+    super.context,
   }) : super(
-          message,
           statusCode: 403,
-          originalError: originalError,
-          context: context,
         );
 
   /// Factory constructor for insufficient permissions
@@ -193,18 +184,15 @@ class RateLimitException extends ApiException {
   final DateTime? resetTime;
 
   RateLimitException(
-    String message,
+    super.message,
     this.retryAfterSeconds, {
     this.currentLimit,
     this.remainingRequests,
     this.resetTime,
-    dynamic originalError,
-    Map<String, dynamic>? context,
+    super.originalError,
+    super.context,
   }) : super(
-          message,
           statusCode: 429,
-          originalError: originalError,
-          context: context,
         );
 
   /// Factory constructor with retry-after header parsing
@@ -235,16 +223,13 @@ class ValidationException extends ApiException {
   final List<String> generalErrors;
 
   ValidationException(
-    String message, {
+    super.message, {
     this.fieldErrors = const {},
     this.generalErrors = const [],
-    dynamic originalError,
-    Map<String, dynamic>? context,
+    super.originalError,
+    super.context,
   }) : super(
-          message,
           statusCode: 400,
-          originalError: originalError,
-          context: context,
         );
 
   /// Factory constructor from Django REST framework error response
@@ -297,18 +282,13 @@ class ServerException extends ApiException {
   final bool isRetryable;
 
   ServerException(
-    String message, {
-    required int statusCode,
+    super.message, {
+    required int super.statusCode,
     this.errorType = ServerErrorType.unknown,
     this.isRetryable = true,
-    dynamic originalError,
-    Map<String, dynamic>? context,
-  }) : super(
-          message,
-          statusCode: statusCode,
-          originalError: originalError,
-          context: context,
-        );
+    super.originalError,
+    super.context,
+  });
 
   /// Factory constructor for internal server error
   factory ServerException.internalError({String? customMessage}) {
@@ -359,16 +339,13 @@ class NotFoundException extends ApiException {
   final String? resourceId;
 
   NotFoundException(
-    String message, {
+    super.message, {
     this.resourceType,
     this.resourceId,
-    dynamic originalError,
-    Map<String, dynamic>? context,
+    super.originalError,
+    super.context,
   }) : super(
-          message,
           statusCode: 404,
-          originalError: originalError,
-          context: context,
         );
 
   /// Factory constructor for generic not found
@@ -392,16 +369,11 @@ class NotFoundException extends ApiException {
 /// Thrown when an error doesn't fit into other categories
 class UnknownApiException extends ApiException {
   UnknownApiException(
-    String message, {
-    int? statusCode,
-    dynamic originalError,
-    Map<String, dynamic>? context,
-  }) : super(
-          message,
-          statusCode: statusCode,
-          originalError: originalError,
-          context: context,
-        );
+    super.message, {
+    super.statusCode,
+    super.originalError,
+    super.context,
+  });
 
   /// Factory constructor for unexpected errors
   factory UnknownApiException.unexpected({

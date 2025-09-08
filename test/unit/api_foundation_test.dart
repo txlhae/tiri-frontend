@@ -1,5 +1,6 @@
 /// Unit Tests for API Foundation Components - Phase 1
 /// Basic test structure for validating API client functionality
+library;
 
 import 'dart:developer';
 

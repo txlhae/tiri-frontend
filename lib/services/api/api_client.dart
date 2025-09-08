@@ -1,5 +1,6 @@
 /// Main API Client for Django Backend Integration
 /// Provides centralized HTTP client with configuration and error handling
+library;
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';

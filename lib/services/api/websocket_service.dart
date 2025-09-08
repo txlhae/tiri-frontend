@@ -1,5 +1,6 @@
 /// WebSocket Service for Real-time Notifications
 /// Provides auto-reconnection, message handling, and state management
+library;
 
 import 'dart:async';
 import 'dart:convert';
@@ -202,7 +203,7 @@ class WebSocketService extends GetxService {
 
     } catch (e) {
       log('WebSocketService: Failed to create connection: $e');
-      throw e;
+      rethrow;
     }
   }
 

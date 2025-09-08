@@ -11,12 +11,12 @@ class VerificationStatusWidget extends StatelessWidget {
   final VoidCallback? onVerificationSuccess;
   
   const VerificationStatusWidget({
-    Key? key,
+    super.key,
     this.title = 'Verify Your Email',
     this.description = 'Please check your email and click the verification link, then tap the button below.',
     this.buttonText = 'I have verified',
     this.onVerificationSuccess,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

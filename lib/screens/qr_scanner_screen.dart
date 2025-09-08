@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:tiri/controllers/auth_controller.dart';
-import 'package:tiri/screens/widgets/custom_widgets/custom_back_button.dart';
 
 class QrScannerScreen extends StatefulWidget {
   const QrScannerScreen({super.key});

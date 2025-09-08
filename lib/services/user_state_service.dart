@@ -5,6 +5,7 @@
 /// 
 /// This service eliminates 401 errors for pending approval users and improves
 /// startup performance for approved users.
+library;
 
 import 'dart:convert';
 import 'dart:developer';

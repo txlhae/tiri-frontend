@@ -75,10 +75,8 @@ void didChangeDependencies() {
       return;
     }
     final number = requestController.validateIntField(controller: requestController.numberOfPeopleController.value);
-if (number == null) return;
 
 final hours = requestController.validateIntField(controller: requestController.hoursNeededController.value);
-if (hours == null) return;
 
 
     // Recalculate status using the already validated `number`

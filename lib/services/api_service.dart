@@ -674,7 +674,7 @@ class ApiService {
       case 400:
         // 🚨 DEBUG FIX: Preserve original DioException for debugging Django validation errors
         log('🚨 [API_SERVICE DEBUG] 400 Bad Request detected');
-        log('🚨 [API_SERVICE DEBUG] Response data: ${data}');
+        log('🚨 [API_SERVICE DEBUG] Response data: $data');
         
         // Throw the original DioException so RequestService can extract Django errors
         throw error;

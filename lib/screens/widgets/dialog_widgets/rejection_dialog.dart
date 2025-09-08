@@ -8,12 +8,12 @@ class RejectionDialog extends StatefulWidget {
   final Function(String reason) onConfirm;
 
   const RejectionDialog({
-    Key? key,
+    super.key,
     required this.userName,
     required this.userEmail,
     required this.onCancel,
     required this.onConfirm,
-  }) : super(key: key);
+  });
 
   @override
   State<RejectionDialog> createState() => _RejectionDialogState();
@@ -167,7 +167,7 @@ class _RejectionDialogState extends State<RejectionDialog> {
                     dense: true,
                     contentPadding: EdgeInsets.zero,
                   );
-                }).toList(),
+                }),
 
                 // Custom reason text field
                 if (_isCustomReason) ...[

@@ -1,5 +1,6 @@
 /// API Response Models for Django Backend Integration
 /// Provides generic response wrappers and data models
+library;
 
 import 'dart:convert';
 
@@ -81,7 +82,7 @@ class ApiResponse<T> {
       // Successful response with data
       final data = fromJsonT != null ? fromJsonT(json['data']) : json['data'] as T?;
       return ApiResponse.success(
-        data: data!,
+        data: data as T,
         message: json['message'],
         statusCode: statusCode,
         metadata: json['metadata'],
@@ -102,7 +103,7 @@ class ApiResponse<T> {
   Map<String, dynamic> toJson({Map<String, dynamic> Function(T)? toJsonT}) {
     return {
       'success': success,
-      'data': data != null && toJsonT != null ? toJsonT(data!) : data,
+      'data': data != null && toJsonT != null ? toJsonT(data as T) : data,
       'message': message,
       'status_code': statusCode,
       'error': error?.toJson(),

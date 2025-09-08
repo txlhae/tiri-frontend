@@ -133,7 +133,7 @@ class ChatWebSocketService {
       log('❌ WebSocket connection failed: $e', name: 'WebSocket');
       _updateConnectionState(ConnectionState.error);
       _scheduleReconnect();
-      throw e;
+      rethrow;
     }
   }
 

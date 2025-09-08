@@ -86,7 +86,7 @@ class ChatApiService {
       // Enhanced logging for exact payload
       log('🔍 [CHAT API] === Request Payload ===');
       log('🔍 [CHAT API] service_request_id: $requestId');
-      log('🔍 [CHAT API] participants: [${userId1}, ${userId2}]');
+      log('🔍 [CHAT API] participants: [$userId1, $userId2]');
       log('🔍 [CHAT API] Full payload: $requestData');
       log('🔍 [CHAT API] JSON payload: ${requestData.toString()}');
       

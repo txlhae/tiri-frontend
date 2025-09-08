@@ -168,7 +168,7 @@ class AddRequestPage extends StatelessWidget {
                                                 ],
                                               ),
                                             );
-                                          }).toList(),
+                                          }),
                                           // Add separator if categories exist
                                           if (controller.categories.isNotEmpty)
                                             const DropdownMenuItem<CategoryModel>(

@@ -377,12 +377,9 @@ class _RequestDetailsState extends State<RequestDetails> {
         // Show feedback section if request is completed
         if (request.status == RequestStatus.complete && request.feedback != null)
           _buildFeedbackSection(request),
-               // Volunteer Status Section - Show status-based message for volunteers
-               // Only show if request is NOT completed (regardless of feedback)
-               if (request.status != RequestStatus.complete &&
-                   request.userId != currentUserId && 
-                   (request.userRequestStatus.isNotEmpty || 
-                    request.acceptedUser.any((user) => user.userId == currentUserId)))
+               // Volunteer Status Section - Show for all non-owners to enable chat
+               // Show for all volunteers regardless of request status (even pending, rejected, etc.)
+               if (request.userId != currentUserId)
           Column(
             children: [
               _buildVolunteerStatusSection(request),
@@ -689,55 +686,60 @@ class _RequestDetailsState extends State<RequestDetails> {
     
     return Column(
       children: [
-        // Status information card
+        // Chat button for pending volunteers - NEW FEATURE
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(16),
           margin: const EdgeInsets.only(bottom: 12),
-          decoration: BoxDecoration(
-            color: statusColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: statusColor.withOpacity(0.3)),
-          ),
-          child: Row(
-            children: [
-              Icon(statusIcon, color: statusColor, size: 20),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      statusTitle,
-                      style: TextStyle(
-                        color: statusColor,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      statusSubtitle,
-                      style: TextStyle(
-                        color: statusColor.withOpacity(0.8),
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      request.volunteerMessage != null && request.volunteerMessage!.trim().isNotEmpty
-                          ? "Your message: \"${request.volunteerMessage}\""
-                          : "Your message: \"No message provided\"",
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 12,
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                  ],
-                ),
+          child: ElevatedButton.icon(
+            onPressed: () async {
+              final currentUserId = authController.currentUserStore.value?.userId;
+              final requester = request.requester;
+              
+              if (currentUserId == null || requester == null) {
+                Get.snackbar(
+                  'Error',
+                  'Unable to start chat. Please try again.',
+                  backgroundColor: Colors.red.shade100,
+                  colorText: Colors.red.shade700,
+                );
+                return;
+              }
+              
+              try {
+                final chatController = Get.put(ChatController());
+                final roomId = await chatController.createOrGetChatRoom(
+                  currentUserId,
+                  request.userId,
+                  serviceRequestId: request.requestId,
+                );
+                
+                Get.toNamed(
+                  Routes.chatPage,
+                  arguments: {
+                    'chatRoomId': roomId,
+                    'receiverId': request.userId,
+                    'receiverName': requester.username,
+                    'receiverProfilePic': requester.imageUrl ?? " ",
+                  },
+                );
+              } catch (e) {
+                Get.snackbar(
+                  'Error',
+                  'Failed to create chat room. Please try again.',
+                  backgroundColor: Colors.red.shade100,
+                  colorText: Colors.red.shade700,
+                );
+              }
+            },
+            icon: const Icon(Icons.chat_bubble_outline, color: Colors.white),
+            label: const Text("Message Requester", style: TextStyle(color: Colors.white)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue.shade600,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
-            ],
+            ),
           ),
         ),
         
@@ -2366,7 +2368,8 @@ class _RequestDetailsState extends State<RequestDetails> {
         if (request.acceptedUser.any((user) => user.userId == currentUserId)) {
           headerTitle = "Accepted by:";
         } else {
-          headerTitle = "Request sent to:";
+          // For users who haven't sent a request yet
+          headerTitle = "Request Details:";
         }
     }
     
@@ -2414,8 +2417,12 @@ class _RequestDetailsState extends State<RequestDetails> {
                               Get.to(() => ProfileScreen(user: requester));
                             },
                           ),
-                          // Chat button for accepted/approved volunteers
-                          if (userStatus == 'approved' || userStatus == 'accepted' || 
+                          // Chat button - only show if user has sent a volunteer request (pending, approved, or rejected)
+                          if (userStatus == 'pending' || 
+                              userStatus == 'approved' || 
+                              userStatus == 'accepted' || 
+                              userStatus == 'rejected' ||
+                              request.hasVolunteered ||
                               request.acceptedUser.any((user) => user.userId == currentUserId))
                             IconButton(
                               icon: const Icon(Icons.chat_bubble_outline, color: Colors.blue, size: 22),
@@ -2461,6 +2468,47 @@ class _RequestDetailsState extends State<RequestDetails> {
                 label: "Email",
                 value: requester?.email ?? "Not available",
               ),
+              // Show volunteer message if status is pending
+              if (userStatus == 'pending' && request.volunteerMessage != null && request.volunteerMessage!.trim().isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color.fromRGBO(0, 140, 170, 0.05),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color.fromRGBO(0, 140, 170, 0.2)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.message_outlined, size: 16, color: Color.fromRGBO(0, 140, 170, 1)),
+                          const SizedBox(width: 8),
+                          const Text(
+                            "Your message:",
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: Color.fromRGBO(0, 140, 170, 1),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        request.volunteerMessage!,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade700,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: 12),
               const Divider(thickness: 1, color: Colors.grey),
               const SizedBox(height: 12),

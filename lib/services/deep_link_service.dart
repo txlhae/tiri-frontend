@@ -1,6 +1,7 @@
 /// Enhanced Deep Link Service for Email Verification and App Navigation
 /// Handles incoming deep links from email verification and other sources
 /// Supports token extraction and automatic authentication
+library;
 
 import 'dart:async';
 import 'dart:developer';
