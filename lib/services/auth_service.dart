@@ -1,7 +1,6 @@
 ﻿// lib/services/auth_service.dart
 
 import 'dart:convert';
-import 'dart:developer';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
@@ -106,7 +105,7 @@ class AuthService {
       await _loadUserFromStorage();
       
     } catch (e) {
-      log('Error initializing AuthService: $e', name: 'AUTH');
+      // Silent initialization error handling
     }
   }
 
@@ -194,7 +193,6 @@ class AuthService {
           );
         } catch (e) {
           // Fallback to legacy format if new format parsing fails
-          log('Failed to parse enhanced response, falling back to legacy format: $e', name: 'AUTH');
           
           final userData = data['user'] ?? data['data'];
           final tokens = data['tokens'];
@@ -226,7 +224,6 @@ class AuthService {
       );
       
     } catch (e) {
-      log('Registration error: $e', name: 'AUTH');
       return EnhancedAuthResult.failure(
         message: _extractErrorMessage(e),
       );
@@ -361,7 +358,6 @@ class AuthService {
               );
 
             } catch (parseError) {
-
               // Last resort fallback - if we have tokens and user data saved, succeed anyway
               if (_currentUser != null) {
                 return EnhancedAuthResult.legacy(
@@ -377,7 +373,6 @@ class AuthService {
             }
           } else {
             // Legacy response format
-
             final userData = data['user'] ?? data['data'];
             final tokens = data['tokens'];
 
@@ -435,9 +430,6 @@ class AuthService {
   /// Logout current user and clear all data
   Future<AuthResult> logout() async {
     try {
-      if (ApiConfig.enableLogging) {
-        log('Attempting logout', name: 'AUTH');
-      }
 
       // Try to logout on server (optional - don't fail if it doesn't work)
       try {
@@ -449,7 +441,6 @@ class AuthService {
         );
       } catch (e) {
         // Server logout failed, but continue with local cleanup
-        log('Server logout failed (continuing with local cleanup): $e', name: 'AUTH');
       }
 
       // Clean up Firebase notifications
@@ -457,26 +448,20 @@ class AuthService {
         final firebaseNotificationService = Get.find<FirebaseNotificationService>();
         await firebaseNotificationService.cleanup();
       } catch (e) {
-        log('Firebase notification cleanup failed (continuing): $e', name: 'AUTH');
+        // Firebase notification cleanup failed (continuing)
       }
 
       // Clear all local data
       await _clearAllUserData();
-      
-      if (ApiConfig.enableLogging) {
-        log('Logout completed', name: 'AUTH');
-      }
       
       return AuthResult.success(
         message: 'Logout successful',
       );
       
     } catch (e) {
-      log('Logout error: $e', name: 'AUTH');
-      
       // Even if logout fails, clear local data
       await _clearAllUserData();
-      
+
       return AuthResult.success(
         message: 'Logout completed',
       );
@@ -497,9 +482,6 @@ class AuthService {
     bool isMobile = false,
   }) async {
     try {
-      if (ApiConfig.enableLogging) {
-        log('Attempting email verification (mobile: $isMobile)', name: 'AUTH');
-      }
 
       // Use mobile endpoint if this is from a mobile deep link
       final endpoint = isMobile 
@@ -517,9 +499,6 @@ class AuthService {
       if (response.statusCode == 200) {
         final data = response.data;
         
-        if (ApiConfig.enableLogging) {
-          log('Email verification successful', name: 'AUTH');
-        }
 
         // Handle mobile response with tokens
         if (isMobile && data['access_token'] != null && data['refresh_token'] != null) {
@@ -552,7 +531,6 @@ class AuthService {
       );
       
     } catch (e) {
-      log('Email verification error: $e', name: 'AUTH');
       return AuthResult.failure(
         message: _extractErrorMessage(e),
       );
@@ -568,7 +546,6 @@ class AuthService {
   Future<Map<String, dynamic>> checkVerificationStatus() async {
     // 🚨 PREVENT CONCURRENT CALLS: Only allow one verification check at a time
     if (_isCheckingVerificationStatus) {
-      log('⚠️ AuthService: Verification check already in progress, waiting...', name: 'AUTH');
       // Wait for ongoing check to complete
       while (_isCheckingVerificationStatus) {
         await Future.delayed(const Duration(milliseconds: 100));
@@ -581,38 +558,14 @@ class AuthService {
 
     try {
       // 🚨 CRITICAL FIX: Ensure API service has latest tokens before making the call
-      log('🔐 AuthService: Ensuring API service has latest tokens...', name: 'AUTH');
       await _apiService.loadTokensFromStorage();
 
-      if (ApiConfig.enableLogging) {
-        log('🔍 AuthService: API Service token status - isAuthenticated: ${_apiService.isAuthenticated}', name: 'AUTH');
-        if (_apiService.accessToken != null) {
-          log('🔐 AuthService: Using access token: ${_apiService.accessToken!.substring(0, 20)}...', name: 'AUTH');
-          log('🔐 AuthService: Full access token length: ${_apiService.accessToken!.length}', name: 'AUTH');
-          // Decode JWT payload for debugging (this is safe for debugging)
-          try {
-            final parts = _apiService.accessToken!.split('.');
-            if (parts.length == 3) {
-              log('🔐 AuthService: JWT token has 3 parts (valid format)', name: 'AUTH');
-            } else {
-              log('❌ AuthService: JWT token has ${parts.length} parts (invalid format)', name: 'AUTH');
-            }
-          } catch (e) {
-            log('❌ AuthService: Error checking JWT format: $e', name: 'AUTH');
-          }
-        } else {
-          log('⚠️ AuthService: No access token available', name: 'AUTH');
-        }
-      }
 
       final response = await _apiService.get(ApiConfig.authVerificationStatus);
 
       if (response.statusCode == 200) {
         final data = response.data;
         
-        if (ApiConfig.enableLogging) {
-          log('Enhanced verification status response: ${data.toString()}', name: 'AUTH');
-        }
         
         // Handle auto-login with direct JWT tokens (new format)
         if (data['auto_login'] == true) {
@@ -624,11 +577,6 @@ class AuthService {
               data['refresh_token'],
             );
             
-            if (ApiConfig.enableLogging) {
-              log('Auto-login JWT tokens saved successfully', name: 'AUTH');
-              log('   - Access token: ${data['access_token'].toString().substring(0, 20)}...', name: 'AUTH');
-              log('   - Refresh token: ${data['refresh_token'].toString().substring(0, 20)}...', name: 'AUTH');
-            }
             
             // Update user data if provided
             if (data['user'] != null) {
@@ -636,12 +584,7 @@ class AuthService {
               await _saveUserToStorage(user);
               _currentUser = user;
               
-              if (ApiConfig.enableLogging) {
-                log('User data updated from verification response: ${user.email}', name: 'AUTH');
-              }
             }
-          } else {
-            log('Warning: auto_login=true but no JWT tokens in response', name: 'AUTH');
           }
         }
         
@@ -659,7 +602,6 @@ class AuthService {
       throw Exception('Failed to check verification status - HTTP ${response.statusCode}');
       
     } catch (e) {
-      log('Verification status check error: $e', name: 'AUTH');
       return {
         'is_verified': false,
         'auto_login': false,
@@ -672,7 +614,6 @@ class AuthService {
     } finally {
       // 🚨 CRITICAL: Always release the mutex
       _isCheckingVerificationStatus = false;
-      log('🔓 AuthService: Verification check mutex released', name: 'AUTH');
     }
   }
 
@@ -686,9 +627,6 @@ class AuthService {
     required String email,
   }) async {
     try {
-      if (ApiConfig.enableLogging) {
-        log('Requesting password reset for: $email', name: 'AUTH');
-      }
 
       final response = await _apiService.post(
         ApiConfig.authPasswordReset,
@@ -700,9 +638,6 @@ class AuthService {
       if (response.statusCode == 200) {
         final data = response.data;
 
-        if (ApiConfig.enableLogging) {
-          log('Password reset requested successfully', name: 'AUTH');
-        }
 
         return AuthResult.success(
           message: data['message'] ?? 'Password reset email sent',
@@ -714,7 +649,6 @@ class AuthService {
       );
 
     } catch (e) {
-      log('Password reset request error: $e', name: 'AUTH');
       return AuthResult.failure(
         message: _extractErrorMessage(e),
       );
@@ -735,9 +669,6 @@ class AuthService {
     required String newPassword,
   }) async {
     try {
-      if (ApiConfig.enableLogging) {
-        log('Confirming password reset', name: 'AUTH');
-      }
 
       final response = await _apiService.post(
         '/api/auth/password-reset-confirm/',
@@ -751,9 +682,6 @@ class AuthService {
       if (response.statusCode == 200) {
         final data = response.data;
 
-        if (ApiConfig.enableLogging) {
-          log('Password reset confirmed successfully', name: 'AUTH');
-        }
 
         return AuthResult.success(
           message: data['message'] ?? 'Password reset successful',
@@ -765,7 +693,6 @@ class AuthService {
       );
 
     } catch (e) {
-      log('Password reset confirmation error: $e', name: 'AUTH');
       return AuthResult.failure(
         message: _extractErrorMessage(e),
       );
@@ -788,9 +715,6 @@ class AuthService {
         );
       }
 
-      if (ApiConfig.enableLogging) {
-        log('Resending verification email to: $targetEmail', name: 'AUTH');
-      }
 
       final response = await _apiService.post(
         ApiConfig.authResendVerification,
@@ -800,9 +724,6 @@ class AuthService {
       if (response.statusCode == 200) {
         final data = response.data;
 
-        if (ApiConfig.enableLogging) {
-          log('Verification email resent successfully', name: 'AUTH');
-        }
 
         return AuthResult.success(
           message: data['message'] ?? 'Verification email sent successfully',
@@ -814,7 +735,6 @@ class AuthService {
       );
 
     } catch (e) {
-      log('Resend verification email error: $e', name: 'AUTH');
       return AuthResult.failure(
         message: _extractErrorMessage(e),
       );
@@ -829,9 +749,6 @@ class AuthService {
   /// Returns: AuthResult with verification status and potential tokens
   Future<AuthResult> verifyEmailWithToken(String token) async {
     try {
-      if (ApiConfig.enableLogging) {
-        log('Verifying email with token', name: 'AUTH');
-      }
 
       final response = await _apiService.post(
         '/api/auth/verify-email/',
@@ -841,9 +758,6 @@ class AuthService {
       if (response.statusCode == 200) {
         final data = response.data;
 
-        if (ApiConfig.enableLogging) {
-          log('Email verification with token successful', name: 'AUTH');
-        }
 
         // Check if response includes new tokens (for auto-login)
         if (data['access_token'] != null && data['refresh_token'] != null) {
@@ -872,7 +786,6 @@ class AuthService {
       );
 
     } catch (e) {
-      log('Email verification with token error: $e', name: 'AUTH');
       return AuthResult.failure(
         message: _extractErrorMessage(e),
       );
@@ -885,9 +798,6 @@ class AuthService {
   /// Returns: Map with verification status and potential auto-login tokens
   Future<Map<String, dynamic>> getVerificationStatus() async {
     try {
-      if (ApiConfig.enableLogging) {
-        log('Getting verification status (limited access)', name: 'AUTH');
-      }
 
       final response = await _apiService.get(
         '/api/auth/verification-status/',
@@ -896,9 +806,6 @@ class AuthService {
       if (response.statusCode == 200) {
         final data = response.data;
 
-        if (ApiConfig.enableLogging) {
-          log('Verification status retrieved successfully', name: 'AUTH');
-        }
 
         // Handle auto-login tokens if provided
         if (data['auto_login'] == true && data['access_token'] != null) {
@@ -930,7 +837,6 @@ class AuthService {
       throw Exception('Failed to get verification status - HTTP ${response.statusCode}');
 
     } catch (e) {
-      log('Get verification status error: $e', name: 'AUTH');
       return {
         'is_verified': false,
         'auto_login': false,
@@ -950,9 +856,6 @@ class AuthService {
   /// Returns: Map with complete registration status
   Future<Map<String, dynamic>> getRegistrationStatusLimited() async {
     try {
-      if (ApiConfig.enableLogging) {
-        log('Getting registration status (limited access)', name: 'AUTH');
-      }
 
       final response = await _apiService.get(
         '/api/auth/registration-status/',
@@ -961,9 +864,6 @@ class AuthService {
       if (response.statusCode == 200) {
         final data = response.data;
 
-        if (ApiConfig.enableLogging) {
-          log('Registration status retrieved successfully', name: 'AUTH');
-        }
 
         return {
           'account_status': data['account_status'],
@@ -980,7 +880,6 @@ class AuthService {
       throw Exception('Failed to get registration status - HTTP ${response.statusCode}');
 
     } catch (e) {
-      log('Get registration status error: $e', name: 'AUTH');
       return {
         'account_status': 'error',
         'next_step': 'verify_email',
@@ -1004,9 +903,6 @@ class AuthService {
         return AuthResult.failure(message: 'No refresh token available');
       }
 
-      if (ApiConfig.enableLogging) {
-        log('Refreshing access token', name: 'AUTH');
-      }
 
       final response = await _apiService.post(
         '/api/auth/token/refresh/',
@@ -1020,9 +916,6 @@ class AuthService {
         if (newAccessToken != null) {
           await _apiService.saveTokens(newAccessToken, refreshToken);
 
-          if (ApiConfig.enableLogging) {
-            log('Access token refreshed successfully', name: 'AUTH');
-          }
 
           return AuthResult.success(
             message: 'Token refreshed successfully',
@@ -1036,7 +929,6 @@ class AuthService {
       );
 
     } catch (e) {
-      log('Token refresh error: $e', name: 'AUTH');
       return AuthResult.failure(
         message: _extractErrorMessage(e),
       );
@@ -1073,7 +965,6 @@ class AuthService {
       return null;
       
     } catch (e) {
-      log('Get current user profile error: $e', name: 'AUTH');
       return null;
     }
   }
@@ -1106,9 +997,6 @@ class AuthService {
         await _saveUserToStorage(user);
         _currentUser = user;
         
-        if (ApiConfig.enableLogging) {
-          log('Profile updated successfully', name: 'AUTH');
-        }
         
         return user;
       }
@@ -1116,7 +1004,6 @@ class AuthService {
       return null;
       
     } catch (e) {
-      log('Update profile error: $e', name: 'AUTH');
       return null;
     }
   }
@@ -1133,9 +1020,6 @@ class AuthService {
   /// Returns: Map with validation result and referrer info
   Future<Map<String, dynamic>?> validateReferralCode(String code) async {
     try {
-      if (ApiConfig.enableLogging) {
-        log('Validating referral code: $code', name: 'AUTH');
-      }
 
       final response = await _apiService.post(
         '/api/auth/validate-referral/',
@@ -1145,9 +1029,6 @@ class AuthService {
       if (response.statusCode == 200) {
         final data = response.data;
         
-        if (ApiConfig.enableLogging) {
-          log('Referral validation successful: ${data.toString()}', name: 'AUTH');
-        }
         
         return {
           'valid': data['valid'] ?? false,
@@ -1160,7 +1041,6 @@ class AuthService {
       return null;
       
     } catch (e) {
-      log('Referral validation error: $e', name: 'AUTH');
       return null;
     }
   }
@@ -1172,34 +1052,18 @@ class AuthService {
     try {
       // Use hasValidTokens for approval operations since they work for verified users
       if (!hasValidTokens) {
-        log('❌ No valid tokens for approval requests', name: 'AUTH');
         throw Exception('User not authenticated');
       }
 
-      if (ApiConfig.enableLogging) {
-        log('Fetching pending approvals', name: 'AUTH');
-      }
-
-      // 🚨 DEBUG: Force log the exact URL being called
       final endpoint = '/api/auth/approvals/pending/';
-      log('🔍 DEBUG: About to call endpoint: $endpoint', name: 'AUTH');
-      log('🔍 DEBUG: About to call endpoint: $endpoint');
 
       final response = await _apiService.get(endpoint);
 
-      // 🚨 DEBUG: Log the response details
-      log('🔍 DEBUG: Response status: ${response.statusCode}', name: 'AUTH');
-      log('🔍 DEBUG: Response data: ${response.data}', name: 'AUTH');
-      log('🔍 DEBUG: Response status: ${response.statusCode}');
-      log('🔍 DEBUG: Response data: ${response.data}');
 
       if (response.statusCode == 200) {
         final data = response.data;
         final approvals = data['approvals'] as List<dynamic>? ?? [];
         
-        if (ApiConfig.enableLogging) {
-          log('Fetched ${approvals.length} pending approvals', name: 'AUTH');
-        }
         
         return approvals.cast<Map<String, dynamic>>();
       }
@@ -1207,7 +1071,6 @@ class AuthService {
       throw Exception('Failed to fetch pending approvals - HTTP ${response.statusCode}');
       
     } catch (e) {
-      log('Get pending approvals error: $e', name: 'AUTH');
       rethrow;
     }
   }
@@ -1225,9 +1088,6 @@ class AuthService {
         throw Exception('User not authenticated');
       }
 
-      if (ApiConfig.enableLogging) {
-        log('Approving user with approval ID: $approvalId', name: 'AUTH');
-      }
 
       final response = await _apiService.post(
         '/api/auth/approvals/$approvalId/approve/',
@@ -1237,9 +1097,6 @@ class AuthService {
       if (response.statusCode == 200) {
         final data = response.data;
         
-        if (ApiConfig.enableLogging) {
-          log('User approval successful', name: 'AUTH');
-        }
         
         return AuthResult.success(
           message: data['message'] ?? 'User approved successfully',
@@ -1251,7 +1108,6 @@ class AuthService {
       );
       
     } catch (e) {
-      log('Approve user error: $e', name: 'AUTH');
       return AuthResult.failure(
         message: _extractErrorMessage(e),
       );
@@ -1272,9 +1128,6 @@ class AuthService {
         throw Exception('User not authenticated');
       }
 
-      if (ApiConfig.enableLogging) {
-        log('Rejecting user with approval ID: $approvalId', name: 'AUTH');
-      }
 
       final response = await _apiService.post(
         '/api/auth/approvals/$approvalId/reject/',
@@ -1286,9 +1139,6 @@ class AuthService {
       if (response.statusCode == 200) {
         final data = response.data;
         
-        if (ApiConfig.enableLogging) {
-          log('User rejection successful', name: 'AUTH');
-        }
         
         return AuthResult.success(
           message: data['message'] ?? 'User rejected successfully',
@@ -1300,7 +1150,6 @@ class AuthService {
       );
       
     } catch (e) {
-      log('Reject user error: $e', name: 'AUTH');
       return AuthResult.failure(
         message: _extractErrorMessage(e),
       );
@@ -1314,24 +1163,17 @@ class AuthService {
     try {
       // Use hasValidTokens for approval operations
       if (!hasValidTokens) {
-        log('❌ No valid tokens for approval history', name: 'AUTH');
         throw Exception('User not authenticated');
       }
 
-      if (ApiConfig.enableLogging) {
-        log('Fetching approval history', name: 'AUTH');
-      }
 
       final response = await _apiService.get('/api/auth/approvals/history/');
 
       if (response.statusCode == 200) {
         final data = response.data;
-        log('🔍 DEBUG: getApprovalHistory - Response data: $data');
-        log('🔍 DEBUG: getApprovalHistory - Response data type: ${data.runtimeType}');
         
         // Handle null response
         if (data == null) {
-          log('⚠️ DEBUG: getApprovalHistory - Response data is null, returning empty list');
           return [];
         }
         
@@ -1350,19 +1192,14 @@ class AuthService {
           // Try to extract any list from the response
           history = [];
           if (data is Map) {
-            log('🔍 DEBUG: getApprovalHistory - Looking for list in map keys: ${data.keys}');
-            data.forEach((key, value) {
+              data.forEach((key, value) {
               if (value is List && history.isEmpty) {
-                log('🔍 DEBUG: getApprovalHistory - Found list at key: $key');
                 history = value;
               }
             });
           }
         }
         
-        if (ApiConfig.enableLogging) {
-          log('Fetched ${history.length} approval history items', name: 'AUTH');
-        }
         
         // Ensure we're returning valid Map objects
         final validHistory = <Map<String, dynamic>>[];
@@ -1380,7 +1217,6 @@ class AuthService {
       throw Exception('Failed to fetch approval history - HTTP ${response.statusCode}');
       
     } catch (e) {
-      log('Get approval history error: $e', name: 'AUTH');
       rethrow;
     }
   }
@@ -1390,8 +1226,6 @@ class AuthService {
   /// Returns: RegistrationStatusResponse with full account state
   Future<RegistrationStatusResponse?> getRegistrationStatus() async {
     // TEMPORARILY DISABLED: Registration status endpoint doesn't exist
-    log('🚨 ALERT: getRegistrationStatus() was called! Stack trace:', name: 'AUTH');
-    log('${StackTrace.current}', name: 'AUTH');
     return null;
     
     // ORIGINAL CODE COMMENTED OUT:
@@ -1429,18 +1263,12 @@ class AuthService {
       // They need to check status before getting JWT tokens
       // The verification-status endpoint works without auth for email-verified users
       
-      if (ApiConfig.enableLogging) {
-        log('Checking approval status (no auth required for pending users)', name: 'AUTH');
-      }
 
       final response = await _apiService.get('/api/auth/verification-status/');
 
       if (response.statusCode == 200) {
         final data = response.data;
         
-        if (ApiConfig.enableLogging) {
-          log('Approval status check response: ${data.toString()}', name: 'AUTH');
-        }
         
         return {
           'status': data['approval_status'] ?? 'pending',
@@ -1456,7 +1284,6 @@ class AuthService {
       throw Exception('Failed to check approval status - HTTP ${response.statusCode}');
       
     } catch (e) {
-      log('Check approval status error: $e', name: 'AUTH');
       return {
         'status': 'error',
         'is_approved': false,
@@ -1476,32 +1303,18 @@ class AuthService {
   /// Load user data from secure storage
   Future<void> _loadUserFromStorage() async {
     try {
-      // 🚨 DEBUG: Log user data loading process
-      log('🔍 DEBUG: Starting _loadUserFromStorage...', name: 'AUTH');
-      log('🔍 DEBUG: Starting _loadUserFromStorage...');
       
       final userDataString = await _secureStorage.read(key: _userDataKey);
       
-      log('🔍 DEBUG: userDataString from storage: ${userDataString != null ? 'found' : 'null'}', name: 'AUTH');
-      log('🔍 DEBUG: userDataString from storage: ${userDataString != null ? 'found' : 'null'}');
       
       if (userDataString != null) {
         final userData = jsonDecode(userDataString);
         _currentUser = UserModel.fromJson(userData);
         
-        log('🔍 DEBUG: User loaded successfully: ${_currentUser?.email}', name: 'AUTH');
-        log('🔍 DEBUG: User loaded successfully: ${_currentUser?.email}');
         
-        if (ApiConfig.enableLogging) {
-          log('User data loaded from storage: ${_currentUser?.email}', name: 'AUTH');
-        }
       } else {
-        log('🔍 DEBUG: No user data found in storage', name: 'AUTH');
-        log('🔍 DEBUG: No user data found in storage');
       }
     } catch (e) {
-      log('❌ DEBUG: Error loading user from storage: $e', name: 'AUTH');
-      log('❌ DEBUG: Error loading user from storage: $e');
     }
   }
 
@@ -1517,11 +1330,7 @@ class AuthService {
       });
       await _secureStorage.write(key: _userDataKey, value: userDataString);
       
-      if (ApiConfig.enableLogging) {
-        log('User data saved to storage: ${user.email}', name: 'AUTH');
-      }
     } catch (e) {
-      log('Error saving user to storage: $e', name: 'AUTH');
     }
   }
 
@@ -1537,11 +1346,7 @@ class AuthService {
       await _secureStorage.delete(key: _userDataKey);
       await _secureStorage.delete(key: _userPreferencesKey);
       
-      if (ApiConfig.enableLogging) {
-        log('All user data cleared', name: 'AUTH');
-      }
     } catch (e) {
-      log('Error clearing user data: $e', name: 'AUTH');
     }
   }
 
@@ -1552,73 +1357,46 @@ class AuthService {
   /// Set up push notifications after successful authentication
   void _setupPushNotificationsAfterAuth() {
     try {
-      log('🔔 Starting FCM setup after authentication...', name: 'AUTH');
       
       // Run in background to avoid blocking the auth flow
       Future.delayed(const Duration(seconds: 2), () async {
         try {
-          log('🔍 Attempting to find FirebaseNotificationService...', name: 'AUTH');
           
           if (!Get.isRegistered<FirebaseNotificationService>()) {
-            log('❌ FirebaseNotificationService not registered with GetX', name: 'AUTH');
             return;
           }
           
           final firebaseNotificationService = Get.find<FirebaseNotificationService>();
-          log('✅ Found FirebaseNotificationService, calling setupPushNotifications...', name: 'AUTH');
-          final success = await firebaseNotificationService.setupPushNotifications();
-          
-          if (success) {
-            log('🎉 Push notifications set up successfully after auth', name: 'AUTH');
-          } else {
-            log('❌ Push notifications setup failed after auth', name: 'AUTH');
-          }
+          await firebaseNotificationService.setupPushNotifications();
         } catch (e) {
-          log('❌ Error setting up push notifications after auth: $e', name: 'AUTH');
-          
-          // FCM service should be initialized in main.dart
-          log('❌ FCM service not available - ensure it is initialized in main.dart first', name: 'AUTH');
         }
       });
     } catch (e) {
-      log('❌ Error scheduling push notification setup: $e', name: 'AUTH');
     }
   }
 
   /// Immediately set up FCM token registration after login (no delay)
   void _setupFCMTokenImmediately() {
     try {
-      log('🚀 Setting up FCM token registration immediately after login...', name: 'AUTH');
       
       // Run without delay to ensure it happens
       Future.microtask(() async {
         try {
-          log('🔍 Checking for FirebaseNotificationService registration...', name: 'AUTH');
           
           if (!Get.isRegistered<FirebaseNotificationService>()) {
-            log('❌ FirebaseNotificationService not registered - cannot setup FCM token', name: 'AUTH');
             return;
           }
           
           final firebaseNotificationService = Get.find<FirebaseNotificationService>();
-          log('✅ FirebaseNotificationService found, setting up full FCM flow...', name: 'AUTH');
           
           // 🔥 CRITICAL FIX: Use setupPushNotifications instead of registerTokenWithBackend
           // This ensures permissions are requested before token registration
           final success = await firebaseNotificationService.setupPushNotifications();
           
-          if (success) {
-            log('🎉 FCM setup completed successfully with backend after login', name: 'AUTH');
-          } else {
-            log('❌ FCM setup failed after login - check permissions and Firebase config', name: 'AUTH');
-          }
         } catch (e) {
-          log('❌ Error setting up FCM token immediately: $e', name: 'AUTH');
-          log('❌ Stack trace: ${StackTrace.current}', name: 'AUTH');
         }
       });
     } catch (e) {
-      log('❌ Error scheduling immediate FCM token setup: $e', name: 'AUTH');
     }
   }
 

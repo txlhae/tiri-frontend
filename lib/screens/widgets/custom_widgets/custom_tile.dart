@@ -69,7 +69,6 @@ class CustomTile extends StatelessWidget {
                               log('The user is here: ${value!.toJson().toString()}');
                               Get.dialog(VerifyDialog(
                                 acceptedUser: value,
-                                notification: notify,
                               ));
                             }
                           // Removed misplaced comma and parenthesis

@@ -87,9 +87,6 @@ class ApiConfig {
   /// Feedback endpoints
   static const String feedback = '/api/feedback/';
 
-  /// Notification endpoints
-  static const String notifications = '/api/notifications/';
-
   // =============================================================================
   // TIMEOUT CONFIGURATIONS
   // =============================================================================

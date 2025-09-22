@@ -1,7 +1,6 @@
 // lib/services/auth_storage.dart
 
 import 'dart:convert';
-import 'dart:developer';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// AuthStorage class for managing authentication data locally
@@ -47,9 +46,9 @@ class AuthStorage {
         await prefs.setString(_registrationStageKey, jsonEncode(authResponse['registration_stage']));
       }
 
-      log('✅ AuthStorage: Authentication data stored successfully');
+      
     } catch (e) {
-      log('❌ AuthStorage: Error storing auth data: $e');
+      
       rethrow;
     }
   }
@@ -60,7 +59,7 @@ class AuthStorage {
       final prefs = await SharedPreferences.getInstance();
       return prefs.getString(_accessTokenKey);
     } catch (e) {
-      log('❌ AuthStorage: Error getting access token: $e');
+      
       return null;
     }
   }
@@ -71,7 +70,7 @@ class AuthStorage {
       final prefs = await SharedPreferences.getInstance();
       return prefs.getString(_refreshTokenKey);
     } catch (e) {
-      log('❌ AuthStorage: Error getting refresh token: $e');
+      
       return null;
     }
   }
@@ -82,7 +81,7 @@ class AuthStorage {
       final prefs = await SharedPreferences.getInstance();
       return prefs.getString(_nextStepKey);
     } catch (e) {
-      log('❌ AuthStorage: Error getting next step: $e');
+      
       return null;
     }
   }
@@ -94,7 +93,7 @@ class AuthStorage {
       final userData = prefs.getString(_userDataKey);
       return userData != null ? jsonDecode(userData) : null;
     } catch (e) {
-      log('❌ AuthStorage: Error getting user data: $e');
+      
       return null;
     }
   }
@@ -105,7 +104,7 @@ class AuthStorage {
       final prefs = await SharedPreferences.getInstance();
       return prefs.getString(_accountStatusKey);
     } catch (e) {
-      log('❌ AuthStorage: Error getting account status: $e');
+      
       return null;
     }
   }
@@ -117,7 +116,7 @@ class AuthStorage {
       final registrationStage = prefs.getString(_registrationStageKey);
       return registrationStage != null ? jsonDecode(registrationStage) : null;
     } catch (e) {
-      log('❌ AuthStorage: Error getting registration stage: $e');
+      
       return null;
     }
   }
@@ -127,9 +126,9 @@ class AuthStorage {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_nextStepKey, nextStep);
-      log('✅ AuthStorage: Next step updated to: $nextStep');
+      
     } catch (e) {
-      log('❌ AuthStorage: Error updating next step: $e');
+      
     }
   }
 
@@ -138,9 +137,9 @@ class AuthStorage {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_accountStatusKey, accountStatus);
-      log('✅ AuthStorage: Account status updated to: $accountStatus');
+      
     } catch (e) {
-      log('❌ AuthStorage: Error updating account status: $e');
+      
     }
   }
 
@@ -150,9 +149,9 @@ class AuthStorage {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_accessTokenKey, accessToken);
       await prefs.setString(_refreshTokenKey, refreshToken);
-      log('✅ AuthStorage: Tokens updated successfully');
+      
     } catch (e) {
-      log('❌ AuthStorage: Error updating tokens: $e');
+      
     }
   }
 
@@ -164,7 +163,7 @@ class AuthStorage {
       return accessToken != null && accessToken.isNotEmpty &&
              refreshToken != null && refreshToken.isNotEmpty;
     } catch (e) {
-      log('❌ AuthStorage: Error checking token validity: $e');
+      
       return false;
     }
   }
@@ -179,9 +178,9 @@ class AuthStorage {
       await prefs.remove(_accountStatusKey);
       await prefs.remove(_nextStepKey);
       await prefs.remove(_registrationStageKey);
-      log('✅ AuthStorage: All authentication data cleared');
+      
     } catch (e) {
-      log('❌ AuthStorage: Error clearing auth data: $e');
+      
     }
   }
 
@@ -191,9 +190,9 @@ class AuthStorage {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_accessTokenKey);
       await prefs.remove(_refreshTokenKey);
-      log('✅ AuthStorage: Tokens cleared');
+      
     } catch (e) {
-      log('❌ AuthStorage: Error clearing tokens: $e');
+      
     }
   }
 
@@ -210,7 +209,7 @@ class AuthStorage {
         'has_valid_tokens': await hasValidTokens(),
       };
     } catch (e) {
-      log('❌ AuthStorage: Error getting auth state: $e');
+      
       return {};
     }
   }

@@ -5,13 +5,10 @@ import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
 import 'package:tiri/controllers/auth_controller.dart';
 import 'package:tiri/controllers/home_controller.dart';
-import 'package:tiri/controllers/notification_controller.dart';
 import 'package:tiri/controllers/request_controller.dart';
 import 'package:tiri/infrastructure/routes.dart';
 import 'package:tiri/screens/widgets/home_widgets/community_requests.dart';
 import 'package:tiri/screens/widgets/home_widgets/my_requests.dart';
-import 'package:tiri/services/firebase_notification_service.dart';
-
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -20,7 +17,6 @@ class HomeScreen extends StatelessWidget {
     final HomeController homeController = Get.find<HomeController>();
     final AuthController authController = Get.find<AuthController>();
     final RequestController requestController = Get.find<RequestController>();
-    final NotificationController notificationController = Get.find<NotificationController>();
 
     // 🚨 SAFETY CHECK: Ensure tabController is initialized before building UI
     if (homeController.tabController == null) {
@@ -159,32 +155,24 @@ class HomeScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 15),
-                      Obx(() {
-                      return Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          IconButton(
-                            onPressed: () async {
-                              await notificationController.markAllAsRead(); 
-                              Get.toNamed(Routes.notificationsPage);
-                            },
-                            icon: const Icon(Icons.notifications, color: Colors.white),
-                          ),
-                          if (notificationController.unreadCount.value > 0)
-                            Positioned(
-                              right: 12,
-                              top: 12,
-                              child: Container(
-                                padding: const EdgeInsets.all(5),
-                                decoration: const BoxDecoration(
-                                  color: Colors.red,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                            ),
-                        ],
-                      );
-                    }),
+                      GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () {
+                          Get.snackbar(
+                            "Coming Soon!",
+                            "We're working on this feature. Stay tuned!",
+                            duration: const Duration(milliseconds: 1000),
+                            snackPosition: SnackPosition.BOTTOM,
+                            backgroundColor: Colors.black87,
+                            colorText: Colors.white,
+                            margin: const EdgeInsets.all(16),
+                          );
+                        },
+                        child: const Icon(
+                          Icons.notifications,
+                          color: Colors.white,
+                        ),
+                      ),
                     ],
                   ),
                   TabBar.secondary(

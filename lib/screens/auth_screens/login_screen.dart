@@ -148,24 +148,17 @@ class _LoginScreenState extends State<LoginScreen> {
                                 CustomButton(
                                   buttonText: "Login",
                                   onButtonPressed: () {
-                                    print('🔥🔥🔥 LOGIN SCREEN DEBUG: Button pressed!');
-                                    print('🔥🔥🔥 LOGIN SCREEN DEBUG: authController type: ${authController.runtimeType}');
-                                    print('🔥🔥🔥 LOGIN SCREEN DEBUG: controller type: ${controller.runtimeType}');
-                                    print('🔥🔥🔥 LOGIN SCREEN DEBUG: Email: ${authController.emailController.value.text}');
                                     
                                     authController
                                         .removeSpace(authController
                                             .emailController.value)
                                         .then(
                                       (value) {
-                                        print('🔥🔥🔥 LOGIN SCREEN DEBUG: After removeSpace email');
                                         authController
                                             .removeSpace(authController
                                                 .passwordController.value)
                                             .then(
                                           (value) {
-                                            print('🔥🔥🔥 LOGIN SCREEN DEBUG: After removeSpace password');
-                                            print('🔥🔥🔥 LOGIN SCREEN DEBUG: About to call controller.login()');
                                             controller.login(
                                                 authController
                                                     .emailController.value.text,

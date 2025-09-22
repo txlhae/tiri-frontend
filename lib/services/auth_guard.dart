@@ -1,6 +1,5 @@
 // lib/services/auth_guard.dart
 
-import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:tiri/controllers/auth_controller.dart';
@@ -33,14 +32,14 @@ class AuthGuard {
     bool duringInitialization = false,
   }) async {
     try {
-      log('🔒 AuthGuard: Validating access to $attemptedRoute (duringInit: $duringInitialization)', name: 'AUTH_GUARD');
+      
 
       final authController = Get.find<AuthController>();
       final authService = Get.find<AuthService>();
 
       // Check if user is logged in with tokens
       if (!authController.isLoggedIn.value || authController.currentUserStore.value == null) {
-        log('❌ AuthGuard: No valid session - access denied', name: 'AUTH_GUARD');
+        
         if (!duringInitialization) {
           _redirectToLogin();
         }
@@ -48,15 +47,15 @@ class AuthGuard {
       }
 
       final user = authController.currentUserStore.value!;
-      log('🔍 AuthGuard: Current user state:', name: 'AUTH_GUARD');
-      log('   - Email: ${user.email}', name: 'AUTH_GUARD');
-      log('   - Email Verified: ${user.isVerified}', name: 'AUTH_GUARD');
-      log('   - Referrer Approved: ${user.isApproved}', name: 'AUTH_GUARD');
+      
+      
+      
+      
 
       // 🚨 CRITICAL CHECK: Both email verified AND referrer approved required for home access
       if (attemptedRoute == Routes.homePage || _isProtectedRoute(attemptedRoute)) {
         if (!user.isVerified) {
-          log('📧 AuthGuard: User not email verified - access denied', name: 'AUTH_GUARD');
+          
           if (!duringInitialization) {
             _redirectToEmailVerification('Email verification required');
           }
@@ -64,7 +63,7 @@ class AuthGuard {
         }
 
         if (!user.isApproved) {
-          log('⏳ AuthGuard: User not referrer approved - access denied', name: 'AUTH_GUARD');
+          
           if (!duringInitialization) {
             _redirectToPendingApproval('Referrer approval required');
           }
@@ -73,7 +72,7 @@ class AuthGuard {
 
         // Double-check with backend to ensure state is current
         try {
-          log('🔄 AuthGuard: Double-checking verification status with backend...', name: 'AUTH_GUARD');
+          
           final statusResult = await authService.checkVerificationStatus();
 
           final backendVerified = statusResult['is_verified'] == true;
@@ -81,9 +80,9 @@ class AuthGuard {
 
           // If backend shows different state, sync local state
           if (backendVerified != user.isVerified || backendApproved != user.isApproved) {
-            log('⚠️ AuthGuard: Local state out of sync with backend - updating...', name: 'AUTH_GUARD');
-            log('   - Backend verified: $backendVerified vs Local: ${user.isVerified}', name: 'AUTH_GUARD');
-            log('   - Backend approved: $backendApproved vs Local: ${user.isApproved}', name: 'AUTH_GUARD');
+            
+            
+            
 
             // Update local user state to match backend
             final updatedUser = user.copyWith(
@@ -108,16 +107,16 @@ class AuthGuard {
             }
           }
         } catch (e) {
-          log('⚠️ AuthGuard: Backend verification check failed: $e', name: 'AUTH_GUARD');
+          
           // Continue with local state if backend check fails
         }
       }
 
-      log('✅ AuthGuard: Access granted to $attemptedRoute', name: 'AUTH_GUARD');
+      
       return true;
 
     } catch (e) {
-      log('❌ AuthGuard: Error validating access: $e', name: 'AUTH_GUARD');
+      
       if (!duringInitialization) {
         _redirectToLogin();
       }
@@ -151,12 +150,12 @@ class AuthGuard {
         );
         Get.offAllNamed(Routes.loginPage);
       } catch (e) {
-        log('⚠️ AuthGuard: Could not show snackbar/navigate, context not ready: $e', name: 'AUTH_GUARD');
+        
         // Fallback: Just navigate without snackbar
         try {
           Get.offAllNamed(Routes.loginPage);
         } catch (e2) {
-          log('❌ AuthGuard: Navigation failed, will retry later: $e2', name: 'AUTH_GUARD');
+          
         }
       }
     });
@@ -176,11 +175,11 @@ class AuthGuard {
         );
         Get.offAllNamed(Routes.emailVerificationPage);
       } catch (e) {
-        log('⚠️ AuthGuard: Email verification redirect failed: $e', name: 'AUTH_GUARD');
+        
         try {
           Get.offAllNamed(Routes.emailVerificationPage);
         } catch (e2) {
-          log('❌ AuthGuard: Email verification navigation failed: $e2', name: 'AUTH_GUARD');
+          
         }
       }
     });
@@ -200,11 +199,11 @@ class AuthGuard {
         );
         Get.offAllNamed(Routes.pendingApprovalPage);
       } catch (e) {
-        log('⚠️ AuthGuard: Pending approval redirect failed: $e', name: 'AUTH_GUARD');
+        
         try {
           Get.offAllNamed(Routes.pendingApprovalPage);
         } catch (e2) {
-          log('❌ AuthGuard: Pending approval navigation failed: $e2', name: 'AUTH_GUARD');
+          
         }
       }
     });
@@ -213,14 +212,14 @@ class AuthGuard {
   /// Force refresh user state from backend
   static Future<void> refreshUserState() async {
     try {
-      log('🔄 AuthGuard: Force refreshing user state from backend...', name: 'AUTH_GUARD');
+      
 
       final authController = Get.find<AuthController>();
       await authController.refreshUserProfile();
 
-      log('✅ AuthGuard: User state refreshed successfully', name: 'AUTH_GUARD');
+      
     } catch (e) {
-      log('❌ AuthGuard: Error refreshing user state: $e', name: 'AUTH_GUARD');
+      
     }
   }
 }

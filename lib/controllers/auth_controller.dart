@@ -4,7 +4,6 @@
 
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer';
 import 'dart:math' as math;
 
 import 'package:country_picker/country_picker.dart';
@@ -19,6 +18,7 @@ import 'package:tiri/services/api_service.dart';
 import 'package:tiri/services/user_state_service.dart';
 import 'package:tiri/services/firebase_notification_service.dart';
 import 'package:tiri/services/auth_redirect_handler.dart';
+import 'package:tiri/services/connectivity_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Enterprise AuthController for TIRI application
@@ -43,6 +43,9 @@ class AuthController extends GetxController {
   
   /// User state management service
   late UserStateService _userStateService;
+
+  /// Network connectivity service
+  late ConnectivityService _connectivityService;
 
   // =============================================================================
   // UI CONSTANTS
@@ -168,6 +171,7 @@ class AuthController extends GetxController {
       _authService = Get.find<AuthService>();
       _apiService = Get.find<ApiService>();
       _userStateService = Get.find<UserStateService>();
+      _connectivityService = Get.find<ConnectivityService>();
     } catch (e) {
     }
   }
@@ -187,12 +191,9 @@ class AuthController extends GetxController {
         final userJson = jsonDecode(userStr);
         currentUserStore.value = UserModel.fromJson(userJson);
         isLoggedIn.value = true;
-      } else {
       }
-      
-      
+
     } catch (e) {
-      
       // Fallback: Clear potentially corrupted data
       try {
         await _apiService.clearTokens();
@@ -205,6 +206,51 @@ class AuthController extends GetxController {
     }
   }
 
+  /// Check connectivity before making API calls
+  Future<bool> _checkConnectivityBeforeApiCall({
+    String operation = 'API call',
+    bool showSnackbar = true,
+  }) async {
+    try {
+      if (!_connectivityService.canMakeApiCalls) {
+        final message = _connectivityService.getStatusMessage();
+
+        if (showSnackbar) {
+          Get.snackbar(
+            'Connection Error',
+            message,
+            snackPosition: SnackPosition.TOP,
+            backgroundColor: Colors.red.shade600,
+            colorText: Colors.white,
+            duration: const Duration(seconds: 4),
+            icon: Icon(
+              _connectivityService.state == ConnectivityState.offline
+                ? Icons.cloud_off
+                : Icons.dns,
+              color: Colors.white,
+            ),
+          );
+        }
+
+        return false;
+      }
+      return true;
+    } catch (e) {
+      if (showSnackbar) {
+        Get.snackbar(
+          'Connection Error',
+          'Unable to connect to server. Please check your internet connection.',
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: Colors.red.shade600,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 4),
+          icon: const Icon(Icons.error_outline, color: Colors.white),
+        );
+      }
+      return false;
+    }
+  }
+
   // =============================================================================
   // AUTHENTICATION METHODS
   // =============================================================================
@@ -213,10 +259,14 @@ class AuthController extends GetxController {
   Future<void> login([String? email, String? password, String? routeName]) async {
     if (!validateLoginForm()) return;
 
+    // Check connectivity before making API call
+    if (!await _checkConnectivityBeforeApiCall(operation: 'login')) {
+      return;
+    }
+
     isLoading.value = true;
 
     try {
-      
       final result = await _authService.login(
         email: emailController.value.text.trim(),
         password: passwordController.value.text,
@@ -224,7 +274,6 @@ class AuthController extends GetxController {
 
 
       if (result.isSuccess) {
-
         // Update reactive state
         if (result.user != null) {
           currentUserStore.value = result.user;
@@ -238,7 +287,6 @@ class AuthController extends GetxController {
 
         // Handle enhanced auth response with next_step routing
         if (result.authResponse != null) {
-
           // Use AuthRedirectHandler for centralized routing
           await AuthRedirectHandler.handleLoginSuccess({
             'user': {
@@ -309,15 +357,11 @@ class AuthController extends GetxController {
 
         // Clear form
         _clearLoginForm();
-        
       } else {
-        log('❌ Login failed: ${result.message}');
-        
         // ✅ APPROVAL SYSTEM: Handle backend login errors with specific routing
         final message = result.message.toLowerCase();
         
         if (message.contains('pending approval') || message.contains('pending_approval')) {
-          log('📋 Backend reports pending approval');
           Get.snackbar(
             'Approval Pending',
             'Your registration is waiting for approval from your referrer',
@@ -331,7 +375,6 @@ class AuthController extends GetxController {
         }
         
         if (message.contains('rejected') || message.contains('not approved')) {
-          log('❌ Backend reports user rejected');
           Get.snackbar(
             'Registration Rejected',
             'Your registration was not approved by the referrer',
@@ -345,7 +388,6 @@ class AuthController extends GetxController {
         }
         
         if (message.contains('expired')) {
-          log('⏰ Backend reports approval expired');
           Get.snackbar(
             'Approval Expired',
             'Your approval request has expired after 7 days',
@@ -359,7 +401,6 @@ class AuthController extends GetxController {
         }
         
         if (message.contains('verify') || message.contains('verification')) {
-          log('📧 Backend reports email not verified');
           Get.snackbar(
             'Email Verification Required',
             'Please verify your email address first',
@@ -383,7 +424,6 @@ class AuthController extends GetxController {
         );
       }
     } catch (e) {
-      log('💥 Login error: $e');
       Get.snackbar(
         'Login Error',
         'An unexpected error occurred. Please try again.',
@@ -407,11 +447,14 @@ class AuthController extends GetxController {
   Future<void> register([String? name, String? phoneNumber, String? country, String? email, String? referralUid, String? password, String? routeName, String? imageURL]) async {
     if (!validateRegisterForm()) return;
 
+    // Check connectivity before making API call
+    if (!await _checkConnectivityBeforeApiCall(operation: 'registration')) {
+      return;
+    }
+
     isLoading.value = true;
     
     try {
-      log('📝 AuthController: Starting registration process...');
-      
       // Build phone number with country code
       updatePhoneWithCode();
       
@@ -425,17 +468,12 @@ class AuthController extends GetxController {
       );
 
       if (result.isSuccess) {
-        log('✅ Registration successful');
-        log('📊 User data received: ${result.user?.userId}');
-        log('🔑 User ID: ${result.user?.userId}');
-        
         // ✅ SET AUTHENTICATION STATE
         isLoggedIn.value = true;
         currentUserStore.value = result.user;
         
         // ✅ SAVE USER TO STORAGE (FIX FOR MISSING UUID)
         await _saveUserToStorage(result.user!);
-        log('💾 User data saved to storage after registration');
         
         // ✅ UPDATE USER STATE: Set initial state after registration
         final usedReferralCode = referredUid.value.isNotEmpty ? referredUid.value : referralCodeController.value.text.trim();
@@ -444,7 +482,6 @@ class AuthController extends GetxController {
           userId: result.user!.userId,
           referrerName: referredUser.value.isNotEmpty ? referredUser.value : null,
         );
-        log('📊 AuthController: User state updated to emailUnverified after registration');
         
         Get.snackbar(
           'Registration Successful!',
@@ -457,20 +494,16 @@ class AuthController extends GetxController {
         
         // ✅ APPROVAL SYSTEM: Route based on referral usage
         if (usedReferralCode.isNotEmpty) {
-          log('🔄 Registration with referral code - will need approval after email verification');
           // User will go to pending approval after email verification
           Get.offAll(() => const EmailVerificationScreen());
         } else {
-          log('🔄 Direct registration without referral - proceeding to email verification only');
           Get.offAll(() => const EmailVerificationScreen());
         }
         
         // Clear form
         _clearRegisterForm();
-        
+
       } else {
-        log('❌ Registration failed: ${result.message}');
-        
         Get.snackbar(
           'Registration Failed',
           result.message,
@@ -481,7 +514,6 @@ class AuthController extends GetxController {
         );
       }
     } catch (e) {
-      log('💥 Registration error: $e');
       Get.snackbar(
         'Registration Error',
         'An unexpected error occurred. Please try again.',
@@ -519,7 +551,6 @@ class AuthController extends GetxController {
   /// 🚨 ENHANCED: Proper token cleanup
   Future<void> logout() async {
     try {
-      log('🚪 AuthController: Starting logout process...');
       isLoading.value = true;
       
       final result = await _authService.logout();
@@ -536,7 +567,6 @@ class AuthController extends GetxController {
       
       // ✅ CLEAR USER STATE: Reset approval state on logout
       await _userStateService.clearState();
-      log('📊 AuthController: User state cleared on logout');
       
       Get.snackbar(
         'Logged Out',
@@ -548,11 +578,8 @@ class AuthController extends GetxController {
       
       // Navigate to login
       Get.offAllNamed(Routes.loginPage);
-      
-      log('✅ Logout completed successfully');
-      
+
     } catch (e) {
-      log('❌ Logout error: $e');
     } finally {
       isLoading.value = false;
     }
@@ -569,30 +596,22 @@ class AuthController extends GetxController {
       if (currentUserStore.value?.userId == userId) {
         return currentUserStore.value;
       }
-      
-      log('👤 AuthController: Fetching user $userId from Django API');
-      
+
       final response = await _apiService.get('/api/profile/users/$userId/');
       
       if (response.statusCode == 200 && response.data != null) {
         // Apply user field mapping for Django compatibility
         final userData = response.data as Map<String, dynamic>;
-        log('📊 Raw API response for user $userId: ${userData.toString()}');
         
         final flutterUserData = _mapDjangoUserToFlutter(userData);
-        log('🔄 Mapped Flutter data: ${flutterUserData.toString()}');
         
         final UserModel user = UserModel.fromJson(flutterUserData);
-        log('👤 Created UserModel - hours: ${user.hours}, rating: ${user.rating}');
         
-        log('✅ AuthController: Fetched user $userId successfully');
         return user;
       } else {
-        log('❌ AuthController: Failed to fetch user $userId - Status: ${response.statusCode}');
         return null;
       }
     } catch (e) {
-      log('💥 AuthController: Error fetching user $userId - $e');
       return null;
     }
   }
@@ -602,13 +621,7 @@ class AuthController extends GetxController {
     if (djangoUser is! Map) return {};
     
     final userMap = djangoUser as Map<String, dynamic>;
-    
-    log('🔍 Mapping Django user data: ${userMap.toString()}');
-    log('📊 total_hours_helped: ${userMap['total_hours_helped']}');
-    log('⭐ average_rating: ${userMap['average_rating']}');
-    log('👤 full_name: ${userMap['full_name']}');
-    log('👤 username: ${userMap['username']}');
-    
+
     final mappedData = {
       'userId': userMap['userId']?.toString() ?? '',
       'username': userMap['full_name'] ?? userMap['username'] ?? 'Unknown',
@@ -626,15 +639,12 @@ class AuthController extends GetxController {
       'isVerified': userMap['is_verified'] ?? false,
     };
     
-    log('✅ Mapped data - hours: ${mappedData['hours']}, rating: ${mappedData['rating']}');
     return mappedData;
   }
 
   /// Fetch user by referral code (Updated for approval system)
   Future<UserModel?> fetchUserByReferralCode(String code) async {
     try {
-      log('fetchUserByReferralCode called for code: $code');
-      
       // Basic validation
       if (code.isEmpty || code.length < 3) {
         isCodeValid.value = false;
@@ -643,13 +653,9 @@ class AuthController extends GetxController {
       }
       
       // Call Django API to verify referral code via AuthService
-      log('Calling Django API to verify referral code: $code');
       final result = await _authService.validateReferralCode(code);
-      log('Django API response: ${result.toString()}');
       
       if (result != null && result['valid'] == true) {
-        log('Referral code verified successfully: ${result.toString()}');
-        
         isCodeValid.value = true;
         codeError.value = '';
         
@@ -673,7 +679,6 @@ class AuthController extends GetxController {
         }
         
         referredUser.value = referrerName;
-        log('Referrer found: $referrerName ($referrerEmail)');
         
         // Create a minimal UserModel for backward compatibility with the dialog
         // The dialog expects a UserModel object to determine success
@@ -687,13 +692,11 @@ class AuthController extends GetxController {
           referralCode: code,
         );
       } else {
-        log('Referral code validation failed - Django returned: ${result.toString()}');
         isCodeValid.value = false;
         codeError.value = 'Invalid or expired referral code';
         return null;
       }
     } catch (e) {
-      log('Error fetching user by referral code: $e');
       isCodeValid.value = false;
       codeError.value = 'Error validating referral code. Please try again.';
       return null;
@@ -703,18 +706,13 @@ class AuthController extends GetxController {
   /// Complete user registration (for email verification flow)
   Future<void> completeUserRegistration() async {
     try {
-      log('🎯 AuthController: Completing user registration...');
-      
       // Refresh user profile to get latest data from server
       await refreshUserProfile();
       
       final currentUser = currentUserStore.value;
       if (currentUser != null && currentUser.isVerified) {
-        log('✅ AuthController: User is verified, checking approval status...');
-        
         // ✅ APPROVAL SYSTEM: Check if user also needs approval
         if (!currentUser.isApproved) {
-          log('📋 User is verified but needs approval - checking status');
           
           // Check current approval status from backend
           final statusResult = await _authService.checkApprovalStatus();
@@ -722,8 +720,6 @@ class AuthController extends GetxController {
           
           switch (status) {
             case 'approved':
-              log('🎉 User is now approved - completing registration');
-              
               // Update user model with approval status
               final updatedUser = currentUser.copyWith(
                 isApproved: true,
@@ -749,15 +745,12 @@ class AuthController extends GetxController {
               return;
               
             case 'pending':
-              log('⏳ Email verified but approval still pending');
-              
               // ✅ CRITICAL FIX: Update user state to emailVerifiedPendingApproval
               await _userStateService.updateState(
                 UserApprovalState.emailVerifiedPendingApproval,
                 userId: currentUser.userId,
                 referrerName: statusResult['user']?['referred_by_name'] ?? statusResult['user']?['referredByName'],
               );
-              log('📊 AuthController: User state updated to emailVerifiedPendingApproval in completeUserRegistration');
               
               Get.snackbar(
                 'Email Verified!',
@@ -771,7 +764,6 @@ class AuthController extends GetxController {
               return;
               
             case 'rejected':
-              log('❌ Email verified but registration was rejected');
               rejectionReason.value = statusResult['rejection_reason'] ?? '';
               Get.snackbar(
                 'Registration Rejected',
@@ -785,7 +777,6 @@ class AuthController extends GetxController {
               return;
               
             case 'expired':
-              log('⏰ Email verified but approval request expired');
               Get.snackbar(
                 'Approval Expired',
                 'Your email is verified, but the approval request has expired.',
@@ -798,8 +789,6 @@ class AuthController extends GetxController {
               return;
           }
         } else {
-          log('✅ User is both verified and approved - completing registration');
-          
           // Update login status
           isLoggedIn.value = true;
           
@@ -815,14 +804,10 @@ class AuthController extends GetxController {
           );
           
           // Navigate to home page
-          log('🏠 AuthController: Navigating to home page');
           await Future.delayed(const Duration(seconds: 1)); // Brief delay for UX
           Get.offAllNamed(Routes.homePage);
         }
-        
       } else {
-        log('⚠️ AuthController: User verification status unclear');
-        
         // User might not be verified yet, guide them appropriately
         if (currentUser == null) {
           // No user data, redirect to login
@@ -846,10 +831,7 @@ class AuthController extends GetxController {
           );
         }
       }
-      
     } catch (e) {
-      log('❌ AuthController: Error completing user registration: $e');
-      
       Get.snackbar(
         'Registration Error',
         'Unable to complete registration. Please try logging in.',
@@ -870,7 +852,6 @@ class AuthController extends GetxController {
       
       // TODO: Implement Django API call to update user
       // For now, just log the action
-      log('editUser called for user: ${user.userId} with value: $newValue');
       
       Get.snackbar(
         'Profile Updated',
@@ -881,7 +862,6 @@ class AuthController extends GetxController {
       );
       
     } catch (e) {
-      log('Error editing user: $e');
       Get.snackbar(
         'Update Failed',
         'Failed to update profile',
@@ -900,7 +880,6 @@ class AuthController extends GetxController {
       isLoading.value = true;
       
       // TODO: Implement Django API call to delete account
-      log('deleteUserAccount called for email: $email');
       
       // Clear user data
       await _authService.logout();
@@ -919,7 +898,6 @@ class AuthController extends GetxController {
       );
       
     } catch (e) {
-      log('Error deleting account: $e');
       Get.snackbar(
         'Delete Failed',
         'Failed to delete account',
@@ -938,7 +916,6 @@ class AuthController extends GetxController {
       isLoading.value = true;
       
       // TODO: Implement Django API call to verify user
-      log('verifyUser called for user: ${user.userId}');
       
       Get.snackbar(
         'User Verified',
@@ -949,7 +926,6 @@ class AuthController extends GetxController {
       );
       
     } catch (e) {
-      log('Error verifying user: $e');
       Get.snackbar(
         'Verification Failed',
         'Failed to verify user',
@@ -965,16 +941,9 @@ class AuthController extends GetxController {
   /// Refresh user profile from server
   Future<void> refreshUserProfile() async {
     try {
-      log('🔄 AuthController: Refreshing user profile from server...');
-      
       final updatedUser = await _authService.getCurrentUserProfile();
       
       if (updatedUser != null) {
-        log('✅ AuthController: User profile refreshed successfully');
-        log('   - User ID: ${updatedUser.userId}');
-        log('   - Email: ${updatedUser.email}');
-        log('   - Verified: ${updatedUser.isVerified}');
-        
         // Update local state with reactive notifications
         currentUserStore.value = updatedUser;
         currentUserStore.refresh(); // Force reactive update
@@ -984,13 +953,8 @@ class AuthController extends GetxController {
         
         // Trigger update notification for any observers
         update();
-        
-      } else {
-        log('⚠️ AuthController: Failed to refresh user profile - no data returned');
       }
-      
     } catch (e) {
-      log('❌ AuthController: Refresh user profile error: $e');
     }
   }
 
@@ -1001,8 +965,6 @@ class AuthController extends GetxController {
   /// Fetch pending approval requests (for referrers)
   Future<void> fetchPendingApprovals() async {
     try {
-      log('🔄 AuthController: Fetching pending approvals...');
-      
       // Clear error state
       pendingApprovalsError.value = false;
       pendingApprovalsErrorMessage.value = '';
@@ -1029,11 +991,8 @@ class AuthController extends GetxController {
       }
       
       pendingApprovalsCount.value = pendingApprovals.length;
-      log('✅ AuthController: Fetched ${pendingApprovals.length} pending approvals');
-      
+
     } catch (e) {
-      log('❌ AuthController: Error fetching pending approvals: $e');
-      
       // Set error state
       pendingApprovalsError.value = true;
       pendingApprovalsErrorMessage.value = 'Failed to load pending approvals. Please check your connection and try again.';
@@ -1057,19 +1016,15 @@ class AuthController extends GetxController {
   /// Fetch approval history (for referrers)
   Future<void> fetchApprovalHistory() async {
     try {
-      log('🔄 AuthController: Fetching approval history...');
-      
       // Clear error state
       approvalHistoryError.value = false;
       approvalHistoryErrorMessage.value = '';
       
       final history = await _authService.getApprovalHistory();
-      log('📊 AuthController: Received history data: $history');
       
       // Convert to ApprovalRequest objects
       approvalHistory.clear();
       for (final item in history) {
-        log('📊 AuthController: Processing history item: $item');
         try {
           // Parse dates properly
           final requestedAt = item['requested_at'] != null 
@@ -1105,16 +1060,10 @@ class AuthController extends GetxController {
             'decidedAt': decidedAt?.toIso8601String(),
           }));
         } catch (e) {
-          log('❌ AuthController: Error parsing history item: $e');
-          log('❌ AuthController: Item data: $item');
         }
       }
-      
-      log('✅ AuthController: Fetched ${approvalHistory.length} approval history items');
-      
+
     } catch (e) {
-      log('❌ AuthController: Error fetching approval history: $e');
-      
       // Set error state
       approvalHistoryError.value = true;
       approvalHistoryErrorMessage.value = 'Failed to load approval history. Please check your connection and try again.';
@@ -1137,7 +1086,6 @@ class AuthController extends GetxController {
   Future<void> approveUser(String approvalId) async {
     try {
       isLoading.value = true;
-      log('👍 AuthController: Approving user with ID: $approvalId');
       
       final result = await _authService.approveUser(approvalId);
       
@@ -1165,7 +1113,6 @@ class AuthController extends GetxController {
         );
       }
     } catch (e) {
-      log('❌ AuthController: Error approving user: $e');
       Get.snackbar(
         'Error',
         'Failed to approve user',
@@ -1182,7 +1129,6 @@ class AuthController extends GetxController {
   Future<void> rejectUser(String approvalId, [String? reason]) async {
     try {
       isLoading.value = true;
-      log('👎 AuthController: Rejecting user with ID: $approvalId');
       
       final result = await _authService.rejectUser(approvalId, reason);
       
@@ -1210,7 +1156,6 @@ class AuthController extends GetxController {
         );
       }
     } catch (e) {
-      log('❌ AuthController: Error rejecting user: $e');
       Get.snackbar(
         'Error',
         'Failed to reject user',
@@ -1226,8 +1171,6 @@ class AuthController extends GetxController {
   /// Check approval status for current user (for polling)
   Future<void> checkApprovalStatus() async {
     try {
-      log('🔍 AuthController: Checking approval status for current user...');
-      
       final result = await _authService.checkApprovalStatus();
       
       approvalStatus.value = result['status'] ?? 'pending';
@@ -1251,12 +1194,7 @@ class AuthController extends GetxController {
         currentUserStore.value = updatedUser;
         await _saveUserToStorage(updatedUser);
       }
-      
-      log('✅ AuthController: Approval status updated - ${approvalStatus.value}');
-      
     } catch (e) {
-      log('❌ AuthController: Error checking approval status: $e');
-      
       // Don't show snackbar error for silent polling - let the UI handle it
     }
   }
@@ -1308,14 +1246,12 @@ class AuthController extends GetxController {
 
   /// Start polling approval status (for users waiting for approval)
   void startApprovalStatusPolling() {
-    log('📡 AuthController: Starting approval status polling...');
     // TODO: Implement periodic status checking (every 30 seconds)
     // This can use a Timer.periodic or similar mechanism
   }
 
   /// Stop polling approval status
   void stopApprovalStatusPolling() {
-    log('🛑 AuthController: Stopping approval status polling...');
     // TODO: Cancel periodic timer
   }
 
@@ -1344,7 +1280,6 @@ class AuthController extends GetxController {
       );
       
     } catch (e) {
-      log('Password reset error: $e');
       Get.snackbar(
         'Error',
         'Failed to send reset email',
@@ -1361,21 +1296,15 @@ class AuthController extends GetxController {
   Future<void> verifyEmail(String token, String uid) async {
     try {
       isLoading.value = true;
-      log('📧 AuthController: Starting email verification process...');
-      log('   - Token: ${token.substring(0, 10)}...');
-      log('   - UID: $uid');
       
       final result = await _authService.verifyEmail(token: token, uid: uid, isMobile: true);
       
       if (result.isSuccess) {
-        log('✅ AuthController: Email verification successful');
-        
         // Update user verification status locally
         if (currentUserStore.value != null) {
           final updatedUser = currentUserStore.value!.copyWith(isVerified: true);
           currentUserStore.value = updatedUser;
           await _saveUserToStorage(updatedUser);
-          log('✅ AuthController: User verification status updated locally');
         }
         
         // Show success message
@@ -1390,16 +1319,13 @@ class AuthController extends GetxController {
         );
         
         // Auto-login and navigate to home if user is verified
-        log('🏠 AuthController: Navigating to home page after verification');
         await Future.delayed(const Duration(seconds: 2)); // Allow user to see success message
         Get.offAllNamed(Routes.homePage);
         
         // Refresh user profile to sync with server
         await refreshUserProfile();
-        
+
       } else {
-        log('❌ AuthController: Email verification failed: ${result.message}');
-        
         Get.snackbar(
           'Verification Failed',
           result.message,
@@ -1411,8 +1337,6 @@ class AuthController extends GetxController {
         );
       }
     } catch (e) {
-      log('💥 AuthController: Email verification error: $e');
-      
       Get.snackbar(
         'Verification Error',
         'An unexpected error occurred during verification. Please try again.',
@@ -1431,9 +1355,11 @@ class AuthController extends GetxController {
   /// Enhanced to handle direct JWT tokens in API response
   Future<bool> checkVerificationStatus() async {
     try {
-      log('🔍 AuthController: Starting checkVerificationStatus...');
-      log('🔍 AuthController: Checking verification status with enhanced JWT token support...');
-      
+      // Check connectivity before making API call
+      if (!await _checkConnectivityBeforeApiCall(operation: 'verification status check', showSnackbar: false)) {
+        return false;
+      }
+
       final statusResult = await _authService.checkVerificationStatus();
       
       final isVerified = statusResult['is_verified'] == true;
@@ -1445,34 +1371,9 @@ class AuthController extends GetxController {
       
       // ✅ UPDATE USER STATE: Sync with API response
       await _userStateService.updateStateFromApiResponse(statusResult);
-      log('📊 AuthController: User state synced with API response');
-      
-      log('📊 AuthController: Enhanced status result:');
-      log('   - verified: $isVerified');
-      log('   - auto_login: $autoLogin');
-      log('   - approval_status: $approvalStatus');
-      log('   - has_access_token: ${accessToken != null}');
-      log('   - has_refresh_token: ${refreshToken != null}');
-      
-      // 🔍 DEBUG: Print exact values and conditions
-      log('🔍 DEBUG: Raw statusResult = $statusResult');
-      log('🔍 DEBUG: isVerified = $isVerified (${isVerified.runtimeType})');
-      log('🔍 DEBUG: approvalStatus = "$approvalStatus" (${approvalStatus.runtimeType})');
-      log('🔍 DEBUG: autoLogin = $autoLogin (${autoLogin.runtimeType})');
-      log('🔍 DEBUG: message = "$message"');
-      log('🔍 DEBUG: accessToken != null = ${accessToken != null}');
-      log('🔍 DEBUG: refreshToken != null = ${refreshToken != null}');
-      log('🔍 DEBUG: Condition 1 (approved + autoLogin): ${isVerified && approvalStatus == "approved" && autoLogin}');
-      log('🔍 DEBUG: Condition 2 (approved + !autoLogin): ${isVerified && approvalStatus == "approved" && !autoLogin}');
-      log('🔍 DEBUG: NEW Condition (unknown + tokens): ${isVerified && autoLogin && accessToken != null && approvalStatus == "unknown"}');
-      log('🔍 DEBUG: Condition 3 (pending): ${isVerified && approvalStatus == "pending"}');
-      log('🔍 DEBUG: Condition 4 (rejected): ${isVerified && approvalStatus == "rejected"}');
-      log('🔍 DEBUG: Condition 5 (expired): ${isVerified && approvalStatus == "expired"}');
       
       // Handle unverified users first
       if (!isVerified) {
-        log('❌ AuthController: User not yet verified');
-        
         Get.snackbar(
           'Not Verified',
           message.isNotEmpty ? message : 'Please check your email and click the verification link first.',
@@ -1485,17 +1386,10 @@ class AuthController extends GetxController {
         
         return false;
       }
-      
-      // 🚨 CRITICAL FIX: Check APPROVED status first, then pending
       // User is verified - handle approval status with correct priority
-      
-      log('🔍 DEBUG: About to check approval conditions...');
-      
       if (isVerified && (approvalStatus == "approved" || (autoLogin && accessToken != null && approvalStatus == "unknown"))) {
-        log('🎉 DEBUG: APPROVED condition matched!');
         if (autoLogin && accessToken != null && refreshToken != null) {
           // Scenario 1: Approved user within auto-login window (has JWT tokens)
-          log('✅ AuthController: Auto-login enabled - approved user with JWT tokens');
           
           // Update local user state
           if (currentUserStore.value != null) {
@@ -1521,9 +1415,7 @@ class AuthController extends GetxController {
               final user = UserModel.fromJson(mappedUserData);
               currentUserStore.value = user;
               await _saveUserToStorage(user);
-              log('👤 AuthController: User data updated from API response with approval status');
             } catch (e) {
-              log('⚠️ AuthController: Failed to parse user data: $e');
             }
           }
           
@@ -1537,7 +1429,6 @@ class AuthController extends GetxController {
           );
           
           // 🔥🔥🔥 CRITICAL FIX: Setup FCM token after successful auto-login
-          log('🔥🔥🔥 AUTHCONTROLLER DEBUG: SETTING UP FCM AFTER AUTO-LOGIN SUCCESS', name: 'AUTH_CONTROLLER');
           await _setupFCMTokenAfterLogin();
           
           // Show approval popup and auto-redirect
@@ -1547,15 +1438,11 @@ class AuthController extends GetxController {
           
         } else {
           // Scenario 2: Approved user outside auto-login window (no JWT tokens)
-          log('🎉 DEBUG: APPROVED without auto-login - showing congratulations');
-          log('🎉 AuthController: User approved but outside auto-login window - showing congratulations');
-          
           // Update user state to fully approved
           await _userStateService.updateState(
             UserApprovalState.fullyApproved,
             userId: currentUserStore.value?.userId,
           );
-          log('📊 AuthController: User state updated to fullyApproved');
           
           // Update user model with approval status
           if (currentUserStore.value != null) {
@@ -1576,16 +1463,12 @@ class AuthController extends GetxController {
         
       } else if (isVerified && approvalStatus == "pending") {
         // Scenario 3: ✅ Email verified but pending approval - Proper state transition
-        log('⏳ DEBUG: PENDING condition matched');
-        log('📋 AuthController: Email verified, approval pending - transitioning to pending approval state');
-        
         // ✅ CRITICAL FIX: Update user state to prevent screen switching
         await _userStateService.updateState(
           UserApprovalState.emailVerifiedPendingApproval,
           userId: currentUserStore.value?.userId,
           referrerName: statusResult['user']?['referred_by_name'] ?? statusResult['user']?['referredByName'],
         );
-        log('📊 AuthController: User state updated to emailVerifiedPendingApproval');
         
         // Extract referrer info for display
         final userData = statusResult['user'] ?? {};
@@ -1609,9 +1492,6 @@ class AuthController extends GetxController {
         
       } else if (isVerified && approvalStatus == "rejected") {
         // Scenario 4: Rejected by referrer
-        log('❌ DEBUG: REJECTED condition matched');
-        log('❌ AuthController: User registration was rejected by referrer');
-        
         final userData = statusResult['user'] ?? {};
         final rejectionReason = userData['rejection_reason'] ?? userData['rejectionReason'] ?? 'No reason provided';
         
@@ -1633,8 +1513,6 @@ class AuthController extends GetxController {
         
       } else if (isVerified && approvalStatus == "expired") {
         // Scenario 5: Approval window expired
-        log('⏰ AuthController: Approval request expired - require new referral');
-        
         // Clear session for expired approval
         await logout();
         
@@ -1656,9 +1534,6 @@ class AuthController extends GetxController {
         
       } else {
         // Unknown scenario - fallback
-        log('❓ DEBUG: UNKNOWN scenario - falling to else block');
-        log('⚠️ AuthController: Unknown approval scenario - approval_status: $approvalStatus, auto_login: $autoLogin');
-        
         Get.snackbar(
           'Status Unknown',
           'Please contact support or try logging in manually.',
@@ -1672,8 +1547,6 @@ class AuthController extends GetxController {
         return false;
       }
     } catch (e) {
-      log('❌ AuthController: Enhanced verification check failed: $e');
-      
       Get.snackbar(
         'Verification Check Failed',
         'Unable to check verification status. Please try again.',
@@ -1861,14 +1734,11 @@ class AuthController extends GetxController {
   /// Reload JWT tokens and user data (used by splash controller)
   Future<void> reloadTokens() async {
     try {
-      log('🔄 AuthController: Reloading tokens and user data...');
-      
       // Load JWT tokens from secure storage
       await _apiService.loadTokensFromStorage();
       
       // Check if we have valid tokens
       final hasTokens = _apiService.isAuthenticated;
-      log('🔄 AuthController: Has valid tokens: $hasTokens');
       
       // Load user data from shared preferences
       final prefs = await SharedPreferences.getInstance();
@@ -1880,7 +1750,6 @@ class AuthController extends GetxController {
         
         // Try to validate the token by checking verification status
         try {
-          log('🔄 AuthController: Validating stored tokens...');
           // Use verification-status endpoint to verify token is still valid
           final response = await _apiService.get('/api/auth/verification-status/');
 
@@ -1902,34 +1771,27 @@ class AuthController extends GetxController {
               await saveUserToStorage(updatedUser);
             }
 
-            log('✅ AuthController: Tokens validated - verified: $isVerified, approved: $isApproved');
           } else {
             throw Exception('Token validation failed');
           }
         } catch (e) {
-          log('⚠️ AuthController: Token validation failed, attempting refresh: $e');
-          
           // Try to refresh the token
           final refreshSuccess = await _apiService.refreshTokenIfNeeded();
           
           if (refreshSuccess) {
             isLoggedIn.value = true;
-            log('✅ AuthController: Token refreshed successfully');
           } else {
-            log('❌ AuthController: Token refresh failed - user needs to login again');
             isLoggedIn.value = false;
             currentUserStore.value = null;
             await _clearUserData();
           }
         }
       } else {
-        log('ℹ️  AuthController: No user data found in storage');
         isLoggedIn.value = false;
         currentUserStore.value = null;
       }
       
     } catch (e) {
-      log('❌ AuthController: Error reloading tokens: $e');
       isLoggedIn.value = false;
       currentUserStore.value = null;
     }
@@ -1942,27 +1804,16 @@ class AuthController extends GetxController {
   /// Setup FCM token registration after successful login
   Future<void> _setupFCMTokenAfterLogin() async {
     try {
-      log('🚀 AuthController: Setting up FCM token after login...', name: 'AUTH_CONTROLLER');
-      
       // Get Firebase notification service
       if (Get.isRegistered<FirebaseNotificationService>()) {
         final firebaseService = Get.find<FirebaseNotificationService>();
-        log('✅ Found FirebaseNotificationService, setting up full FCM flow...', name: 'AUTH_CONTROLLER');
         
         // 🔥 CRITICAL FIX: Use setupPushNotifications instead of registerTokenWithBackend
         // This ensures permissions are requested before token registration
         final success = await firebaseService.setupPushNotifications();
         
-        if (success) {
-          log('🎉 FCM setup completed successfully with backend after login!', name: 'AUTH_CONTROLLER');
-        } else {
-          log('❌ FCM setup failed after login - check permissions and Firebase config', name: 'AUTH_CONTROLLER');
-        }
-      } else {
-        log('❌ FirebaseNotificationService not found - cannot setup FCM token', name: 'AUTH_CONTROLLER');
       }
     } catch (e) {
-      log('💥 Error setting up FCM token after login: $e', name: 'AUTH_CONTROLLER');
     }
   }
 
@@ -1992,9 +1843,7 @@ class AuthController extends GetxController {
         'rejectionReason': user.rejectionReason,
         'approvalExpiresAt': user.approvalExpiresAt?.toIso8601String(),
       }));
-      log('💾 User data saved to storage');
     } catch (e) {
-      log('❌ Error saving user to storage: $e');
     }
   }
 
@@ -2003,9 +1852,7 @@ class AuthController extends GetxController {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('user');
-      log('🧹 User data cleared from storage');
     } catch (e) {
-      log('❌ Error clearing user data: $e');
     }
   }
 

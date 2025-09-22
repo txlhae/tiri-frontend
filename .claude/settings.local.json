@@ -19,7 +19,9 @@
       "Read(//c/Users/Talha/AppData/Local/Packages/Microsoft.YourPhone_8wekyb3d8bbwe/TempState/medias/**)",
       "Bash(timeout 15 flutter analyze --no-fatal-infos)",
       "mcp__ide__getDiagnostics",
-      "Bash(timeout 30 flutter logs)"
+      "Bash(timeout 30 flutter logs)",
+      "Bash(dart analyze:*)",
+      "Bash(dart:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",

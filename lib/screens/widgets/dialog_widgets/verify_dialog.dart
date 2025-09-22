@@ -3,19 +3,15 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:tiri/controllers/auth_controller.dart';
-import 'package:tiri/controllers/notification_controller.dart';
-import 'package:tiri/models/notification_model.dart';
 import 'package:tiri/models/user_model.dart';
 import 'package:tiri/screens/widgets/custom_widgets/custom_button.dart';
 import 'package:tiri/screens/widgets/custom_widgets/custom_cancel.dart';
 
 class VerifyDialog extends StatefulWidget {
   final UserModel acceptedUser;
-  final NotificationModel notification;
   const VerifyDialog({
     super.key,
     required this.acceptedUser,
-    required this.notification,
   });
 
   @override
@@ -24,19 +20,10 @@ class VerifyDialog extends StatefulWidget {
 
 class _VerifyDialogState extends State<VerifyDialog> {
   final authController = Get.find<AuthController>();
-  final notificationController = Get.find<NotificationController>();
   Future<void> verifyUserData() async {
     log('AcceptedUser type: ${widget.acceptedUser.runtimeType}');
     try {
-      await authController.verifyUser(widget.acceptedUser).then(
-        (value) {
-          notificationController.updateNotify(widget.notification).then(
-            (value) {
-              notificationController.loadNotification();
-            },
-          );
-        },
-      );
+      await authController.verifyUser(widget.acceptedUser);
     } catch (error) {
       log('Error in interested dialog: $error');
     }

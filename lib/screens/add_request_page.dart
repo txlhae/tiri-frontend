@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'package:tiri/controllers/notification_controller.dart';
 import 'package:tiri/controllers/request_controller.dart';
 import 'package:tiri/models/category_model.dart';
 import 'package:tiri/screens/widgets/custom_widgets/custom_back_button.dart';
@@ -14,8 +13,6 @@ class AddRequestPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final RequestController controller = Get.find<RequestController>();
-    final NotificationController notificationController =
-        Get.find<NotificationController>();
     return GestureDetector(
       onTap: () {
         FocusScope.of(context).requestFocus(FocusNode());
@@ -339,11 +336,7 @@ class AddRequestPage extends StatelessWidget {
                         buttonText: controller.isLoading.value ? "Creating..." : "Create Request",
                         onButtonPressed: () {
                           if (!controller.isLoading.value) {
-                            controller.saveRequest().then((success) {
-                              if (success) {
-                                notificationController.loadNotification();
-                              }
-                            });
+                            controller.saveRequest();
                           }
                         },
                       )),

@@ -13,7 +13,6 @@ import 'package:tiri/screens/edit_add_request_page.dart';
 import 'package:tiri/screens/feedback.dart';
 import 'package:tiri/screens/home_screen.dart';
 import 'package:tiri/screens/auth_screens/login_screen.dart';
-import 'package:tiri/screens/notifications_page.dart';
 import 'package:tiri/screens/privacy_and_security.dart';
 import 'package:tiri/screens/profile_screen.dart';
 import 'package:tiri/screens/auth_screens/register_screen.dart';
@@ -93,10 +92,6 @@ class Navigation {
     GetPage(
       name: Routes.contactUsPage,
       page: () => const ContactUs(),
-    ),
-    GetPage(
-      name: Routes.notificationsPage,
-      page: () => const NotificationsPage(),
     ),
     GetPage(
       name: Routes.feedbackPage,

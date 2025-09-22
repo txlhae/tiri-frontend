@@ -4,7 +4,6 @@ import 'package:tiri/controllers/chat_controller.dart';
 import 'package:tiri/controllers/email_sent_controller.dart';
 import 'package:tiri/controllers/home_controller.dart';
 import 'package:tiri/controllers/image_controller.dart';
-import 'package:tiri/controllers/notification_controller.dart';
 import 'package:tiri/controllers/request_controller.dart';
 import 'package:tiri/controllers/request_details_controller.dart';
 // Splash controller is created directly by SplashScreen, not via AppBinding
@@ -15,6 +14,7 @@ import 'package:tiri/services/request_service.dart';
 import 'package:tiri/services/deep_link_service.dart';
 import 'package:tiri/services/user_state_service.dart';
 import 'package:tiri/services/account_status_service.dart';
+import 'package:tiri/services/connectivity_service.dart';
 
 class AppBinding extends Bindings {
   @override
@@ -24,6 +24,7 @@ class AppBinding extends Bindings {
     Get.put<AuthService>(AuthService());
     Get.put<RequestService>(RequestService());
     Get.put<DeepLinkService>(DeepLinkService(), permanent: true);
+    Get.put<ConnectivityService>(ConnectivityService(), permanent: true);
     Get.put<UserStateService>(UserStateService(), permanent: true);
     Get.put<AccountStatusService>(AccountStatusService.instance, permanent: true);
     
@@ -36,7 +37,6 @@ class AppBinding extends Bindings {
     Get.put<ImageController>(ImageController());
     // Use lazyPut for controllers that make API calls - they only initialize when first accessed
     Get.lazyPut<RequestController>(() => RequestController());
-    Get.lazyPut<NotificationController>(() => NotificationController());
     Get.put<RequestDetailsController>(RequestDetailsController());
   }
 }

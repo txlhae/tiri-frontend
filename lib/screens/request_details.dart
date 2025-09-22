@@ -5,11 +5,9 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:tiri/controllers/auth_controller.dart';
 import 'package:tiri/controllers/chat_controller.dart';
-import 'package:tiri/controllers/notification_controller.dart';
 import 'package:tiri/controllers/request_controller.dart';
 import 'package:tiri/controllers/request_details_controller.dart';
 import 'package:tiri/infrastructure/routes.dart';
-import 'package:tiri/models/notification_model.dart';
 import 'package:tiri/models/request_model.dart';
 import 'package:tiri/models/user_model.dart';
 import 'package:tiri/screens/profile_screen.dart';
@@ -30,8 +28,6 @@ class RequestDetails extends StatefulWidget {
 class _RequestDetailsState extends State<RequestDetails> {
   final RequestController requestController = Get.find<RequestController>();
   final AuthController authController = Get.find<AuthController>();
-  final NotificationController notificationController =
-      Get.put(NotificationController());
   late final RequestDetailsController detailsController;
 
   /// Convert RequestStatus enum to user-friendly display string
@@ -2526,24 +2522,9 @@ class _RequestDetailsState extends State<RequestDetails> {
             DeferPointer(
               child: GestureDetector(
                 onTap: () {
-                  final newNotification = NotificationModel(
-                    notificationId: DateTime.now().millisecondsSinceEpoch.toString(),
-                    status: "",
-                    body: 'Please provide feedback for "${request.title}" completed by ${authController.currentUserStore.value?.username}',
-                    isUserWaiting: false,
-                    userId: request.userId,
-                    timestamp: DateTime.now(),
-                  );
-
-                  try {
-                    notificationController.sendReminderNotification(newNotification);
-                  } catch (e) {
-                    debugPrint("Error: $e");
-                  }
-
                   Get.snackbar(
-                    'Reminder Sent',
-                    'Notification sent to the requester!',
+                    'Feature Coming Soon',
+                    'Reminder functionality will be available soon!',
                     duration: const Duration(seconds: 3),
                     snackPosition: SnackPosition.BOTTOM,
                     backgroundColor: Colors.black87,

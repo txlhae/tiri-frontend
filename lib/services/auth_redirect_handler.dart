@@ -1,6 +1,5 @@
 // lib/services/auth_redirect_handler.dart
 
-import 'dart:developer';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:tiri/infrastructure/routes.dart';
@@ -16,21 +15,15 @@ class AuthRedirectHandler {
   /// Handle login success and redirect based on next_step
   static Future<void> handleLoginSuccess(Map<String, dynamic> response) async {
     try {
-      log('🛤️ AuthRedirectHandler: Handling login success...');
-
       // Store auth data first
       await AuthStorage.storeAuthData(response);
 
       final nextStep = response['next_step'] ?? '';
       final accountStatus = response['account_status'] ?? '';
 
-      log('📊 AuthRedirectHandler: Redirecting based on next_step: $nextStep');
-      log('📊 AuthRedirectHandler: Account status: $accountStatus');
-
       await _handleRedirect(nextStep, response);
 
     } catch (e) {
-      log('❌ AuthRedirectHandler: Error handling login success: $e');
       // Fallback to login page on error
       Get.offAllNamed(Routes.loginPage);
     }
@@ -39,21 +32,17 @@ class AuthRedirectHandler {
   /// Handle registration success and redirect based on next_step
   static Future<void> handleRegistrationSuccess(Map<String, dynamic> response) async {
     try {
-      log('🛤️ AuthRedirectHandler: Handling registration success...');
-
       // Store auth data first
       await AuthStorage.storeAuthData(response);
 
       final nextStep = response['next_step'] ?? 'verify_email';
       final accountStatus = response['account_status'] ?? 'email_pending';
 
-      log('📊 AuthRedirectHandler: Redirecting based on next_step: $nextStep');
-      log('📊 AuthRedirectHandler: Account status: $accountStatus');
-
+      
       await _handleRedirect(nextStep, response);
 
     } catch (e) {
-      log('❌ AuthRedirectHandler: Error handling registration success: $e');
+      
       // For registration errors, go to email verification as fallback
       Get.offAllNamed(Routes.emailVerificationPage);
     }
@@ -61,19 +50,17 @@ class AuthRedirectHandler {
 
   /// Core redirect logic based on registration_stage.can_access_app (NEW WORKFLOW)
   static Future<void> _handleRedirect(String nextStep, Map<String, dynamic> response) async {
-    log('🔍 AuthRedirectHandler: Full response data: $response');
+    
     final registrationStage = response['registration_stage'] as Map<String, dynamic>?;
-    log('🔍 AuthRedirectHandler: registration_stage = $registrationStage');
-
+    
     // 🚨 NEW WORKFLOW: Check can_access_app first
     if (registrationStage != null) {
       final canAccessApp = registrationStage['can_access_app'] == true;
-      log('🔍 AuthRedirectHandler: can_access_app = $canAccessApp');
-      log('🔍 AuthRedirectHandler: All registrationStage keys: ${registrationStage.keys.toList()}');
+      
 
       if (canAccessApp) {
         // User can access the app - go to home page
-        log('✅ AuthRedirectHandler: User can access app - redirecting to home');
+        
         _showMessage(
           'Welcome to TIRI!',
           'Your account is ready. Welcome to the community!',
@@ -85,12 +72,10 @@ class AuthRedirectHandler {
 
       // User cannot access app - check email verification status
       final isEmailVerified = registrationStage['is_email_verified'] == true || registrationStage['isEmailVerified'] == true;
-      log('🔍 AuthRedirectHandler: is_email_verified = $isEmailVerified');
-
+      
       if (!isEmailVerified) {
         // Email not verified - go to email verification page + auto-send email
-        log('📧 AuthRedirectHandler: Email not verified - redirecting to email verification');
-
+        
         // Auto-send verification email
         await _autoSendVerificationEmail();
 
@@ -105,12 +90,10 @@ class AuthRedirectHandler {
 
       // Email verified but not approved - check approval status
       final isApproved = registrationStage['is_approved'] == true || registrationStage['isApproved'] == true;
-      log('🔍 AuthRedirectHandler: is_approved = $isApproved');
-
+      
       if (!isApproved) {
         // Email verified but not approved - show popup and stay on login page
-        log('⚠️ AuthRedirectHandler: User not approved - showing rejection popup');
-
+        
         // Show popup with rejection message
         Get.dialog(
           AlertDialog(
@@ -132,11 +115,10 @@ class AuthRedirectHandler {
     }
 
     // FALLBACK: If no registration_stage data, use legacy next_step logic
-    log('⚠️ AuthRedirectHandler: No registration_stage data - falling back to next_step logic');
+    
     switch (nextStep) {
       case 'verify_email':
-        log('📧 AuthRedirectHandler: Redirecting to email verification');
-
+        
         // Auto-send verification email
         await _autoSendVerificationEmail();
 
@@ -150,7 +132,7 @@ class AuthRedirectHandler {
 
       case 'waiting_for_approval':
       case 'needs_referral_approval':
-        log('⏳ AuthRedirectHandler: Redirecting to pending approval');
+        
         final referrerEmail = registrationStage?['referrer_email'] ?? 'your referrer';
         _showMessage(
           'Approval Pending',
@@ -161,7 +143,7 @@ class AuthRedirectHandler {
         break;
 
       case 'approval_rejected':
-        log('❌ AuthRedirectHandler: Redirecting to rejection screen');
+        
         _showMessage(
           'Registration Rejected',
           'Your registration was not approved by the referrer.',
@@ -171,7 +153,7 @@ class AuthRedirectHandler {
         break;
 
       case 'complete_profile':
-        log('🏠 AuthRedirectHandler: Complete profile - redirecting to home page');
+        
         _showMessage(
           'Welcome to TIRI!',
           'Your account is ready. Welcome to the community!',
@@ -181,7 +163,7 @@ class AuthRedirectHandler {
         break;
 
       case 'ready':
-        log('🏠 AuthRedirectHandler: Redirecting to home page');
+        
         _showMessage(
           'Welcome to TIRI!',
           'Your account is ready. Welcome to the community!',
@@ -191,8 +173,7 @@ class AuthRedirectHandler {
         break;
 
       default:
-        log('⚠️ AuthRedirectHandler: Unknown next_step: $nextStep, defaulting to email verification');
-
+        
         // Auto-send verification email for unknown states
         await _autoSendVerificationEmail();
 
@@ -249,11 +230,10 @@ class AuthRedirectHandler {
 
       final expectedRoute = getRouteFromNextStep(nextStep ?? '');
 
-      log('🤔 AuthRedirectHandler: Current: $currentRoute, Expected: $expectedRoute');
 
       return currentRoute != expectedRoute;
     } catch (e) {
-      log('❌ AuthRedirectHandler: Error checking redirect: $e');
+      
       return false;
     }
   }
@@ -265,25 +245,23 @@ class AuthRedirectHandler {
 
       if (nextStep != null) {
         final correctRoute = getRouteFromNextStep(nextStep);
-        log('🛤️ AuthRedirectHandler: Redirecting to correct route: $correctRoute');
+        
         Get.offAllNamed(correctRoute);
       }
     } catch (e) {
-      log('❌ AuthRedirectHandler: Error redirecting to correct route: $e');
+      
     }
   }
 
   /// Handle email verification completion
   static Future<void> handleEmailVerificationComplete() async {
     try {
-      log('✅ AuthRedirectHandler: Email verification complete - checking next step');
-
+      
       // Check current auth state
       final authState = await AuthStorage.getAuthState();
       final nextStep = authState['next_step'];
       final accountStatus = authState['account_status'];
 
-      log('📊 AuthRedirectHandler: Post-verification - NextStep: $nextStep, Status: $accountStatus');
 
       // Update next step based on current state
       if (accountStatus == 'email_pending') {
@@ -303,7 +281,7 @@ class AuthRedirectHandler {
       }
 
     } catch (e) {
-      log('❌ AuthRedirectHandler: Error handling email verification complete: $e');
+      
       Get.offAllNamed(Routes.pendingApprovalPage);
     }
   }
@@ -311,8 +289,7 @@ class AuthRedirectHandler {
   /// Handle approval status change
   static Future<void> handleApprovalStatusChange(String newStatus) async {
     try {
-      log('📊 AuthRedirectHandler: Handling approval status change to: $newStatus');
-
+      
       switch (newStatus) {
         case 'approved':
           await AuthStorage.updateAccountStatus('approved');
@@ -354,11 +331,11 @@ class AuthRedirectHandler {
           break;
 
         default:
-          log('⚠️ AuthRedirectHandler: Unknown approval status: $newStatus');
+          
       }
 
     } catch (e) {
-      log('❌ AuthRedirectHandler: Error handling approval status change: $e');
+      
     }
   }
 
@@ -374,25 +351,24 @@ class AuthRedirectHandler {
         const Color.fromRGBO(176, 48, 48, 1),
       );
     } catch (e) {
-      log('❌ AuthRedirectHandler: Error clearing auth: $e');
+      
     }
   }
 
   /// Auto-send verification email for unverified users
   static Future<void> _autoSendVerificationEmail() async {
     try {
-      log('📧 AuthRedirectHandler: Auto-sending verification email...');
-
+      
       final authService = Get.find<AuthService>();
       final result = await authService.resendVerificationEmail();
 
       if (result.isSuccess) {
-        log('✅ AuthRedirectHandler: Verification email sent automatically');
+        
       } else {
-        log('❌ AuthRedirectHandler: Failed to auto-send verification email: ${result.message}');
+        
       }
     } catch (e) {
-      log('❌ AuthRedirectHandler: Error auto-sending verification email: $e');
+      
     }
   }
 }

@@ -7,6 +7,7 @@ import 'package:tiri/services/user_state_service.dart';
 import 'package:tiri/services/notification_permission_service.dart';
 import 'package:tiri/services/auth_service.dart';
 import 'package:tiri/services/api_service.dart';
+import 'package:tiri/services/connectivity_service.dart';
 
 /// Smart Splash Controller with State-Based Routing
 /// 
@@ -22,6 +23,7 @@ class SplashController extends GetxController {
   
   late final AuthController _authController;
   late final UserStateService _userStateService;
+  late final ConnectivityService _connectivityService;
   
   // =============================================================================
   // REACTIVE STATE
@@ -39,6 +41,7 @@ class SplashController extends GetxController {
     super.onInit();
     _authController = Get.find<AuthController>();
     _userStateService = Get.find<UserStateService>();
+    _connectivityService = Get.find<ConnectivityService>();
 
     // Start smart initialization after splash delay
     Timer(const Duration(seconds: 2), () {
@@ -56,27 +59,55 @@ class SplashController extends GetxController {
   Future<void> _performSmartInitialization() async {
     try {
       log('🚀 SplashController: Starting smart initialization', name: 'SPLASH');
-      
-      // Step 1: Initialize user state service
+
+      // Step 1: Check network connectivity first
+      initializationStatus.value = 'Checking connection...';
+      final connectivityState = await _connectivityService.checkConnectivity();
+
+      if (connectivityState == ConnectivityState.offline) {
+        log('🔴 SplashController: No internet connection detected', name: 'SPLASH');
+        initializationStatus.value = 'Not connected to the internet';
+        await Future.delayed(const Duration(seconds: 3));
+        // Show offline screen or retry
+        await _handleOfflineState();
+        return;
+      } else if (connectivityState == ConnectivityState.serverOffline) {
+        log('🔴 SplashController: Server offline detected', name: 'SPLASH');
+        initializationStatus.value = 'Server offline - unable to reach backend';
+        await Future.delayed(const Duration(seconds: 3));
+        // Show server offline screen or retry
+        await _handleServerOfflineState();
+        return;
+      }
+
+      log('✅ SplashController: Network connectivity confirmed', name: 'SPLASH');
+
+      // Step 2: Initialize user state service
       initializationStatus.value = 'Loading user state...';
       await _userStateService.initialize();
-      
-      // Step 2: Request notification permissions on first launch
+
+      // Step 3: Request notification permissions on first launch
       initializationStatus.value = 'Checking permissions...';
       await NotificationPermissionService.requestNotificationPermissionOnFirstLaunch();
-      
-      // Step 3: Load authentication tokens and user data
+
+      // Step 4: Load authentication tokens and user data
       initializationStatus.value = 'Checking authentication...';
       log('🔄 DEBUG: About to reload tokens...');
       await _authController.reloadTokens(); // Load JWT tokens
       log('🔄 DEBUG: Tokens reloaded. IsLoggedIn: ${_authController.isLoggedIn.value}');
-      
-      // 🚨 CRITICAL FIX: Check verification status before routing
+
+      // 🚨 CRITICAL FIX: Check verification status before routing (only if connected)
       if (_authController.isLoggedIn.value && _authController.currentUserStore.value != null) {
         log('🔍 User has tokens - checking verification status before routing...', name: 'SPLASH');
         initializationStatus.value = 'Checking account status...';
 
         try {
+          // Verify connectivity before making API call
+          if (!_connectivityService.canMakeApiCalls) {
+            log('⚠️ Cannot make API calls - connectivity issue detected', name: 'SPLASH');
+            throw Exception('No network connectivity for API calls');
+          }
+
           // Call verification-status API to check auto_login
           final authService = Get.find<AuthService>();
           final statusResult = await authService.checkVerificationStatus();
@@ -102,7 +133,15 @@ class SplashController extends GetxController {
             return;
           }
         } catch (e) {
-          log('⚠️ Verification status check failed: $e - routing to login', name: 'SPLASH');
+          log('⚠️ Verification status check failed: $e', name: 'SPLASH');
+
+          // Check if it's a connectivity issue
+          if (!_connectivityService.canMakeApiCalls) {
+            await _handleConnectivityError();
+            return;
+          }
+
+          // Otherwise treat as auth failure
           await _clearAllUserData();
           Get.offAllNamed(Routes.loginPage);
           return;
@@ -316,14 +355,68 @@ class SplashController extends GetxController {
   }
 
   // =============================================================================
+  // CONNECTIVITY ERROR HANDLERS
+  // =============================================================================
+
+  /// Handle offline state with retry option
+  Future<void> _handleOfflineState() async {
+    log('🔴 SplashController: Handling offline state', name: 'SPLASH');
+
+    // For now, retry after showing message
+    initializationStatus.value = 'Retrying in 5 seconds...';
+    await Future.delayed(const Duration(seconds: 5));
+
+    // Retry initialization
+    await _performSmartInitialization();
+  }
+
+  /// Handle server offline state with retry option
+  Future<void> _handleServerOfflineState() async {
+    log('🔴 SplashController: Handling server offline state', name: 'SPLASH');
+
+    // For now, retry after showing message
+    initializationStatus.value = 'Retrying connection...';
+    await Future.delayed(const Duration(seconds: 5));
+
+    // Retry initialization
+    await _performSmartInitialization();
+  }
+
+  /// Handle connectivity errors during operations
+  Future<void> _handleConnectivityError() async {
+    log('⚠️ SplashController: Handling connectivity error during operation', name: 'SPLASH');
+
+    final currentState = _connectivityService.currentState.value;
+
+    if (currentState == ConnectivityState.offline) {
+      initializationStatus.value = 'Not connected to the internet';
+      await _handleOfflineState();
+    } else if (currentState == ConnectivityState.serverOffline) {
+      initializationStatus.value = 'Server offline - unable to reach backend';
+      await _handleServerOfflineState();
+    } else {
+      // Unknown connectivity issue - try fallback
+      initializationStatus.value = 'Connection issue - trying again...';
+      await Future.delayed(const Duration(seconds: 3));
+      await _performSmartInitialization();
+    }
+  }
+
+  // =============================================================================
   // GETTERS FOR UI
   // =============================================================================
-  
+
   /// Get current initialization status for display
   String get currentStatus => initializationStatus.value;
-  
+
   /// Check if initialization is still in progress
   bool get isStillInitializing => isInitializing.value;
+
+  /// Get current connectivity state for UI
+  ConnectivityState get connectivityState => _connectivityService.currentState.value;
+
+  /// Get connectivity status message
+  String get connectivityMessage => _connectivityService.getStatusMessage();
 
   /// Clear all user data and cache
   Future<void> _clearAllUserData() async {
