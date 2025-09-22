@@ -17,6 +17,8 @@ import 'package:tiri/screens/auth_screens/email_verification_screen.dart';
 import 'package:tiri/services/auth_service.dart';
 import 'package:tiri/services/api_service.dart';
 import 'package:tiri/services/user_state_service.dart';
+import 'package:tiri/services/firebase_notification_service.dart';
+import 'package:tiri/services/auth_redirect_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Enterprise AuthController for TIRI application
@@ -166,9 +168,7 @@ class AuthController extends GetxController {
       _authService = Get.find<AuthService>();
       _apiService = Get.find<ApiService>();
       _userStateService = Get.find<UserStateService>();
-      log('✅ AuthController: Services initialized successfully');
     } catch (e) {
-      log('❌ AuthController: Error initializing services: $e');
     }
   }
 
@@ -176,15 +176,10 @@ class AuthController extends GetxController {
   /// This is the FIX for the 401 Unauthorized errors on app restart
   Future<void> _loadUserFromStorageWithTokens() async {
     try {
-      log('🔄 AuthController: Loading tokens and user data on app startup...');
-      
-      // 🚨 STEP 1: Load JWT tokens from secure storage FIRST
-      log('📱 Step 1: Loading JWT tokens from secure storage...');
+      // Load JWT tokens from secure storage FIRST
       await _apiService.loadTokensFromStorage();
-      log('   - Tokens loaded successfully');
-      
-      // 🚨 STEP 2: Load user data from shared preferences
-      log('👤 Step 2: Loading user data from shared preferences...');
+
+      // Load user data from shared preferences
       final prefs = await SharedPreferences.getInstance();
       final userStr = prefs.getString('user');
       
@@ -192,17 +187,11 @@ class AuthController extends GetxController {
         final userJson = jsonDecode(userStr);
         currentUserStore.value = UserModel.fromJson(userJson);
         isLoggedIn.value = true;
-        log('✅ User loaded from storage: ${currentUserStore.value?.email}');
-        log('   - User ID: ${currentUserStore.value?.userId}');
-        log('   - Verified: ${currentUserStore.value?.isVerified}');
       } else {
-        log('ℹ️ No stored user data found');
       }
       
-      log('🎯 AuthController: Token and user loading complete');
       
     } catch (e) {
-      log('❌ Error loading user/tokens from storage: $e');
       
       // Fallback: Clear potentially corrupted data
       try {
@@ -211,9 +200,7 @@ class AuthController extends GetxController {
         await prefs.remove('user');
         isLoggedIn.value = false;
         currentUserStore.value = null;
-        log('🧹 Cleared corrupted session data');
       } catch (clearError) {
-        log('❌ Failed to clear corrupted data: $clearError');
       }
     }
   }
@@ -227,117 +214,99 @@ class AuthController extends GetxController {
     if (!validateLoginForm()) return;
 
     isLoading.value = true;
-    
+
     try {
-      log('🔐 AuthController: Starting login process...');
       
       final result = await _authService.login(
         email: emailController.value.text.trim(),
         password: passwordController.value.text,
       );
 
-      if (result.isSuccess && result.user != null) {
-        log('✅ Login successful via AuthService');
-        
+
+      if (result.isSuccess) {
+
         // Update reactive state
-        currentUserStore.value = result.user;
-        isLoggedIn.value = true;
-        
-        // Save to storage
-        await _saveUserToStorage(result.user!);
-        
-        // ✅ APPROVAL SYSTEM: Check user status and route appropriately
-        final user = result.user!;
-        
-        if (!user.isVerified) {
-          log('🚨 User not verified - redirecting to email verification');
-          Get.snackbar(
-            'Email Verification Required',
-            'Please verify your email address to continue',
-            snackPosition: SnackPosition.TOP,
-            backgroundColor: Colors.orange,
-            colorText: Colors.white,
-            duration: const Duration(seconds: 3),
-          );
-          Get.offAllNamed(Routes.emailVerificationPage);
-          return;
+        if (result.user != null) {
+          currentUserStore.value = result.user;
+          isLoggedIn.value = true;
+          await _saveUserToStorage(result.user!);
         }
-        
-        if (!user.isApproved) {
-          log('🚨 User not approved - checking approval status');
-          
-          // Check current approval status
-          final statusResult = await _authService.checkApprovalStatus();
-          final status = statusResult['status'] ?? 'pending';
-          
-          switch (status) {
-            case 'pending':
-              log('📋 User approval still pending');
-              Get.snackbar(
-                'Approval Pending',
-                'Your registration is still waiting for approval from your referrer',
-                snackPosition: SnackPosition.TOP,
-                backgroundColor: Colors.orange,
-                colorText: Colors.white,
-                duration: const Duration(seconds: 3),
-              );
-              Get.offAllNamed(Routes.pendingApprovalPage);
-              return;
-              
-            case 'rejected':
-              log('❌ User registration was rejected');
-              rejectionReason.value = statusResult['rejection_reason'] ?? '';
-              Get.snackbar(
-                'Registration Rejected',
-                'Your registration was not approved by the referrer',
-                snackPosition: SnackPosition.TOP,
-                backgroundColor: cancel,
-                colorText: Colors.white,
-                duration: const Duration(seconds: 3),
-              );
-              Get.offAllNamed(Routes.rejectionScreen);
-              return;
-              
-            case 'expired':
-              log('⏰ User approval request expired');
-              Get.snackbar(
-                'Approval Expired',
-                'Your approval request has expired after 7 days',
-                snackPosition: SnackPosition.TOP,
-                backgroundColor: Colors.orange,
-                colorText: Colors.white,
-                duration: const Duration(seconds: 3),
-              );
-              Get.offAllNamed(Routes.expiredScreen);
-              return;
-              
-            default:
-              log('⚠️ Unknown approval status: $status');
-              Get.snackbar(
-                'Account Status Unknown',
-                'Please contact support for assistance',
-                snackPosition: SnackPosition.TOP,
-                backgroundColor: cancel,
-                colorText: Colors.white,
-                duration: const Duration(seconds: 3),
-              );
-              return;
+
+        // Setup FCM token after successful login
+        await Future.delayed(const Duration(milliseconds: 100));
+        await _setupFCMTokenAfterLogin();
+
+        // Handle enhanced auth response with next_step routing
+        if (result.authResponse != null) {
+
+          // Use AuthRedirectHandler for centralized routing
+          await AuthRedirectHandler.handleLoginSuccess({
+            'user': {
+              'userId': result.authResponse!.user.userId,
+              'email': result.authResponse!.user.email,
+              'username': result.authResponse!.user.username,
+              'imageUrl': result.authResponse!.user.imageUrl,
+              'phoneNumber': result.authResponse!.user.phoneNumber,
+              'country': result.authResponse!.user.country,
+              'referralCode': result.authResponse!.user.referralCode,
+              'rating': result.authResponse!.user.rating,
+              'hours': result.authResponse!.user.hours,
+              'isVerified': result.authResponse!.user.isVerified,
+              'isApproved': result.authResponse!.user.isApproved,
+            },
+            'tokens': {
+              'access': result.authResponse!.tokens.access,
+              'refresh': result.authResponse!.tokens.refresh,
+            },
+            'account_status': result.authResponse!.accountStatus,
+            'next_step': result.authResponse!.nextStep,
+            'registration_stage': result.authResponse!.registrationStage != null ? {
+              'status': result.authResponse!.registrationStage!.status,
+              'is_email_verified': result.authResponse!.registrationStage!.isEmailVerified,
+              'is_approved': result.authResponse!.registrationStage!.isApproved,
+              'can_access_app': result.authResponse!.registrationStage!.canAccessApp,
+              'approval_status': result.authResponse!.registrationStage!.approvalStatus,
+              'referrer_email': result.authResponse!.registrationStage!.referrerEmail,
+            } : null,
+            'message': result.authResponse!.message,
+          });
+        } else {
+          // Legacy routing based on user verification/approval status
+          final user = result.user!;
+
+          if (!user.isVerified) {
+            Get.snackbar(
+              'Email Verification Required',
+              'Please verify your email address to continue',
+              snackPosition: SnackPosition.TOP,
+              backgroundColor: Colors.orange,
+              colorText: Colors.white,
+              duration: const Duration(seconds: 3),
+            );
+            Get.offAllNamed(Routes.emailVerificationPage);
+          } else if (!user.isApproved) {
+            Get.snackbar(
+              'Approval Pending',
+              'Your registration is waiting for approval',
+              snackPosition: SnackPosition.TOP,
+              backgroundColor: Colors.orange,
+              colorText: Colors.white,
+              duration: const Duration(seconds: 3),
+            );
+            Get.offAllNamed(Routes.pendingApprovalPage);
+          } else {
+            Get.snackbar(
+              'Welcome Back!',
+              'Hello ${user.username}',
+              snackPosition: SnackPosition.TOP,
+              backgroundColor: move,
+              colorText: Colors.white,
+              duration: const Duration(seconds: 3),
+            );
+            Get.offAllNamed(Routes.homePage);
           }
         }
-        
-        // ✅ User is both verified and approved - proceed to home
-        log('🏠 User fully approved - navigating to home page');
-        Get.snackbar(
-          'Welcome Back!',
-          'Hello ${user.username}',
-          snackPosition: SnackPosition.TOP,
-          backgroundColor: move,
-          colorText: Colors.white,
-          duration: const Duration(seconds: 3),
-        );
-        
-        Get.offAllNamed(Routes.homePage);
-        
+
         // Clear form
         _clearLoginForm();
         
@@ -1567,6 +1536,10 @@ class AuthController extends GetxController {
             userId: currentUserStore.value?.userId,
           );
           
+          // 🔥🔥🔥 CRITICAL FIX: Setup FCM token after successful auto-login
+          log('🔥🔥🔥 AUTHCONTROLLER DEBUG: SETTING UP FCM AFTER AUTO-LOGIN SUCCESS', name: 'AUTH_CONTROLLER');
+          await _setupFCMTokenAfterLogin();
+          
           // Show approval popup and auto-redirect
           _showApprovalSuccessPopup();
           
@@ -1905,23 +1878,31 @@ class AuthController extends GetxController {
         final userJson = jsonDecode(userStr);
         currentUserStore.value = UserModel.fromJson(userJson);
         
-        // Try to validate the token by making a simple API call
+        // Try to validate the token by checking verification status
         try {
           log('🔄 AuthController: Validating stored tokens...');
-          // Make a simple authenticated request to verify token is still valid
-          final response = await _apiService.get('/api/auth/user/');
-          
+          // Use verification-status endpoint to verify token is still valid
+          final response = await _apiService.get('/api/auth/verification-status/');
+
           if (response.statusCode == 200) {
             isLoggedIn.value = true;
-            
-            // Update user state to fullyApproved if we have valid tokens and user data
-            await _userStateService.updateState(
-              UserApprovalState.fullyApproved,
-              userId: currentUserStore.value?.userId,
-            );
-            
-            log('✅ AuthController: Tokens validated and user authenticated');
-            log('✅ AuthController: User state updated to fullyApproved');
+
+            // Parse verification status response
+            final data = response.data as Map<String, dynamic>;
+            final isVerified = data['is_verified'] == true;
+            final isApproved = data['auto_login'] == true || data['approval_status'] == 'approved';
+
+            // Update user verification and approval status
+            if (currentUserStore.value != null) {
+              final updatedUser = currentUserStore.value!.copyWith(
+                isVerified: isVerified,
+                isApproved: isApproved,
+              );
+              currentUserStore.value = updatedUser;
+              await saveUserToStorage(updatedUser);
+            }
+
+            log('✅ AuthController: Tokens validated - verified: $isVerified, approved: $isApproved');
           } else {
             throw Exception('Token validation failed');
           }
@@ -1933,15 +1914,7 @@ class AuthController extends GetxController {
           
           if (refreshSuccess) {
             isLoggedIn.value = true;
-            
-            // Update user state to fullyApproved after successful refresh
-            await _userStateService.updateState(
-              UserApprovalState.fullyApproved,
-              userId: currentUserStore.value?.userId,
-            );
-            
             log('✅ AuthController: Token refreshed successfully');
-            log('✅ AuthController: User state updated to fullyApproved');
           } else {
             log('❌ AuthController: Token refresh failed - user needs to login again');
             isLoggedIn.value = false;
@@ -1959,6 +1932,37 @@ class AuthController extends GetxController {
       log('❌ AuthController: Error reloading tokens: $e');
       isLoggedIn.value = false;
       currentUserStore.value = null;
+    }
+  }
+
+  // =============================================================================
+  // FCM INTEGRATION METHODS
+  // =============================================================================
+  
+  /// Setup FCM token registration after successful login
+  Future<void> _setupFCMTokenAfterLogin() async {
+    try {
+      log('🚀 AuthController: Setting up FCM token after login...', name: 'AUTH_CONTROLLER');
+      
+      // Get Firebase notification service
+      if (Get.isRegistered<FirebaseNotificationService>()) {
+        final firebaseService = Get.find<FirebaseNotificationService>();
+        log('✅ Found FirebaseNotificationService, setting up full FCM flow...', name: 'AUTH_CONTROLLER');
+        
+        // 🔥 CRITICAL FIX: Use setupPushNotifications instead of registerTokenWithBackend
+        // This ensures permissions are requested before token registration
+        final success = await firebaseService.setupPushNotifications();
+        
+        if (success) {
+          log('🎉 FCM setup completed successfully with backend after login!', name: 'AUTH_CONTROLLER');
+        } else {
+          log('❌ FCM setup failed after login - check permissions and Firebase config', name: 'AUTH_CONTROLLER');
+        }
+      } else {
+        log('❌ FirebaseNotificationService not found - cannot setup FCM token', name: 'AUTH_CONTROLLER');
+      }
+    } catch (e) {
+      log('💥 Error setting up FCM token after login: $e', name: 'AUTH_CONTROLLER');
     }
   }
 
@@ -2053,8 +2057,20 @@ class AuthController extends GetxController {
   /// Check if user is verified
   bool get isUserVerified => currentUserStore.value?.isVerified ?? false;
 
-  /// Check if user is currently authenticated
-  bool get isAuthenticated => isLoggedIn.value && currentUserStore.value != null;
+  /// Check if user is currently authenticated (BOTH email verified AND referrer approved)
+  bool get isAuthenticated {
+    // Must be logged in with user data
+    if (!isLoggedIn.value || currentUserStore.value == null) {
+      return false;
+    }
+
+    // 🚨 SECURITY FIX: Must be BOTH email verified AND referrer approved
+    final user = currentUserStore.value!;
+    final isVerified = user.isVerified ?? false;
+    final isApproved = user.isApproved ?? false;
+
+    return isVerified && isApproved;
+  }
 
   // =============================================================================
   // CLEANUP
@@ -2175,4 +2191,9 @@ class AuthController extends GetxController {
   
   /// Provide access to the API service for other controllers
   ApiService get apiService => _apiService;
+
+  /// Public method to save user data to storage (for AuthGuard and other services)
+  Future<void> saveUserToStorage(UserModel user) async {
+    await _saveUserToStorage(user);
+  }
 }

@@ -10,6 +10,7 @@ import 'package:tiri/controllers/request_controller.dart';
 import 'package:tiri/infrastructure/routes.dart';
 import 'package:tiri/screens/widgets/home_widgets/community_requests.dart';
 import 'package:tiri/screens/widgets/home_widgets/my_requests.dart';
+import 'package:tiri/services/firebase_notification_service.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -20,6 +21,20 @@ class HomeScreen extends StatelessWidget {
     final AuthController authController = Get.find<AuthController>();
     final RequestController requestController = Get.find<RequestController>();
     final NotificationController notificationController = Get.find<NotificationController>();
+
+    // 🚨 SAFETY CHECK: Ensure tabController is initialized before building UI
+    if (homeController.tabController == null) {
+      return const Scaffold(
+        backgroundColor: Color(0xFF1A1A1A),
+        body: Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(
+              Color.fromRGBO(0, 140, 170, 1),
+            ),
+          ),
+        ),
+      );
+    }
 
     // 🚨 SAFETY FIX: Ensure requests are loaded when HomeScreen is displayed
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -178,7 +193,7 @@ class HomeScreen extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
                     ),
-                    controller: homeController.tabController,
+                    controller: homeController.tabController!,
                     unselectedLabelStyle: const TextStyle(
                       color: Color.fromRGBO(218, 218, 218, 1),
                     ),
@@ -193,7 +208,7 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
             ValueListenableBuilder(
-              valueListenable: homeController.tabController.animation!,
+              valueListenable: homeController.tabController!.animation!,
               builder: (context, animation, child) {
                 double value = animation;
                 final int transitioningIndex = value.floor();
@@ -202,7 +217,7 @@ class HomeScreen extends StatelessWidget {
                 final int firstIndex = transitioningIndex;
                 final int visualIndex = isTransitioning
                     ? firstIndex
-                    : homeController.tabController.index;
+                    : homeController.tabController!.index;
 
                 // Make the container shrink faster than it grows
                 final bool isRemovingIcon =
@@ -224,7 +239,7 @@ class HomeScreen extends StatelessWidget {
                                 child: TextFormField(
                                   onFieldSubmitted: (location) async {
                                     final selectedTab =
-                                        homeController.tabController.index;
+                                        homeController.tabController!.index;
                                     if (selectedTab == 0) {
                                       // Community tab
                                       await requestController
@@ -268,7 +283,7 @@ class HomeScreen extends StatelessWidget {
                                                     .clear();
                                                 final selectedTab =
                                                     homeController
-                                                        .tabController.index;
+                                                        .tabController!.index;
                                                 if (selectedTab == 0) {
                                                   requestController
                                                       .communityRequests
@@ -351,7 +366,7 @@ class HomeScreen extends StatelessWidget {
             ),
             Expanded(
               child: TabBarView(
-                controller: homeController.tabController,
+                controller: homeController.tabController!,
                 children: const <Widget>[
                   CommunityRequests(),
                   MyRequests(),

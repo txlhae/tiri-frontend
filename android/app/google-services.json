@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "869913529630",
+    "project_id": "tiri-ca1ca",
+    "storage_bucket": "tiri-ca1ca.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:869913529630:android:7637a39112a998546c4d0f",
+        "android_client_info": {
+          "package_name": "com.example.tiri"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyATbIGrhg9FLL9LW07nf_tPK724X4RV7BQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

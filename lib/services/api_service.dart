@@ -116,12 +116,11 @@ class ApiService {
   Interceptor _createAuthInterceptor() {
     return InterceptorsWrapper(
       onRequest: (RequestOptions options, RequestInterceptorHandler handler) async {
-        // Don't add auth header to token refresh requests and verification status
-        if (options.path == ApiConfig.authTokenRefresh || 
+        // Don't add auth header to public endpoints only
+        if (options.path == ApiConfig.authTokenRefresh ||
             options.path == ApiConfig.authLogin ||
-            options.path == ApiConfig.authRegister ||
-            options.path == ApiConfig.authVerificationStatus) {
-          log('🔓 Skipping auth header for: ${options.path}', name: 'API');
+            options.path == ApiConfig.authRegister) {
+          log('🔓 Skipping auth header for public endpoint: ${options.path}', name: 'API');
           handler.next(options);
           return;
         }
@@ -139,6 +138,8 @@ class ApiService {
         if (_accessToken != null) {
           options.headers['Authorization'] = 'Bearer $_accessToken';
           log('🔐 Added auth header to: ${options.path} (token: ${_accessToken!.substring(0, 20)}...)', name: 'API');
+          log('🔐 Full Authorization header: Bearer ${_accessToken!.substring(0, 30)}...', name: 'API');
+          log('🔐 Token length: ${_accessToken!.length} characters', name: 'API');
         } else {
           log('⚠️ No access token available for: ${options.path} (isAuthenticated: $isAuthenticated)', name: 'API');
         }

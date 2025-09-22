@@ -229,7 +229,37 @@ class _PendingApprovalScreenState extends State<PendingApprovalScreen>
                           ),
                         ),
                       ),
-                
+
+                      const SizedBox(height: 20),
+
+                      // Back to login option
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text(
+                            "Need to use a different account?",
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.black54,
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              // Clear current session and go back to login
+                              authController.logout();
+                            },
+                            child: const Text(
+                              'Login',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: Color.fromRGBO(0, 140, 170, 1),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
                 const SizedBox(height: 40),
               ],
             );

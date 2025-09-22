@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:tiri/controllers/auth_controller.dart';
+import 'package:tiri/infrastructure/routes.dart';
 import 'package:tiri/screens/widgets/custom_widgets/custom_button.dart';
 import 'package:tiri/services/auth_service.dart';
 import 'package:tiri/services/account_status_service.dart';
@@ -32,6 +34,10 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
   late final AccountStatusService accountStatusService;
   final RxBool isCheckingVerification = false.obs;
   final Rx<RegistrationStatusResponse?> currentStatus = Rx<RegistrationStatusResponse?>(null);
+
+  // Timer for resend button
+  final RxBool canResendEmail = true.obs;
+  final RxInt resendCooldownSeconds = 0.obs;
 
   @override
   void initState() {
@@ -71,30 +77,75 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
   Future<void> handleVerificationCheck() async {
     try {
       log('🔍 EmailVerificationScreen: User clicked "I have verified"');
-      
+
       isCheckingVerification.value = true;
-      
-      // TEMPORARILY DISABLED: Get fresh registration status from server (endpoint doesn't exist)
-      // final status = await authService.getRegistrationStatus();
-      // 
-      // if (status == null) {
-      //   throw Exception('Unable to check verification status. Please try again.');
-      // }
-      // 
-      // // Update current status
-      // currentStatus.value = status;
-      // await accountStatusService.storeAccountStatus(status);
-      
-      log('⚠️ EmailVerificationScreen: Registration status check disabled - using legacy verification check', name: 'EMAIL_VERIFICATION');
-      
-      // Use the legacy verification check instead
-      final success = await authController.checkVerificationStatus();
-      if (!success) {
-        throw Exception('Email verification failed. Please try again.');
+
+      // 🚨 CRITICAL FIX: Ensure tokens are loaded and check verification status
+      log('🔐 EmailVerificationScreen: Loading current tokens and checking verification status...');
+      await authController.reloadTokens();
+
+      // 🚨 CRITICAL FIX: Verify we have tokens before proceeding
+      if (!authController.isLoggedIn.value) {
+        throw Exception('Authentication session expired. Please login again.');
       }
-      
+
+      // Check if user is now verified (reloadTokens already checked this)
+      final user = authController.currentUserStore.value;
+      if (user != null && user.isVerified == true) {
+        log('✅ EmailVerificationScreen: User is now verified!');
+
+        // Show success message and navigate based on approval status
+        if (user.isApproved == true) {
+          Get.snackbar(
+            'Welcome to TIRI!',
+            'Your account is fully verified and approved!',
+            snackPosition: SnackPosition.TOP,
+            backgroundColor: Colors.green,
+            colorText: Colors.white,
+            duration: const Duration(seconds: 3),
+            icon: const Icon(Icons.celebration, color: Colors.white),
+          );
+          Get.offAllNamed(Routes.homePage);
+        } else {
+          Get.snackbar(
+            'Email Verified!',
+            'Now waiting for referrer approval.',
+            snackPosition: SnackPosition.TOP,
+            backgroundColor: Colors.green,
+            colorText: Colors.white,
+            duration: const Duration(seconds: 3),
+            icon: const Icon(Icons.check_circle, color: Colors.white),
+          );
+          Get.offAllNamed(Routes.pendingApprovalPage);
+        }
+        return;
+      } else {
+        // User is still not verified
+        Get.snackbar(
+          'Not Verified Yet',
+          'Please check your email and click the verification link first. If you can\'t find it, check your spam folder.',
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: Colors.orange,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 5),
+          icon: const Icon(Icons.email_outlined, color: Colors.white),
+        );
+        return;
+      }
+
+      // Show success feedback
+      Get.snackbar(
+        'Verification Check Complete',
+        'Your verification status has been updated successfully.',
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 3),
+        icon: const Icon(Icons.check_circle, color: Colors.white),
+      );
+
       return; // Exit early since we're using legacy verification
-      
+
       // UNREACHABLE CODE - COMMENTED OUT
       // // Handle different verification states
       // switch (status.nextStep) {
@@ -167,11 +218,24 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
     }
   }
 
-  /// Handle resend verification email
+  /// Handle resend verification email with 60-second cooldown
   Future<void> handleResendEmail() async {
+    // Check if resend is currently allowed
+    if (!canResendEmail.value) {
+      Get.snackbar(
+        'Please Wait',
+        'You can resend another email in ${resendCooldownSeconds.value} seconds',
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: Colors.orange,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 2),
+      );
+      return;
+    }
+
     try {
       log('📧 EmailVerificationScreen: Resending verification email');
-      
+
       final userEmail = authController.currentUserStore.value?.email;
       if (userEmail == null) {
         Get.snackbar(
@@ -183,22 +247,37 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
         );
         return;
       }
-      
-      // TODO: Implement resend verification email API call
-      // For now, show a placeholder message
-      Get.snackbar(
-        'Email Sent',
-        'A new verification email has been sent to $userEmail',
-        snackPosition: SnackPosition.TOP,
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-        duration: const Duration(seconds: 3),
-        icon: const Icon(Icons.email, color: Colors.white),
-      );
-      
+
+      // Call the resend verification email API
+      final result = await authService.resendVerificationEmail(email: userEmail);
+
+      if (result.isSuccess) {
+        // Start 60-second cooldown timer
+        _startResendCooldown();
+
+        Get.snackbar(
+          'Email Sent',
+          'A new verification email has been sent to $userEmail',
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 3),
+          icon: const Icon(Icons.email, color: Colors.white),
+        );
+      } else {
+        Get.snackbar(
+          'Resend Failed',
+          result.message,
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 4),
+        );
+      }
+
     } catch (e) {
       log('❌ EmailVerificationScreen: Error resending email: $e');
-      
+
       Get.snackbar(
         'Resend Failed',
         'Unable to resend verification email. Please try again.',
@@ -207,6 +286,23 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
         colorText: Colors.white,
       );
     }
+  }
+
+  /// Start the 60-second cooldown timer for resend button
+  void _startResendCooldown() {
+    canResendEmail.value = false;
+    resendCooldownSeconds.value = 60;
+
+    // Countdown timer
+    Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (resendCooldownSeconds.value > 0) {
+        resendCooldownSeconds.value--;
+      } else {
+        // Cooldown finished
+        canResendEmail.value = true;
+        timer.cancel();
+      }
+    });
   }
 
   @override
@@ -373,17 +469,21 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                 color: Colors.black54,
               ),
             ),
-            TextButton(
-              onPressed: handleResendEmail,
-              child: const Text(
-                'Resend',
+            Obx(() => TextButton(
+              onPressed: canResendEmail.value ? handleResendEmail : null,
+              child: Text(
+                canResendEmail.value
+                    ? 'Resend'
+                    : 'Resend (${resendCooldownSeconds.value}s)',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
-                  color: Color.fromRGBO(0, 140, 170, 1),
+                  color: canResendEmail.value
+                      ? const Color.fromRGBO(0, 140, 170, 1)
+                      : Colors.grey,
                 ),
               ),
-            ),
+            )),
           ],
         ),
       ],

@@ -17,7 +17,9 @@
       "Bash(\"C:\\Users\\Talha\\AppData\\Local\\Android\\sdk\\cmdline-tools\\latest\\bin\\sdkmanager.bat\" --install \"platforms;android-35\")",
       "Bash(set JAVA_HOME=\"C:\\Program Files\\Android\\Android Studio\\jbr\")",
       "Read(//c/Users/Talha/AppData/Local/Packages/Microsoft.YourPhone_8wekyb3d8bbwe/TempState/medias/**)",
-      "Bash(timeout 15 flutter analyze --no-fatal-infos)"
+      "Bash(timeout 15 flutter analyze --no-fatal-infos)",
+      "mcp__ide__getDiagnostics",
+      "Bash(timeout 30 flutter logs)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",

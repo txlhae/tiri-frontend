@@ -26,16 +26,18 @@ class ApiConfig {
   /// Base URLs for different environments
   /// 🔧 UPDATED: Using your computer's IP address for physical device testing
   static const Map<String, String> _baseUrls = {
-    'development': 'http://10.19.218.200:8000',  // New network IP address
-    // 'development': 'http://192.168.1.15:8000',  // Previous network IP (commented for reference)
+    'development': 'http://192.168.0.122:8000',  // New network IP address
+    // 'development': 'http://10.19.218.200:8000',  // Previous network IP (commented for reference)
+    // 'development': 'http://192.168.1.15:8000',  // Older network IP (commented for reference)
     'staging': 'https://staging-api.tiri.com',
     'production': 'https://api.tiri.com',
   };
 
   /// WebSocket URLs for different environments
   static const Map<String, String> _webSocketUrls = {
-    'development': 'ws://10.19.218.200:8000',   // New network WebSocket
-    // 'development': 'ws://192.168.1.15:8000',   // Previous network WebSocket (commented for reference)
+    'development': 'ws://192.168.0.122:8000',   // New network WebSocket
+    // 'development': 'ws://10.19.218.200:8000',   // Previous network WebSocket (commented for reference)
+    // 'development': 'ws://192.168.1.15:8000',   // Older network WebSocket (commented for reference)
     'staging': 'wss://staging-api.tiri.com',    // Secure WebSocket for staging
     'production': 'wss://api.tiri.com',         // Secure WebSocket for production
   };
@@ -65,6 +67,7 @@ class ApiConfig {
   static const String authLogout = '/api/auth/logout/';
   static const String authTokenRefresh = '/api/auth/token/refresh/';
   static const String authVerifyEmail = '/api/auth/verify-email/';
+  static const String authResendVerification = '/api/auth/resend-verification/';
   static const String authVerificationStatus = '/api/auth/verification-status/';
   static const String authRegistrationStatus = '/api/auth/registration-status/';
   static const String authPasswordReset = '/api/auth/password-reset/';

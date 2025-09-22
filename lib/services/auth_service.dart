@@ -4,10 +4,13 @@ import 'dart:convert';
 import 'dart:developer';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:get/get.dart';
 import '../config/api_config.dart';
 import '../models/user_model.dart';
 import '../models/auth_models.dart';
 import 'api_service.dart';
+import 'firebase_notification_service.dart';
+import 'auth_storage.dart';
 
 /// Authentication Service for TIRI application
 /// 
@@ -102,10 +105,6 @@ class AuthService {
       // Load user data from storage
       await _loadUserFromStorage();
       
-      if (ApiConfig.enableLogging) {
-        log('AuthService initialized', name: 'AUTH');
-        log('User authenticated: $isAuthenticated', name: 'AUTH');
-      }
     } catch (e) {
       log('Error initializing AuthService: $e', name: 'AUTH');
     }
@@ -137,9 +136,6 @@ class AuthService {
     String? imageUrl,
   }) async {
     try {
-      if (ApiConfig.enableLogging) {
-        log('Attempting registration for email: $email', name: 'AUTH');
-      }
 
       final response = await _apiService.post(
         '/api/auth/register/',
@@ -159,13 +155,21 @@ class AuthService {
       if (response.statusCode == 201) {
         final data = response.data;
         
-        if (ApiConfig.enableLogging) {
-          log('Enhanced registration response: ${data.toString()}', name: 'AUTH');
-        }
         
         try {
+          // Map snake_case to camelCase for AuthResponse
+          final Map<String, dynamic> mappedData = {
+            'user': data['user'],
+            'tokens': data['tokens'],
+            'message': data['message'] ?? 'Registration successful',
+            'accountStatus': data['account_status'] ?? data['accountStatus'],
+            'nextStep': data['next_step'] ?? data['nextStep'],
+            'registrationStage': data['registration_stage'] ?? data['registrationStage'],
+            'warning': data['warning'],
+          };
+
           // Parse the enhanced auth response
-          final authResponse = AuthResponse.fromJson(data);
+          final authResponse = AuthResponse.fromJson(mappedData);
           
           // Save tokens
           await _apiService.saveTokens(
@@ -177,11 +181,12 @@ class AuthService {
           await _saveUserToStorage(authResponse.user);
           _currentUser = authResponse.user;
           
-          if (ApiConfig.enableLogging) {
-            log('Enhanced registration successful for: ${authResponse.user.email}', name: 'AUTH');
-            log('Account status: ${authResponse.accountStatus}', name: 'AUTH');
-            log('Next step: ${authResponse.nextStep}', name: 'AUTH');
-          }
+          
+          // Set up push notifications after successful registration
+          _setupPushNotificationsAfterAuth();
+          
+          // Also call FCM setup immediately to ensure it happens
+          _setupFCMTokenImmediately();
           
           return EnhancedAuthResult.success(
             authResponse: authResponse,
@@ -201,6 +206,12 @@ class AuthService {
             await _apiService.saveTokens(tokens['access'], tokens['refresh']);
             await _saveUserToStorage(user);
             _currentUser = user;
+            
+            // Set up push notifications after successful legacy registration
+            _setupPushNotificationsAfterAuth();
+            
+            // Also call FCM setup immediately to ensure it happens
+            _setupFCMTokenImmediately();
             
             return EnhancedAuthResult.legacy(
               user: user,
@@ -222,21 +233,18 @@ class AuthService {
     }
   }
 
-  /// Login user with email and password
-  /// 
+  /// Login user with email and password with enhanced next_step routing
+  ///
   /// Parameters:
   /// - [email]: User's email address
   /// - [password]: User's password
-  /// 
+  ///
   /// Returns: Enhanced AuthResult with account status and next steps
   Future<EnhancedAuthResult> login({
     required String email,
     required String password,
   }) async {
     try {
-      if (ApiConfig.enableLogging) {
-        log('Attempting login for email: $email', name: 'AUTH');
-      }
 
       final response = await _apiService.post(
         '/api/auth/login/',
@@ -248,64 +256,175 @@ class AuthService {
 
       if (response.statusCode == 200) {
         final data = response.data;
-        
-        if (ApiConfig.enableLogging) {
-          log('Enhanced login response: ${data.toString()}', name: 'AUTH');
-        }
-        
+
         try {
-          // Parse the enhanced auth response
-          final authResponse = AuthResponse.fromJson(data);
-          
-          // Save tokens
-          await _apiService.saveTokens(
-            authResponse.tokens.access,
-            authResponse.tokens.refresh,
-          );
-          
-          // Save user data
-          await _saveUserToStorage(authResponse.user);
-          _currentUser = authResponse.user;
-          
-          if (ApiConfig.enableLogging) {
-            log('Enhanced login successful for: ${authResponse.user.email}', name: 'AUTH');
-            log('Account status: ${authResponse.accountStatus}', name: 'AUTH');
-            log('Next step: ${authResponse.nextStep}', name: 'AUTH');
+          // Try to parse enhanced response with next_step
+          if (data['next_step'] != null && data['account_status'] != null) {
+
+            // Store complete auth response using AuthStorage
+            await AuthStorage.storeAuthData(data);
+
+            // Parse user and tokens
+            final userData = data['user'] ?? {};
+            final tokens = data['tokens'] ?? {};
+
+            if (tokens['access'] != null && tokens['refresh'] != null) {
+              await _apiService.saveTokens(tokens['access'], tokens['refresh']);
+            }
+
+            if (userData.isNotEmpty) {
+              final mappedData = _mapUserSnakeToCamel(userData);
+              final user = UserModel.fromJson(mappedData);
+              await _saveUserToStorage(user);
+              _currentUser = user;
+            }
+
+            // Set up push notifications
+            _setupPushNotificationsAfterAuth();
+            _setupFCMTokenImmediately();
+
+            try {
+              // Parse user data separately with proper error handling
+              UserModel? parsedUser;
+              try {
+                final mappedUserData = _mapUserSnakeToCamel(userData);
+                parsedUser = UserModel.fromJson(mappedUserData);
+              } catch (userParseError) {
+                // Use existing _currentUser if available, or create minimal user
+                parsedUser = _currentUser;
+              }
+
+              // Parse tokens separately
+              AuthTokens? parsedTokens;
+              try {
+                parsedTokens = AuthTokens.fromJson(tokens);
+              } catch (tokenParseError) {
+                // Create tokens manually
+                parsedTokens = AuthTokens(
+                  access: tokens['access'] ?? '',
+                  refresh: tokens['refresh'] ?? '',
+                );
+              }
+
+              // Parse registration stage separately if present
+              RegistrationStage? parsedRegistrationStage;
+              if (data['registration_stage'] != null) {
+                try {
+                  // Map snake_case fields to camelCase for RegistrationStage parsing
+                  final registrationStageData = data['registration_stage'] as Map<String, dynamic>;
+                  final mappedRegistrationStage = {
+                    'status': registrationStageData['status'],
+                    'isEmailVerified': registrationStageData['is_email_verified'] ?? registrationStageData['isEmailVerified'] ?? false,
+                    'emailVerifiedAt': registrationStageData['email_verified_at'] ?? registrationStageData['emailVerifiedAt'],
+                    'isApproved': registrationStageData['is_approved'] ?? registrationStageData['isApproved'] ?? false,
+                    'hasReferral': registrationStageData['has_referral'] ?? registrationStageData['hasReferral'] ?? false,
+                    'canAccessApp': registrationStageData['can_access_app'] ?? registrationStageData['canAccessApp'] ?? false,
+                    'approvalStatus': registrationStageData['approval_status'] ?? registrationStageData['approvalStatus'],
+                    'referrerEmail': registrationStageData['referrer_email'] ?? registrationStageData['referrerEmail'],
+                    'approvalExpiresAt': registrationStageData['approval_expires_at'] ?? registrationStageData['approvalExpiresAt'],
+                    'timeRemaining': registrationStageData['time_remaining'] ?? registrationStageData['timeRemaining'],
+                    'accountCreatedAt': registrationStageData['account_created_at'] ?? registrationStageData['accountCreatedAt'],
+                  };
+
+                  parsedRegistrationStage = RegistrationStage.fromJson(mappedRegistrationStage);
+                } catch (stageParseError) {
+                  // Continue without registration stage
+                }
+              }
+
+              // Only attempt AuthResponse creation if we have essential data
+              if (parsedUser != null && parsedTokens != null) {
+                try {
+                  final authResponse = AuthResponse(
+                    user: parsedUser,
+                    tokens: parsedTokens,
+                    message: data['message'] ?? 'Login successful',
+                    accountStatus: data['account_status'] ?? 'unknown',
+                    nextStep: data['next_step'] ?? 'ready',
+                    registrationStage: parsedRegistrationStage,
+                    warning: null, // Skip warning parsing for now
+                  );
+
+                  return EnhancedAuthResult.success(
+                    authResponse: authResponse,
+                    message: data['message'] ?? 'Login successful',
+                  );
+                } catch (authResponseError) {
+                  // Fall through to legacy response
+                }
+              }
+
+              // Fallback to legacy response
+              return EnhancedAuthResult.legacy(
+                user: parsedUser ?? _currentUser!,
+                message: data['message'] ?? 'Login successful',
+              );
+
+            } catch (parseError) {
+
+              // Last resort fallback - if we have tokens and user data saved, succeed anyway
+              if (_currentUser != null) {
+                return EnhancedAuthResult.legacy(
+                  user: _currentUser!,
+                  message: data['message'] ?? 'Login successful',
+                );
+              }
+
+              // Only fail if we absolutely cannot recover
+              return EnhancedAuthResult.failure(
+                message: 'Login completed but response format is unexpected. Please try logging in again.',
+              );
+            }
+          } else {
+            // Legacy response format
+
+            final userData = data['user'] ?? data['data'];
+            final tokens = data['tokens'];
+
+            if (userData != null && tokens != null) {
+              final mappedData = _mapUserSnakeToCamel(userData);
+              final user = UserModel.fromJson(mappedData);
+
+              await _apiService.saveTokens(tokens['access'], tokens['refresh']);
+              await _saveUserToStorage(user);
+              _currentUser = user;
+
+              // For legacy responses, store basic auth data
+              await AuthStorage.storeAuthData({
+                'user': userData,
+                'tokens': tokens,
+                'account_status': user.isApproved ? 'active' : 'pending_approval',
+                'next_step': user.isApproved ? 'ready' : 'waiting_for_approval',
+                'message': data['message'] ?? 'Login successful',
+              });
+
+              _setupPushNotificationsAfterAuth();
+              _setupFCMTokenImmediately();
+
+              return EnhancedAuthResult.legacy(
+                user: user,
+                message: data['message'] ?? 'Login successful',
+              );
+            } else {
+              // Missing user data or tokens in legacy response
+              return EnhancedAuthResult.failure(
+                message: 'Login failed: Incomplete response data',
+              );
+            }
           }
-          
-          return EnhancedAuthResult.success(
-            authResponse: authResponse,
-            message: authResponse.message,
-          );
         } catch (e) {
-          // Fallback to legacy format if new format parsing fails
-          log('Failed to parse enhanced response, falling back to legacy format: $e', name: 'AUTH');
-          
-          final userData = data['user'] ?? data['data'];
-          final tokens = data['tokens'];
-          
-          if (userData != null && tokens != null) {
-            final mappedData = _mapUserSnakeToCamel(userData);
-            final user = UserModel.fromJson(mappedData);
-            
-            await _apiService.saveTokens(tokens['access'], tokens['refresh']);
-            await _saveUserToStorage(user);
-            _currentUser = user;
-            
-            return EnhancedAuthResult.legacy(
-              user: user,
-              message: data['message'] ?? 'Login successful',
-            );
-          }
+          return EnhancedAuthResult.failure(
+            message: 'Login failed: Invalid response format',
+          );
         }
+      } else {
+        // Non-200 response
+        return EnhancedAuthResult.failure(
+          message: 'Login failed: Server error',
+        );
       }
-      
-      return EnhancedAuthResult.failure(
-        message: 'Login failed: Invalid response format',
-      );
-      
+
     } catch (e) {
-      log('Login error: $e', name: 'AUTH');
       return EnhancedAuthResult.failure(
         message: _extractErrorMessage(e),
       );
@@ -331,6 +450,14 @@ class AuthService {
       } catch (e) {
         // Server logout failed, but continue with local cleanup
         log('Server logout failed (continuing with local cleanup): $e', name: 'AUTH');
+      }
+
+      // Clean up Firebase notifications
+      try {
+        final firebaseNotificationService = Get.find<FirebaseNotificationService>();
+        await firebaseNotificationService.cleanup();
+      } catch (e) {
+        log('Firebase notification cleanup failed (continuing): $e', name: 'AUTH');
       }
 
       // Clear all local data
@@ -433,15 +560,49 @@ class AuthService {
   }
 
   /// Check current user's verification status with enhanced auto-login support
-  /// 
+  ///
   /// Returns: Map with verification status, auto_login flag, and JWT tokens
+
+  static bool _isCheckingVerificationStatus = false; // 🚨 MUTEX to prevent concurrent calls
+
   Future<Map<String, dynamic>> checkVerificationStatus() async {
+    // 🚨 PREVENT CONCURRENT CALLS: Only allow one verification check at a time
+    if (_isCheckingVerificationStatus) {
+      log('⚠️ AuthService: Verification check already in progress, waiting...', name: 'AUTH');
+      // Wait for ongoing check to complete
+      while (_isCheckingVerificationStatus) {
+        await Future.delayed(const Duration(milliseconds: 100));
+      }
+      // Return empty result for subsequent calls
+      return {'status': 'already_checking'};
+    }
+
+    _isCheckingVerificationStatus = true;
+
     try {
-      // 🚨 CRITICAL FIX: Don't require authentication for verification status
-      // Pending approval users need to check status before getting JWT tokens
-      
+      // 🚨 CRITICAL FIX: Ensure API service has latest tokens before making the call
+      log('🔐 AuthService: Ensuring API service has latest tokens...', name: 'AUTH');
+      await _apiService.loadTokensFromStorage();
+
       if (ApiConfig.enableLogging) {
-        log('Checking verification status (no auth required for pending users)', name: 'AUTH');
+        log('🔍 AuthService: API Service token status - isAuthenticated: ${_apiService.isAuthenticated}', name: 'AUTH');
+        if (_apiService.accessToken != null) {
+          log('🔐 AuthService: Using access token: ${_apiService.accessToken!.substring(0, 20)}...', name: 'AUTH');
+          log('🔐 AuthService: Full access token length: ${_apiService.accessToken!.length}', name: 'AUTH');
+          // Decode JWT payload for debugging (this is safe for debugging)
+          try {
+            final parts = _apiService.accessToken!.split('.');
+            if (parts.length == 3) {
+              log('🔐 AuthService: JWT token has 3 parts (valid format)', name: 'AUTH');
+            } else {
+              log('❌ AuthService: JWT token has ${parts.length} parts (invalid format)', name: 'AUTH');
+            }
+          } catch (e) {
+            log('❌ AuthService: Error checking JWT format: $e', name: 'AUTH');
+          }
+        } else {
+          log('⚠️ AuthService: No access token available', name: 'AUTH');
+        }
       }
 
       final response = await _apiService.get(ApiConfig.authVerificationStatus);
@@ -508,14 +669,18 @@ class AuthService {
         'refresh_token': null,
         'user': null,
       };
+    } finally {
+      // 🚨 CRITICAL: Always release the mutex
+      _isCheckingVerificationStatus = false;
+      log('🔓 AuthService: Verification check mutex released', name: 'AUTH');
     }
   }
 
   /// Request password reset
-  /// 
+  ///
   /// Parameters:
   /// - [email]: User's email address
-  /// 
+  ///
   /// Returns: AuthResult with reset status
   Future<AuthResult> requestPasswordReset({
     required String email,
@@ -534,22 +699,344 @@ class AuthService {
 
       if (response.statusCode == 200) {
         final data = response.data;
-        
+
         if (ApiConfig.enableLogging) {
           log('Password reset requested successfully', name: 'AUTH');
         }
-        
+
         return AuthResult.success(
           message: data['message'] ?? 'Password reset email sent',
         );
       }
-      
+
       return AuthResult.failure(
         message: 'Password reset request failed',
       );
-      
+
     } catch (e) {
       log('Password reset request error: $e', name: 'AUTH');
+      return AuthResult.failure(
+        message: _extractErrorMessage(e),
+      );
+    }
+  }
+
+  /// Confirm password reset with token
+  ///
+  /// Parameters:
+  /// - [uid]: User ID (base64 encoded)
+  /// - [token]: Password reset token
+  /// - [newPassword]: New password
+  ///
+  /// Returns: AuthResult with confirmation status
+  Future<AuthResult> confirmPasswordReset({
+    required String uid,
+    required String token,
+    required String newPassword,
+  }) async {
+    try {
+      if (ApiConfig.enableLogging) {
+        log('Confirming password reset', name: 'AUTH');
+      }
+
+      final response = await _apiService.post(
+        '/api/auth/password-reset-confirm/',
+        data: {
+          'uid': uid,
+          'token': token,
+          'new_password': newPassword,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+
+        if (ApiConfig.enableLogging) {
+          log('Password reset confirmed successfully', name: 'AUTH');
+        }
+
+        return AuthResult.success(
+          message: data['message'] ?? 'Password reset successful',
+        );
+      }
+
+      return AuthResult.failure(
+        message: 'Password reset confirmation failed',
+      );
+
+    } catch (e) {
+      log('Password reset confirmation error: $e', name: 'AUTH');
+      return AuthResult.failure(
+        message: _extractErrorMessage(e),
+      );
+    }
+  }
+
+  /// Resend verification email
+  ///
+  /// Parameters:
+  /// - [email]: User's email address (optional - uses current user if not provided)
+  ///
+  /// Returns: AuthResult with resend status
+  Future<AuthResult> resendVerificationEmail({String? email}) async {
+    try {
+      final targetEmail = email ?? _currentUser?.email;
+
+      if (targetEmail == null) {
+        return AuthResult.failure(
+          message: 'No email address available',
+        );
+      }
+
+      if (ApiConfig.enableLogging) {
+        log('Resending verification email to: $targetEmail', name: 'AUTH');
+      }
+
+      final response = await _apiService.post(
+        ApiConfig.authResendVerification,
+        data: {'email': targetEmail.trim().toLowerCase()},
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+
+        if (ApiConfig.enableLogging) {
+          log('Verification email resent successfully', name: 'AUTH');
+        }
+
+        return AuthResult.success(
+          message: data['message'] ?? 'Verification email sent successfully',
+        );
+      }
+
+      return AuthResult.failure(
+        message: 'Failed to resend verification email',
+      );
+
+    } catch (e) {
+      log('Resend verification email error: $e', name: 'AUTH');
+      return AuthResult.failure(
+        message: _extractErrorMessage(e),
+      );
+    }
+  }
+
+  /// Verify email with token (limited access endpoint)
+  ///
+  /// Parameters:
+  /// - [token]: Email verification token
+  ///
+  /// Returns: AuthResult with verification status and potential tokens
+  Future<AuthResult> verifyEmailWithToken(String token) async {
+    try {
+      if (ApiConfig.enableLogging) {
+        log('Verifying email with token', name: 'AUTH');
+      }
+
+      final response = await _apiService.post(
+        '/api/auth/verify-email/',
+        data: {'token': token},
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+
+        if (ApiConfig.enableLogging) {
+          log('Email verification with token successful', name: 'AUTH');
+        }
+
+        // Check if response includes new tokens (for auto-login)
+        if (data['access_token'] != null && data['refresh_token'] != null) {
+          await _apiService.saveTokens(
+            data['access_token'],
+            data['refresh_token'],
+          );
+
+          // Update user data if provided
+          if (data['user'] != null) {
+            final mappedData = _mapUserSnakeToCamel(data['user']);
+            final user = UserModel.fromJson(mappedData);
+            await _saveUserToStorage(user);
+            _currentUser = user;
+          }
+        }
+
+        return AuthResult.success(
+          message: data['message'] ?? 'Email verified successfully',
+          data: data,
+        );
+      }
+
+      return AuthResult.failure(
+        message: 'Email verification failed',
+      );
+
+    } catch (e) {
+      log('Email verification with token error: $e', name: 'AUTH');
+      return AuthResult.failure(
+        message: _extractErrorMessage(e),
+      );
+    }
+  }
+
+  /// Get verification status (limited access endpoint)
+  /// Works for users who have tokens but may not be fully approved
+  ///
+  /// Returns: Map with verification status and potential auto-login tokens
+  Future<Map<String, dynamic>> getVerificationStatus() async {
+    try {
+      if (ApiConfig.enableLogging) {
+        log('Getting verification status (limited access)', name: 'AUTH');
+      }
+
+      final response = await _apiService.get(
+        '/api/auth/verification-status/',
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+
+        if (ApiConfig.enableLogging) {
+          log('Verification status retrieved successfully', name: 'AUTH');
+        }
+
+        // Handle auto-login tokens if provided
+        if (data['auto_login'] == true && data['access_token'] != null) {
+          await _apiService.saveTokens(
+            data['access_token'],
+            data['refresh_token'],
+          );
+
+          if (data['user'] != null) {
+            final mappedData = _mapUserSnakeToCamel(data['user']);
+            final user = UserModel.fromJson(mappedData);
+            await _saveUserToStorage(user);
+            _currentUser = user;
+          }
+        }
+
+        return {
+          'is_verified': data['is_verified'] ?? false,
+          'auto_login': data['auto_login'] ?? false,
+          'approval_status': data['approval_status'] ?? 'unknown',
+          'message': data['message'] ?? 'Status retrieved successfully',
+          'access_token': data['access_token'],
+          'refresh_token': data['refresh_token'],
+          'user': data['user'],
+          'can_access_app': data['can_access_app'] ?? false,
+        };
+      }
+
+      throw Exception('Failed to get verification status - HTTP ${response.statusCode}');
+
+    } catch (e) {
+      log('Get verification status error: $e', name: 'AUTH');
+      return {
+        'is_verified': false,
+        'auto_login': false,
+        'approval_status': 'error',
+        'message': _extractErrorMessage(e),
+        'access_token': null,
+        'refresh_token': null,
+        'user': null,
+        'can_access_app': false,
+      };
+    }
+  }
+
+  /// Get registration status (limited access endpoint)
+  /// Works for verified users waiting for approval
+  ///
+  /// Returns: Map with complete registration status
+  Future<Map<String, dynamic>> getRegistrationStatusLimited() async {
+    try {
+      if (ApiConfig.enableLogging) {
+        log('Getting registration status (limited access)', name: 'AUTH');
+      }
+
+      final response = await _apiService.get(
+        '/api/auth/registration-status/',
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+
+        if (ApiConfig.enableLogging) {
+          log('Registration status retrieved successfully', name: 'AUTH');
+        }
+
+        return {
+          'account_status': data['account_status'],
+          'next_step': data['next_step'],
+          'is_verified': data['is_verified'] ?? false,
+          'is_approved': data['is_approved'] ?? false,
+          'can_access_app': data['can_access_app'] ?? false,
+          'approval_status': data['approval_status'],
+          'registration_stage': data['registration_stage'],
+          'message': data['message'] ?? 'Status retrieved successfully',
+        };
+      }
+
+      throw Exception('Failed to get registration status - HTTP ${response.statusCode}');
+
+    } catch (e) {
+      log('Get registration status error: $e', name: 'AUTH');
+      return {
+        'account_status': 'error',
+        'next_step': 'verify_email',
+        'is_verified': false,
+        'is_approved': false,
+        'can_access_app': false,
+        'approval_status': 'error',
+        'registration_stage': null,
+        'message': _extractErrorMessage(e),
+      };
+    }
+  }
+
+  /// Refresh access token using refresh token
+  ///
+  /// Returns: AuthResult with new token or failure
+  Future<AuthResult> refreshAccessToken() async {
+    try {
+      final refreshToken = _apiService.refreshToken;
+      if (refreshToken == null || refreshToken.isEmpty) {
+        return AuthResult.failure(message: 'No refresh token available');
+      }
+
+      if (ApiConfig.enableLogging) {
+        log('Refreshing access token', name: 'AUTH');
+      }
+
+      final response = await _apiService.post(
+        '/api/auth/token/refresh/',
+        data: {'refresh': refreshToken},
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        final newAccessToken = data['access'];
+
+        if (newAccessToken != null) {
+          await _apiService.saveTokens(newAccessToken, refreshToken);
+
+          if (ApiConfig.enableLogging) {
+            log('Access token refreshed successfully', name: 'AUTH');
+          }
+
+          return AuthResult.success(
+            message: 'Token refreshed successfully',
+            data: {'access_token': newAccessToken},
+          );
+        }
+      }
+
+      return AuthResult.failure(
+        message: 'Token refresh failed',
+      );
+
+    } catch (e) {
+      log('Token refresh error: $e', name: 'AUTH');
       return AuthResult.failure(
         message: _extractErrorMessage(e),
       );
@@ -1055,6 +1542,83 @@ class AuthService {
       }
     } catch (e) {
       log('Error clearing user data: $e', name: 'AUTH');
+    }
+  }
+
+  // =============================================================================
+  // NOTIFICATION INTEGRATION
+  // =============================================================================
+  
+  /// Set up push notifications after successful authentication
+  void _setupPushNotificationsAfterAuth() {
+    try {
+      log('🔔 Starting FCM setup after authentication...', name: 'AUTH');
+      
+      // Run in background to avoid blocking the auth flow
+      Future.delayed(const Duration(seconds: 2), () async {
+        try {
+          log('🔍 Attempting to find FirebaseNotificationService...', name: 'AUTH');
+          
+          if (!Get.isRegistered<FirebaseNotificationService>()) {
+            log('❌ FirebaseNotificationService not registered with GetX', name: 'AUTH');
+            return;
+          }
+          
+          final firebaseNotificationService = Get.find<FirebaseNotificationService>();
+          log('✅ Found FirebaseNotificationService, calling setupPushNotifications...', name: 'AUTH');
+          final success = await firebaseNotificationService.setupPushNotifications();
+          
+          if (success) {
+            log('🎉 Push notifications set up successfully after auth', name: 'AUTH');
+          } else {
+            log('❌ Push notifications setup failed after auth', name: 'AUTH');
+          }
+        } catch (e) {
+          log('❌ Error setting up push notifications after auth: $e', name: 'AUTH');
+          
+          // FCM service should be initialized in main.dart
+          log('❌ FCM service not available - ensure it is initialized in main.dart first', name: 'AUTH');
+        }
+      });
+    } catch (e) {
+      log('❌ Error scheduling push notification setup: $e', name: 'AUTH');
+    }
+  }
+
+  /// Immediately set up FCM token registration after login (no delay)
+  void _setupFCMTokenImmediately() {
+    try {
+      log('🚀 Setting up FCM token registration immediately after login...', name: 'AUTH');
+      
+      // Run without delay to ensure it happens
+      Future.microtask(() async {
+        try {
+          log('🔍 Checking for FirebaseNotificationService registration...', name: 'AUTH');
+          
+          if (!Get.isRegistered<FirebaseNotificationService>()) {
+            log('❌ FirebaseNotificationService not registered - cannot setup FCM token', name: 'AUTH');
+            return;
+          }
+          
+          final firebaseNotificationService = Get.find<FirebaseNotificationService>();
+          log('✅ FirebaseNotificationService found, setting up full FCM flow...', name: 'AUTH');
+          
+          // 🔥 CRITICAL FIX: Use setupPushNotifications instead of registerTokenWithBackend
+          // This ensures permissions are requested before token registration
+          final success = await firebaseNotificationService.setupPushNotifications();
+          
+          if (success) {
+            log('🎉 FCM setup completed successfully with backend after login', name: 'AUTH');
+          } else {
+            log('❌ FCM setup failed after login - check permissions and Firebase config', name: 'AUTH');
+          }
+        } catch (e) {
+          log('❌ Error setting up FCM token immediately: $e', name: 'AUTH');
+          log('❌ Stack trace: ${StackTrace.current}', name: 'AUTH');
+        }
+      });
+    } catch (e) {
+      log('❌ Error scheduling immediate FCM token setup: $e', name: 'AUTH');
     }
   }
 
