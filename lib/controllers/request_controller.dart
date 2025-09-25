@@ -96,9 +96,9 @@ class RequestController extends GetxController {
     try {
       isLoading.value = true;
       debugLog('🔄 RequestController: Completing request $requestId');
-      
+
       final result = await requestService.completeRequest(requestId, notes: notes);
-      
+
       if (result != null) {
         debugLog('✅ RequestController: Request completed successfully');
         // Update the current request details if available
@@ -106,6 +106,104 @@ class RequestController extends GetxController {
       }
     } catch (e) {
       debugLog('❌ RequestController: Error completing request - $e');
+      rethrow;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  /// Start a request manually (for request owners with accepted volunteers)
+  /// This transitions the request from ACCEPTED to IN_PROGRESS status
+  Future<void> startManualRequest(String requestId) async {
+    try {
+      isLoading.value = true;
+      debugLog('🚀 RequestController: Starting request $requestId manually');
+
+      // Validate that user owns this request
+      final currentRequest = currentRequestDetails.value;
+      final currentUserId = authController.currentUserStore.value?.userId;
+
+      if (currentRequest == null || currentUserId == null) {
+        throw Exception('Unable to verify request ownership');
+      }
+
+      if (currentRequest.userId != currentUserId) {
+        throw Exception('Only request owners can start requests');
+      }
+
+      // Check if request has approved volunteers
+      if (currentRequest.acceptedUser.isEmpty) {
+        throw Exception('Need at least 1 approved volunteer to start');
+      }
+
+      // Call the service to start the request
+      final result = await requestService.startRequest(requestId);
+
+      if (result != null) {
+        debugLog('✅ RequestController: Request started successfully');
+        debugLog('   - New status: ${result['request']?['status']}');
+        debugLog('   - Start time: ${result['request']?['start_time']}');
+        debugLog('   - Volunteers count: ${result['request']?['volunteers_count']}');
+
+        // Refresh request details to show updated status
+        await loadRequestDetails(requestId);
+
+        // Also refresh general request lists
+        await loadRequests();
+
+        debugLog('🔄 RequestController: UI refreshed after starting request');
+      }
+    } catch (e) {
+      debugLog('❌ RequestController: Error starting request - $e');
+      rethrow;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  /// Start a delayed request during grace period (Start Anyway)
+  /// This allows starting a request that is in DELAYED status with insufficient volunteers
+  Future<void> startDelayedRequest(String requestId) async {
+    try {
+      isLoading.value = true;
+      debugLog('⚡ RequestController: Starting delayed request $requestId (grace period)');
+
+      // Validate that user owns this request
+      final currentRequest = currentRequestDetails.value;
+      final currentUserId = authController.currentUserStore.value?.userId;
+
+      if (currentRequest == null || currentUserId == null) {
+        throw Exception('Unable to verify request ownership');
+      }
+
+      if (currentRequest.userId != currentUserId) {
+        throw Exception('Only request owners can start requests');
+      }
+
+      // Verify request is actually in delayed status
+      if (currentRequest.status != RequestStatus.delayed) {
+        throw Exception('This endpoint is only for delayed requests');
+      }
+
+      // Call the service to start the delayed request
+      final result = await requestService.startRequestAnyway(requestId);
+
+      if (result != null) {
+        debugLog('✅ RequestController: Delayed request started successfully');
+        debugLog('   - New status: ${result['request']?['status']}');
+        debugLog('   - Start time: ${result['request']?['start_time']}');
+        debugLog('   - Volunteers count: ${result['request']?['volunteers_count']}');
+
+        // Refresh request details to show updated status
+        await loadRequestDetails(requestId);
+
+        // Also refresh general request lists
+        await loadRequests();
+
+        debugLog('🔄 RequestController: UI refreshed after starting delayed request');
+      }
+    } catch (e) {
+      debugLog('❌ RequestController: Error starting delayed request - $e');
       rethrow;
     } finally {
       isLoading.value = false;
@@ -460,32 +558,19 @@ class RequestController extends GetxController {
   // CATEGORY MANAGEMENT METHODS
   // =============================================================================
 
-  /// Load categories from Django backend
+  /// Load predefined categories (no API call needed)
   Future<void> loadCategories() async {
     try {
       isLoadingCategories.value = true;
       categoryError.value = null;
-      debugLog("📂 RequestController: Loading categories from Django API");
-      
-      try {
-        final categoriesFromApi = await requestService.fetchCategories();
-        
-        if (categoriesFromApi.isNotEmpty) {
-          categories.assignAll(categoriesFromApi);
-          debugLog("✅ RequestController: Loaded ${categories.length} categories from API");
-        } else {
-          // Fallback to predefined categories if API returns empty
-          categories.assignAll(CategoryModel.getAllCategories());
-          debugLog("📋 RequestController: Using predefined categories (${categories.length} total)");
-        }
-      } catch (apiError) {
-        debugLog("⚠️ RequestController: API error, using predefined categories - $apiError");
-        // Fallback to predefined categories if API fails
-        categories.assignAll(CategoryModel.getAllCategories());
-      }
-      
+      debugLog("📂 RequestController: Loading predefined categories");
+
+      // Use predefined categories directly (no API call)
+      categories.assignAll(CategoryModel.getAllCategories());
+      debugLog("✅ RequestController: Loaded ${categories.length} predefined categories");
+
       debugLog("📋 Available categories: ${categories.map((c) => c.name).toList()}");
-      
+
       // Set default category to Moving & Lifting (ID 5) if none selected
       if (selectedCategory.value == null && categories.isNotEmpty) {
         // Try to find Moving & Lifting (ID 5) first, otherwise use first category
@@ -495,27 +580,11 @@ class RequestController extends GetxController {
         );
         debugLog("📌 Set default category: ${selectedCategory.value?.name} (ID: ${selectedCategory.value?.id})");
       }
-      
+
     } catch (e) {
-      debugLog("❌ RequestController: Critical error loading categories - $e");
+      debugLog("❌ RequestController: Error loading predefined categories - $e");
       categoryError.value = "Failed to load categories: $e";
-      // Even on error, try to load predefined categories
-      try {
-        categories.assignAll(CategoryModel.getAllCategories());
-        debugLog("🔄 RequestController: Loaded fallback categories");
-        
-        // Set default category to Moving & Lifting (ID 5) even in fallback
-        if (selectedCategory.value == null && categories.isNotEmpty) {
-          selectedCategory.value = categories.firstWhere(
-            (cat) => cat.id == 5,
-            orElse: () => categories.first,
-          );
-          debugLog("📌 Set fallback default category: ${selectedCategory.value?.name} (ID: ${selectedCategory.value?.id})");
-        }
-      } catch (fallbackError) {
-        debugLog("💥 RequestController: Even fallback categories failed - $fallbackError");
-        categories.clear();
-      }
+      categories.clear();
     } finally {
       isLoadingCategories.value = false;
     }
@@ -999,23 +1068,23 @@ class RequestController extends GetxController {
         // Core content fields
         'title': titleController.value.text.trim(),
         'description': descriptionController.value.text.trim(),
-        
+
         // ✅ NEW: Category field - Use selected category ID or default to 5 (Moving & Lifting)
         'category': selectedCategory.value?.id ?? 5, // ✅ FIXED: Use actual selected category or default to valid backend ID 5
-        
+
         // ✅ REQUIRED: Location fields - Django expects separate latitude/longitude/address/city
         'latitude': 0.0,  // Default coordinates (can be enhanced with GPS later)
-        'longitude': 0.0, // Default coordinates (can be enhanced with GPS later) 
+        'longitude': 0.0, // Default coordinates (can be enhanced with GPS later)
         'address': locationController.value.text.trim(), // ✅ FIXED: was 'location'
         'city': locationController.value.text.trim(), // ✅ FINAL FIX: Required city field (not nullable)
-        
-        // ✅ REQUIRED: Date/time field with correct name
-        'date_needed': selectedDateTime.value?.toIso8601String(), // ✅ FIXED: Django expects 'date_needed' not 'date_time_needed'
-        
+
+        // ✅ TIMEZONE FIX: Convert local datetime to UTC before sending to backend
+        'date_needed': selectedDateTime.value?.toUtc().toIso8601String(), // Convert to UTC
+
         // ✅ REQUIRED: Volunteer and time fields with correct names
         'volunteers_needed': int.tryParse(numberOfPeopleController.value.text) ?? 1, // ✅ FIXED: was 'number_of_people'
         'estimated_hours': int.tryParse(hoursNeededController.value.text) ?? 1, // ✅ FIXED: was 'hours_needed'
-        
+
         // ✅ FIXED: Priority value - Django expects "normal" not "medium"
         'priority': 'normal', // ✅ FIXED: was 'medium' (invalid Django choice)
       };

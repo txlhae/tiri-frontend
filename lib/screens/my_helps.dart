@@ -212,7 +212,7 @@ class _MyHelpsState extends State<MyHelps> with SingleTickerProviderStateMixin {
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: request.status != RequestStatus.complete &&
-                                request.status != RequestStatus.expired &&
+                                request.status != RequestStatus.delayed &&
                                 (request.requestedTime ?? request.timestamp).isAfter(DateTime.now())
                             ? const Color.fromRGBO(3, 80, 135, 1)
                             : Colors.grey,
@@ -223,7 +223,7 @@ class _MyHelpsState extends State<MyHelps> with SingleTickerProviderStateMixin {
                       onPressed: () {
                         log("Cancel it");
                         if (request.status != RequestStatus.complete &&
-                            request.status != RequestStatus.expired &&
+                            request.status != RequestStatus.delayed &&
                             (request.requestedTime ?? request.timestamp).isAfter(DateTime.now())) {
                           Get.dialog(
                             CancelDialog(

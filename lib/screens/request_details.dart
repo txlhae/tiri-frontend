@@ -32,7 +32,8 @@ class _RequestDetailsState extends State<RequestDetails> {
 
   /// Convert RequestStatus enum to user-friendly display string
   /// 🎨 HELPER: Maps status enum to proper display names for UI
-  /// - Handles "inprogress" as "IN PROGRESS" 
+  /// - Handles "inprogress" as "IN PROGRESS"
+  /// - Handles "delayed" (formerly "expired") with proper warning color
   /// - Maintains proper capitalization
   /// - Works with StatusRow color scheme
   String getStatusDisplayName(RequestStatus status) {
@@ -47,8 +48,8 @@ class _RequestDetailsState extends State<RequestDetails> {
         return 'COMPLETED';
       case RequestStatus.incomplete:
         return 'INCOMPLETE';
-      case RequestStatus.expired:
-        return 'EXPIRED';
+      case RequestStatus.delayed:
+        return 'DELAYED';
       case RequestStatus.cancelled:
         return 'CANCELLED';
     }
@@ -274,7 +275,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                   if (request.userId ==
                           authController.currentUserStore.value?.userId &&
                       request.status != RequestStatus.complete &&
-                      request.status != RequestStatus.expired &&
+                      request.status != RequestStatus.delayed &&
                       (request.requestedTime ?? request.timestamp).isAfter(DateTime.now()))
                     IconButton(
                       onPressed: () {
@@ -477,24 +478,59 @@ class _RequestDetailsState extends State<RequestDetails> {
               return _buildVolunteerButton(request);
             },
           ),
-        
-        // Complete Request button for request owners at the bottom
-        if ((request.status == RequestStatus.pending ||
-             request.status == RequestStatus.accepted || 
-             request.status == RequestStatus.inprogress) &&
-            authController.currentUserStore.value?.userId == request.userId)
+
+        // Start Request button for request owners (ACCEPTED status only)
+        if (request.status == RequestStatus.accepted &&
+            authController.currentUserStore.value?.userId == request.userId &&
+            request.acceptedUser.isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(top: 20.0),
-            child: SizedBox(
+            child: Obx(() => SizedBox(
               width: double.infinity,
-              child: ElevatedButton(
-                onPressed: request.status != RequestStatus.complete ? () {
-                  _navigateToFeedbackScreen(request);
-                } : null,
+              child: ElevatedButton.icon(
+                onPressed: requestController.isLoading.value ? null : () async {
+                  try {
+                    await requestController.startManualRequest(request.requestId);
+                    Get.snackbar(
+                      'Success',
+                      'Request started successfully! Work can now begin.',
+                      backgroundColor: Colors.green.shade600,
+                      colorText: Colors.white,
+                      snackPosition: SnackPosition.BOTTOM,
+                      margin: const EdgeInsets.all(16),
+                      duration: const Duration(seconds: 3),
+                    );
+                  } catch (e) {
+                    Get.snackbar(
+                      'Error',
+                      e.toString().replaceAll('Exception: ', ''),
+                      backgroundColor: Colors.red.shade600,
+                      colorText: Colors.white,
+                      snackPosition: SnackPosition.BOTTOM,
+                      margin: const EdgeInsets.all(16),
+                      duration: const Duration(seconds: 4),
+                    );
+                  }
+                },
+                icon: requestController.isLoading.value
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    : const Icon(Icons.play_arrow, size: 24),
+                label: Text(
+                  requestController.isLoading.value ? "Starting..." : "Start Request",
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: request.status != RequestStatus.complete
-                      ? const Color.fromRGBO(0, 140, 170, 1)
-                      : Colors.grey,
+                  backgroundColor: const Color.fromRGBO(34, 139, 34, 1), // Forest green
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
@@ -502,11 +538,165 @@ class _RequestDetailsState extends State<RequestDetails> {
                   ),
                   elevation: 2,
                 ),
-                child: Text(
-                  request.status != RequestStatus.complete
-                      ? "Complete Request"
-                      : "Request Completed",
-                  style: const TextStyle(
+              ),
+            )),
+          ),
+
+        // Start Anyway button for request owners (DELAYED status only)
+        if (request.status == RequestStatus.delayed &&
+            authController.currentUserStore.value?.userId == request.userId)
+          Padding(
+            padding: const EdgeInsets.only(top: 20.0),
+            child: Column(
+              children: [
+                // Warning message
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.orange.shade300),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.warning_amber_rounded, color: Colors.orange.shade700, size: 24),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Request Delayed",
+                              style: TextStyle(
+                                color: Colors.orange.shade900,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              "Not enough volunteers, but you can start anyway during grace period",
+                              style: TextStyle(
+                                color: Colors.orange.shade800,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Start Anyway button
+                Obx(() => SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: requestController.isLoading.value ? null : () async {
+                      // Show confirmation dialog
+                      final confirmed = await Get.dialog<bool>(
+                        AlertDialog(
+                          title: const Text('Start Anyway?'),
+                          content: const Text(
+                            'This request does not have enough volunteers. Are you sure you want to start it anyway?',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Get.back(result: false),
+                              child: const Text('Cancel'),
+                            ),
+                            ElevatedButton(
+                              onPressed: () => Get.back(result: true),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.orange.shade600,
+                              ),
+                              child: const Text('Start Anyway'),
+                            ),
+                          ],
+                        ),
+                      );
+
+                      if (confirmed == true) {
+                        try {
+                          await requestController.startDelayedRequest(request.requestId);
+                          Get.snackbar(
+                            'Success',
+                            'Request started with available volunteers!',
+                            backgroundColor: Colors.green.shade600,
+                            colorText: Colors.white,
+                            snackPosition: SnackPosition.BOTTOM,
+                            margin: const EdgeInsets.all(16),
+                            duration: const Duration(seconds: 3),
+                          );
+                        } catch (e) {
+                          Get.snackbar(
+                            'Error',
+                            e.toString().replaceAll('Exception: ', ''),
+                            backgroundColor: Colors.red.shade600,
+                            colorText: Colors.white,
+                            snackPosition: SnackPosition.BOTTOM,
+                            margin: const EdgeInsets.all(16),
+                            duration: const Duration(seconds: 4),
+                          );
+                        }
+                      }
+                    },
+                    icon: requestController.isLoading.value
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : const Icon(Icons.flash_on, size: 24),
+                    label: Text(
+                      requestController.isLoading.value ? "Starting..." : "Start Anyway",
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange.shade600,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 2,
+                    ),
+                  ),
+                )),
+              ],
+            ),
+          ),
+
+        // Complete Request button for request owners at the bottom (IN_PROGRESS only)
+        if (request.status == RequestStatus.inprogress &&
+            authController.currentUserStore.value?.userId == request.userId)
+          Padding(
+            padding: const EdgeInsets.only(top: 20.0),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  _navigateToFeedbackScreen(request);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color.fromRGBO(0, 140, 170, 1),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 2,
+                ),
+                child: const Text(
+                  "Complete Request",
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
@@ -812,7 +1002,9 @@ class _RequestDetailsState extends State<RequestDetails> {
   Widget _buildOwnerDeleteButton(RequestModel request) {
     // Check if request time has passed
     final bool timeHasPassed = (request.requestedTime ?? request.timestamp).isBefore(DateTime.now());
-    
+    // Check if request is in progress
+    final bool isInProgress = request.status == 'IN PROGRESS';
+
     return Column(
       children: [
         // Owner information card
@@ -855,9 +1047,9 @@ class _RequestDetailsState extends State<RequestDetails> {
             ],
           ),
         ),
-        
-        // ✅ FIX: Only show delete button if request time hasn't passed
-        if (!timeHasPassed) ...[
+
+        // ✅ FIX: Only show delete button if request time hasn't passed and not in progress
+        if (!timeHasPassed && !isInProgress) ...[
           // Delete Request button with loading state
           Obx(() => SizedBox(
             width: double.infinity,
@@ -1392,18 +1584,27 @@ class _RequestDetailsState extends State<RequestDetails> {
             children: [
               GestureDetector(
                 onTap: () {
-                  // Create a UserModel from volunteer data to navigate to profile
-                  final volunteerUser = UserModel(
-                    userId: volunteerId,
-                    username: volunteerName,
-                    email: volunteerEmail,
-                    imageUrl: volunteerImageUrl,
-                    rating: volunteerRating,
-                    hours: volunteerHours,
-                    isVerified: volunteerData['isVerified'] ?? false,
-                    isApproved: volunteerData['isApproved'] ?? false,
-                  );
-                  Get.to(() => ProfileScreen(user: volunteerUser));
+                  // Check if volunteer is current user - if so, don't pass stale data
+                  final currentUserId = authController.currentUserStore.value?.userId;
+                  if (volunteerId == currentUserId) {
+                    // For current user, navigate without passing user data to force fresh fetch
+                    Get.to(() => ProfileScreen());
+                    log('🔍 [REQUEST DETAILS] Navigating to own profile (as volunteer) without stale data');
+                  } else {
+                    // Navigate to profile screen and let it fetch fresh data from API
+                    // Don't pass incomplete user data from request details
+                    final volunteerUser = UserModel(
+                      userId: volunteerId,
+                      username: volunteerName,
+                      email: volunteerEmail,
+                      imageUrl: volunteerImageUrl,
+                      // Don't pass incomplete rating/hours data - let profile screen fetch fresh data
+                      isVerified: volunteerData['isVerified'] ?? false,
+                      isApproved: volunteerData['isApproved'] ?? false,
+                    );
+                    Get.to(() => ProfileScreen(user: volunteerUser));
+                    log('🔍 [REQUEST DETAILS] Navigating to other user profile (volunteer) with partial data');
+                  }
                 },
                 child: CircleAvatar(
                   backgroundColor: Colors.blue.shade100,
@@ -2410,7 +2611,17 @@ class _RequestDetailsState extends State<RequestDetails> {
                             padding: const EdgeInsets.all(4),
                             constraints: const BoxConstraints(),
                             onPressed: () {
-                              Get.to(() => ProfileScreen(user: requester));
+                              // Check if requester is current user - if so, don't pass stale data
+                              final currentUserId = authController.currentUserStore.value?.userId;
+                              if (requester?.userId == currentUserId) {
+                                // For current user, navigate without passing user data to force fresh fetch
+                                Get.to(() => ProfileScreen());
+                                log('🔍 [REQUEST DETAILS] Navigating to own profile without stale data');
+                              } else {
+                                // For other users, pass the user data
+                                Get.to(() => ProfileScreen(user: requester));
+                                log('🔍 [REQUEST DETAILS] Navigating to other user profile with passed data');
+                              }
                             },
                           ),
                           // Chat button - only show if user has sent a volunteer request (pending, approved, or rejected)

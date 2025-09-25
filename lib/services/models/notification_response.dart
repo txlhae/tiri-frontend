@@ -58,10 +58,10 @@ class NotificationResponse {
       isRead: json['is_read'] as bool,
       createdAt: DateTime.parse(json['created_at'] as String),
       notificationType: json['notification_type'] as String,
-      metadata: json['metadata'] as Map<String, dynamic>?,
-      relatedId: json['related_id'] as String?,
+      metadata: json['extra_data'] as Map<String, dynamic>?,
+      relatedId: json['created_by'] as String?,
       priority: json['priority'] as String?,
-      actionUrl: json['action_url'] as String?,
+      actionUrl: null, // Not provided in Django API
     );
   }
 

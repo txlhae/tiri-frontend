@@ -6,7 +6,7 @@ import 'feedback_model.dart';
 part 'request_model.freezed.dart';
 part 'request_model.g.dart';
 
-enum RequestStatus { pending, accepted, complete, incomplete, cancelled ,inprogress, expired}
+enum RequestStatus { pending, accepted, complete, incomplete, cancelled ,inprogress, delayed}
 
 /// Enhanced user request status for volunteer workflow
 class UserRequestStatus {

@@ -43,5 +43,5 @@ const _$RequestStatusEnumMap = {
   RequestStatus.incomplete: 'incomplete',
   RequestStatus.cancelled: 'cancelled',
   RequestStatus.inprogress: 'inprogress',
-  RequestStatus.expired: 'expired',
+  RequestStatus.delayed: 'delayed',
 };

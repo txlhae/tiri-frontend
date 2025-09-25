@@ -15,12 +15,12 @@ class NotificationPermissionService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final hasRequestedBefore = prefs.getBool(_permissionRequestedKey) ?? false;
-      
+
       if (!hasRequestedBefore) {
         log('NotificationPermissionService: First launch detected, requesting notification permission');
-        
+
         await _showPermissionDialog();
-        
+
         await prefs.setBool(_permissionRequestedKey, true);
         log('NotificationPermissionService: Permission request completed');
       } else {

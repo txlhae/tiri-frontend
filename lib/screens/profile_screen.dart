@@ -33,34 +33,63 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
+    _loadUserProfile();
+  }
+
+  Future<void> _loadUserProfile() async {
     final currentUser = authController.currentUserStore.value!;
+    final targetUserId = widget.user?.userId ?? currentUser.userId;
+    final isViewingOwnProfile = widget.user == null || widget.user?.userId == currentUser.userId;
+
+    // Set initial user to avoid black screen
     final initialUser = widget.user ?? currentUser;
-    
-    // Always set initial user first
     shownUser.value = initialUser;
 
-    // Always fetch fresh data, even for current user to ensure we have latest profile data
-    final targetUserId = widget.user?.userId ?? currentUser.userId;
-    log('📱 Profile Screen: Fetching fresh data for user $targetUserId');
-    log('📱 Profile Screen: Initial user data - hours: ${initialUser.hours}, rating: ${initialUser.rating}, name: ${initialUser.username}');
-    
-    // Fetch fresh user profile data
-    authController.fetchUser(targetUserId).then((freshUser) {
-      if (freshUser != null) {
-        log('✅ Profile Screen: Received fresh user data - hours: ${freshUser.hours}, rating: ${freshUser.rating}, name: ${freshUser.username}');
-        shownUser.value = freshUser;
-        // Fetch feedback after updating user data
-        requestController.fetchProfileFeedback(freshUser.userId);
-      } else {
-        log('❌ Profile Screen: fetchUser returned null for $targetUserId');
-        // Fallback: still try to fetch feedback with current data
-        requestController.fetchProfileFeedback(targetUserId);
+    log('📱 Profile Screen: Loading profile for user $targetUserId');
+    log('📱 Profile Screen: Initial data - hours: ${initialUser.hours}, rating: ${initialUser.rating}');
+
+    // Fetch fresh user profile data with cache bypass
+    final freshUser = await authController.fetchUser(targetUserId, bypassCache: true);
+
+    if (freshUser != null) {
+      log('✅ Profile Screen: Received fresh user data - hours: ${freshUser.hours}, rating: ${freshUser.rating}, name: ${freshUser.username}');
+      log('🔍 [PROFILE DEBUG] === Fresh User Data ===');
+      log('🔍 [PROFILE DEBUG] User ID: ${freshUser.userId}');
+      log('🔍 [PROFILE DEBUG] Username: ${freshUser.username}');
+      log('🔍 [PROFILE DEBUG] Hours: ${freshUser.hours}');
+      log('🔍 [PROFILE DEBUG] Rating: ${freshUser.rating}');
+      log('🔍 [PROFILE DEBUG] Rating Type: ${freshUser.rating.runtimeType}');
+      log('🔍 [PROFILE DEBUG] Expected: 5.0, Actual: ${freshUser.rating}');
+
+      // Force update the shownUser
+      log('🔍 [PROFILE DEBUG] Updating shownUser.value...');
+      log('🔍 [PROFILE DEBUG] Old shownUser rating: ${shownUser.value?.rating}');
+
+      // Create a new instance to force Obx to detect change
+      shownUser.value = null;  // First set to null to force change detection
+      await Future.delayed(Duration(milliseconds: 50));  // Small delay
+      shownUser.value = freshUser;  // Then set the new value
+
+      log('🔍 [PROFILE DEBUG] New shownUser rating: ${shownUser.value?.rating}');
+      log('🔍 [PROFILE DEBUG] Fresh user rating: ${freshUser.rating}');
+
+      // Force reactive update
+      shownUser.refresh();
+      log('🔍 [PROFILE DEBUG] Forced reactive refresh called');
+
+      // Also force setState to ensure widget rebuild
+      if (mounted) {
+        setState(() {});
+        log('🔍 [PROFILE DEBUG] setState called to force widget rebuild');
       }
-    }).catchError((error) {
-      log('💥 Profile Screen: Error fetching user data: $error');
+
+      // Fetch feedback after updating user data
+      await requestController.fetchProfileFeedback(freshUser.userId);
+    } else {
+      log('❌ Profile Screen: fetchUser with bypassCache returned null for $targetUserId');
       // Fallback: still try to fetch feedback with current data
-      requestController.fetchProfileFeedback(targetUserId);
-    });
+      await requestController.fetchProfileFeedback(targetUserId);
+    }
   }
 
   @override
@@ -179,9 +208,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             builder: (context) {
                               log('🏠 Profile Screen - User hours: ${user.hours}, rating: ${user.rating}');
                               log('🏠 Profile Screen - Full user data: userId=${user.userId}, hours=${user.hours}, rating=${user.rating}');
-                              
-                              return buildStatsRow(user.hours, user.rating,
-                                  key: ValueKey("${user.hours}_${user.rating}"));
+                              log('🔍 [UI DEBUG] === BuildStatsRow Input ===');
+                              log('🔍 [UI DEBUG] Hours parameter: ${user.hours}');
+                              log('🔍 [UI DEBUG] Rating parameter: ${user.rating}');
+                              log('🔍 [UI DEBUG] Rating type: ${user.rating.runtimeType}');
+                              log('🔍 [UI DEBUG] Current shownUser rating: ${shownUser.value?.rating}');
+
+                              // Use null coalescing to show 0.0 for null ratings until fresh data loads
+                              final displayHours = user.hours ?? 0;
+                              final displayRating = user.rating ?? 0.0;
+
+                              return buildStatsRow(displayHours, displayRating,
+                                  key: ValueKey("${displayHours}_${displayRating}"));
                             }
                           ),
                         ),
@@ -448,8 +486,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             padding: const EdgeInsets.symmetric(horizontal: 30.0),
                             child: Container(
                               decoration: BoxDecoration(
-                                border: Border.all(color: Colors.grey, width: 1),
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
                               ),
                               padding: const EdgeInsets.all(16),
                               child: Column(
@@ -457,93 +501,161 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   const Text(
                                     "What others say:",
                                     style: TextStyle(
-                                        fontSize: 16, fontWeight: FontWeight.bold),
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
                                   ),
-                                  const SizedBox(height: 10),
+                                  const SizedBox(height: 15),
                                   Obx(() {
                                     log('📝 Profile Screen: profileFeedbackList length: ${requestController.profileFeedbackList.length}');
-                                    
+
                                     if (requestController.profileFeedbackList.isEmpty) {
                                       return const Padding(
                                         padding: EdgeInsets.all(20.0),
                                         child: Text(
                                           'No feedback yet',
                                           style: TextStyle(
-                                            color: Colors.grey,
+                                            color: Colors.white70,
                                             fontSize: 14,
                                           ),
                                         ),
                                       );
                                     }
-                                    
+
                                     return Column(
-                                      children: requestController.profileFeedbackList.map((item) {
+                                      children: requestController.profileFeedbackList.take(2).map((item) {
                                         final feedback = item['feedback'] as FeedbackModel;
-                                      final username = item['username'];
-                                      final title = item['title'];
-                                      return Card(
-                                        margin: const EdgeInsets.symmetric(
-                                            vertical: 7, horizontal: 25),
-                                        child: Padding(
-                                          padding: const EdgeInsets.all(12.0),
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Center(
-                                                child: Text(
-                                                  "Given by: $username",
+                                        final username = item['username'];
+                                        final title = item['title'];
+                                        return GestureDetector(
+                                          onTap: () => _showFeedbackDetails(feedback, username, title),
+                                          child: Container(
+                                            margin: const EdgeInsets.symmetric(vertical: 6),
+                                            padding: const EdgeInsets.all(16),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white,
+                                              borderRadius: BorderRadius.circular(12),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: Colors.black.withOpacity(0.05),
+                                                  blurRadius: 4,
+                                                  offset: const Offset(0, 2),
+                                                ),
+                                              ],
+                                            ),
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Row(
+                                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                  children: [
+                                                    Text(
+                                                      "Given by: $username",
+                                                      style: const TextStyle(
+                                                        fontSize: 14,
+                                                        fontWeight: FontWeight.w600,
+                                                        color: Color.fromRGBO(3, 80, 135, 1),
+                                                      ),
+                                                    ),
+                                                    Icon(
+                                                      Icons.arrow_forward_ios,
+                                                      size: 16,
+                                                      color: Colors.grey[400],
+                                                    ),
+                                                  ],
+                                                ),
+                                                const SizedBox(height: 8),
+                                                Text(
+                                                  feedback.review.length > 100
+                                                    ? '${feedback.review.substring(0, 100)}...'
+                                                    : feedback.review,
                                                   style: const TextStyle(
                                                     fontSize: 13,
-                                                    fontWeight: FontWeight.w500,
                                                     color: Colors.black87,
+                                                    height: 1.4,
                                                   ),
+                                                  maxLines: 3,
+                                                  overflow: TextOverflow.ellipsis,
                                                 ),
-                                              ),
-                                              const SizedBox(height: 8),
-                                              Text(
-                                                feedback.review,
-                                                style: const TextStyle(
-                                                  fontSize: 14,
-                                                  fontWeight: FontWeight.w500,
-                                                  color: Colors.black,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 5),
-                                              Text(
-                                                "Rating: ${feedback.rating} ⭐ | Hours: ${feedback.hours}",
-                                                style: const TextStyle(
-                                                  fontSize: 13,
-                                                  color: Colors.black87,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 6),
-                                              Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.spaceBetween,
-                                                children: [
-                                                  Text(
-                                                    "For : $title",
-                                                    style: const TextStyle(
-                                                      fontSize: 12,
-                                                      color: Colors.black87,
+                                                const SizedBox(height: 8),
+                                                Row(
+                                                  children: [
+                                                    Container(
+                                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.amber.withOpacity(0.1),
+                                                        borderRadius: BorderRadius.circular(6),
+                                                      ),
+                                                      child: Text(
+                                                        "${feedback.rating} ⭐",
+                                                        style: const TextStyle(
+                                                          fontSize: 12,
+                                                          fontWeight: FontWeight.w600,
+                                                          color: Colors.amber,
+                                                        ),
+                                                      ),
                                                     ),
-                                                  ),
-                                                  Text(
-                                                    "${feedback.timestamp.day}/${feedback.timestamp.month}/${feedback.timestamp.year}",
-                                                    style: const TextStyle(
-                                                      fontSize: 12,
-                                                      color: Colors.grey,
+                                                    const SizedBox(width: 8),
+                                                    Container(
+                                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                      decoration: BoxDecoration(
+                                                        color: const Color.fromRGBO(3, 80, 135, 0.1),
+                                                        borderRadius: BorderRadius.circular(6),
+                                                      ),
+                                                      child: Text(
+                                                        "${feedback.hours} hrs",
+                                                        style: const TextStyle(
+                                                          fontSize: 12,
+                                                          fontWeight: FontWeight.w600,
+                                                          color: Color.fromRGBO(3, 80, 135, 1),
+                                                        ),
+                                                      ),
                                                     ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ],
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
                                           ),
-                                        ),
-                                      );
+                                        );
                                       }).toList(),
                                     );
                                   }),
+                                  const SizedBox(height: 10),
+                                  if (requestController.profileFeedbackList.length > 2)
+                                    GestureDetector(
+                                      onTap: () => _showAllFeedback(),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withOpacity(0.9),
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(
+                                            color: Colors.white,
+                                            width: 1,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
+                                              "View all ${requestController.profileFeedbackList.length} reviews",
+                                              style: const TextStyle(
+                                                color: Color.fromRGBO(3, 80, 135, 1),
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 13,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 6),
+                                            const Icon(
+                                              Icons.arrow_forward,
+                                              size: 16,
+                                              color: Color.fromRGBO(3, 80, 135, 1),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
                                 ],
                               ),
                             ),
@@ -604,6 +716,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget buildStatsRow(int? hours, double? rating, {Key? key}) {
+    log('🔍 [STATS ROW DEBUG] === buildStatsRow Called ===');
+    log('🔍 [STATS ROW DEBUG] Hours: $hours');
+    log('🔍 [STATS ROW DEBUG] Rating: $rating');
+    log('🔍 [STATS ROW DEBUG] Rating display: ${(rating ?? 0.0).toStringAsFixed(1)}');
+
     return Row(
       key: key,
       mainAxisAlignment: MainAxisAlignment.center,
@@ -633,11 +750,426 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  /// Show feedback details in a popup
+  void _showFeedbackDetails(FeedbackModel feedback, String username, String title) {
+    Get.dialog(
+      Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          margin: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      "Feedback Details",
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Color.fromRGBO(3, 80, 135, 1),
+                      ),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => Get.back(),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Icon(
+                        Icons.close,
+                        size: 20,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color.fromRGBO(3, 80, 135, 0.05),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.person,
+                      color: Color.fromRGBO(3, 80, 135, 1),
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      "Given by: $username",
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Color.fromRGBO(3, 80, 135, 1),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey[50],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "Review:",
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      feedback.review,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        color: Colors.black87,
+                        height: 1.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        children: [
+                          const Icon(
+                            Icons.star,
+                            color: Colors.amber,
+                            size: 24,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            "${feedback.rating}",
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.amber,
+                            ),
+                          ),
+                          const Text(
+                            "Rating",
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.black54,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color.fromRGBO(3, 80, 135, 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        children: [
+                          const Icon(
+                            Icons.access_time,
+                            color: Color.fromRGBO(3, 80, 135, 1),
+                            size: 24,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            "${feedback.hours}",
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Color.fromRGBO(3, 80, 135, 1),
+                            ),
+                          ),
+                          const Text(
+                            "Hours",
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.black54,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue[50],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.work_outline,
+                          color: Color.fromRGBO(3, 80, 135, 1),
+                          size: 16,
+                        ),
+                        const SizedBox(width: 6),
+                        const Text(
+                          "Service:",
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  const Icon(
+                    Icons.calendar_today,
+                    color: Colors.grey,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    "${feedback.timestamp.day}/${feedback.timestamp.month}/${feedback.timestamp.year}",
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Show all feedback in a popup
+  void _showAllFeedback() {
+    Get.dialog(
+      Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          margin: const EdgeInsets.all(20),
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(Get.context!).size.height * 0.8,
+          ),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        "All Reviews (${requestController.profileFeedbackList.length})",
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Color.fromRGBO(3, 80, 135, 1),
+                        ),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () => Get.back(),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[100],
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Icon(
+                          Icons.close,
+                          size: 20,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    children: requestController.profileFeedbackList.map((item) {
+                      final feedback = item['feedback'] as FeedbackModel;
+                      final username = item['username'];
+                      final title = item['title'];
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[50],
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.grey[200]!,
+                            width: 1,
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  "Given by: $username",
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color.fromRGBO(3, 80, 135, 1),
+                                  ),
+                                ),
+                                Text(
+                                  "${feedback.timestamp.day}/${feedback.timestamp.month}/${feedback.timestamp.year}",
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              feedback.review,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Colors.black87,
+                                height: 1.4,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.amber.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    "${feedback.rating} ⭐",
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.amber,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: const Color.fromRGBO(3, 80, 135, 0.1),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    "${feedback.hours} hrs",
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color.fromRGBO(3, 80, 135, 1),
+                                    ),
+                                  ),
+                                ),
+                                const Spacer(),
+                                Text(
+                                  "For: $title",
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.black54,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   /// Open chat with the user being viewed
   Future<void> _openChatWithUser(UserModel user) async {
     try {
       final currentUserId = authController.currentUserStore.value?.userId;
       if (currentUserId == null) {
+        log('❌ [PROFILE CHAT] No current user ID available');
         Get.snackbar(
           'Error',
           'Unable to get current user information',
@@ -646,6 +1178,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
         );
         return;
       }
+
+      log('🔍 [PROFILE CHAT] Starting chat creation...');
+      log('🔍 [PROFILE CHAT] Current User ID: $currentUserId');
+      log('🔍 [PROFILE CHAT] Target User ID: ${user.userId}');
+      log('🔍 [PROFILE CHAT] Target User Name: ${user.username}');
+      log('🔍 [PROFILE CHAT] User Role: DIRECT MESSAGE (no service request)');
 
       // Show loading indicator
       Get.dialog(
@@ -659,16 +1197,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       // Create or get chat room using existing ChatController
       final chatController = Get.put(ChatController());
+      log('🔍 [PROFILE CHAT] About to call createOrGetChatRoom...');
+      log('🔍 [PROFILE CHAT] Parameters: userA=$currentUserId, userB=${user.userId}, serviceRequestId=null');
+
       final roomId = await chatController.createOrGetChatRoom(
         currentUserId,
         user.userId,
         // No serviceRequestId for direct messaging
       );
 
+      log('✅ [PROFILE CHAT] Chat room created successfully: $roomId');
+      log('🔍 [PROFILE CHAT] Room ID length: ${roomId.length}');
+
       // Close loading dialog
       Get.back();
 
       // Navigate to chat page
+      log('🔍 [PROFILE CHAT] Navigating to chat page...');
+      log('🔍 [PROFILE CHAT] Chat arguments: roomId=$roomId, receiverId=${user.userId}, receiverName=${user.username}');
+
       Get.toNamed(
         Routes.chatPage,
         arguments: {
@@ -679,12 +1226,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
         },
       );
 
+      log('✅ [PROFILE CHAT] Successfully navigated to chat page');
+
     } catch (e) {
+      log('❌ [PROFILE CHAT] Error in _openChatWithUser: $e');
+      log('❌ [PROFILE CHAT] Error type: ${e.runtimeType}');
+      log('❌ [PROFILE CHAT] Stack trace: ${StackTrace.current}');
+
       // Close loading dialog if still open
       if (Get.isDialogOpen ?? false) {
         Get.back();
       }
-      
+
       Get.snackbar(
         'Error',
         'Failed to open chat. Please try again.',

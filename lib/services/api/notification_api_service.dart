@@ -3,97 +3,110 @@
 library;
 
 import 'package:dio/dio.dart';
-import '../api/api_client.dart';
+import 'package:get/get.dart';
+import '../api_service.dart';
 import '../models/api_response.dart';
 import '../models/notification_response.dart';
 import '../exceptions/api_exceptions.dart';
 
-/// Static service class for notification API operations
-/// Uses the established ApiClient foundation for all HTTP requests
+/// Service class for notification API operations
+/// Uses the authenticated ApiService for all HTTP requests
 class NotificationApiService {
   /// Private constructor to prevent instantiation
   NotificationApiService._();
 
+  /// Get the authenticated API service instance
+  static ApiService get _apiService => Get.find<ApiService>();
+
   /// Base path for notification endpoints
-  static const String _basePath = '/api/notifications';
+  static const String _basePath = '/api/notifications/notifications';
   
   /// Preferences endpoint path
-  static const String _preferencesPath = '/api/preferences';
+  static const String _preferencesPath = '/api/notifications/preferences';
 
   /// Fetch paginated notifications for the current user
   /// 
   /// Parameters:
   /// - [page]: Page number (1-based, default: 1)
-  /// - [limit]: Number of items per page (default: 20)
+  /// - [pageSize]: Number of items per page (default: 20, max: 100)
   /// - [isRead]: Filter by read status (null for all)
-  /// - [notificationType]: Filter by notification type
-  /// - [category]: Filter by notification category
+  /// - [type]: Filter by notification type
+  /// - [priority]: Filter by priority level
+  /// - [deliveryMethod]: Filter by delivery method
+  /// - [dateFrom]: Filter from date (YYYY-MM-DD)
+  /// - [dateTo]: Filter to date (YYYY-MM-DD)
   /// - [search]: Search query for title/message
-  /// - [orderBy]: Order results by field (created_at, title, etc.)
-  /// - [ordering]: Sort direction (asc, desc)
   /// 
   /// Returns: [PaginatedNotificationResponse] with notifications and metadata
   /// 
   /// Throws: [ApiException] subclasses for various error conditions
   static Future<ApiResponse<PaginatedNotificationResponse>> getNotifications({
     int page = 1,
-    int limit = 20,
+    int pageSize = 20,
     bool? isRead,
-    String? notificationType,
-    String? category,
+    String? type,
+    String? priority,
+    String? deliveryMethod,
+    String? dateFrom,
+    String? dateTo,
     String? search,
-    String? orderBy,
-    String? ordering,
     CancelToken? cancelToken,
   }) async {
     try {
       // Build query parameters
       final queryParams = <String, dynamic>{
         'page': page,
-        'limit': limit,
+        'page_size': pageSize,
       };
 
       // Add optional filters
       if (isRead != null) {
         queryParams['is_read'] = isRead;
       }
-      if (notificationType != null) {
-        queryParams['notification_type'] = notificationType;
+      if (type != null) {
+        queryParams['type'] = type;
       }
-      if (category != null) {
-        queryParams['category'] = category;
+      if (priority != null) {
+        queryParams['priority'] = priority;
+      }
+      if (deliveryMethod != null) {
+        queryParams['delivery_method'] = deliveryMethod;
+      }
+      if (dateFrom != null) {
+        queryParams['date_from'] = dateFrom;
+      }
+      if (dateTo != null) {
+        queryParams['date_to'] = dateTo;
       }
       if (search != null && search.isNotEmpty) {
         queryParams['search'] = search;
       }
-      if (orderBy != null) {
-        queryParams['order_by'] = orderBy;
-      }
-      if (ordering != null) {
-        queryParams['ordering'] = ordering;
+
+      // Build query string
+      String queryString = '';
+      if (queryParams.isNotEmpty) {
+        queryString = '?' + queryParams.entries
+            .map((e) => '${e.key}=${e.value}')
+            .join('&');
       }
 
-      // Make API request
-      final response = await ApiClient.get<Map<String, dynamic>>(
-        '$_basePath/',
-        queryParams: queryParams,
-        cancelToken: cancelToken,
-      );
+      // Make API request using authenticated ApiService
+      final response = await _apiService.get('$_basePath/$queryString');
 
-      if (response.success && response.data != null) {
+      if (response.statusCode == 200 && response.data != null) {
         // Parse paginated response
         final paginatedResponse = PaginatedNotificationResponse.fromJson(response.data!);
         return ApiResponse.success(
           data: paginatedResponse,
           message: 'Notifications fetched successfully',
           statusCode: response.statusCode,
-          metadata: response.metadata,
         );
       } else {
         return ApiResponse.error(
-          error: response.error ?? ApiError(
-            type: 'unknown_error',
+          error: ApiError(
+            type: 'api_error',
             message: 'Failed to fetch notifications',
+            statusCode: response.statusCode,
           ),
         );
       }
@@ -128,26 +141,25 @@ class NotificationApiService {
     CancelToken? cancelToken,
   }) async {
     try {
-      final response = await ApiClient.post<Map<String, dynamic>>(
+      final response = await _apiService.post(
         '$_basePath/$notificationId/mark_as_read/',
-        cancelToken: cancelToken,
       );
 
-      if (response.success) {
+      if (response.statusCode == 200) {
         return ApiResponse.success(
           data: EmptyResponse(
             message: 'Notification marked as read',
             statusCode: response.statusCode,
-            metadata: response.metadata,
           ),
           message: 'Notification marked as read successfully',
           statusCode: response.statusCode,
         );
       } else {
         return ApiResponse.error(
-          error: response.error ?? ApiError(
-            type: 'unknown_error',
+          error: ApiError(
+            type: 'api_error',
             message: 'Failed to mark notification as read',
+            statusCode: response.statusCode,
           ),
         );
       }
@@ -178,26 +190,25 @@ class NotificationApiService {
     CancelToken? cancelToken,
   }) async {
     try {
-      final response = await ApiClient.post<Map<String, dynamic>>(
+      final response = await _apiService.post(
         '$_basePath/mark_all_read/',
-        cancelToken: cancelToken,
       );
 
-      if (response.success) {
+      if (response.statusCode == 200) {
         return ApiResponse.success(
           data: EmptyResponse(
             message: 'All notifications marked as read',
             statusCode: response.statusCode,
-            metadata: response.metadata,
           ),
           message: 'All notifications marked as read successfully',
           statusCode: response.statusCode,
         );
       } else {
         return ApiResponse.error(
-          error: response.error ?? ApiError(
-            type: 'unknown_error',
+          error: ApiError(
+            type: 'api_error',
             message: 'Failed to mark all notifications as read',
+            statusCode: response.statusCode,
           ),
         );
       }
@@ -237,25 +248,29 @@ class NotificationApiService {
         queryParams['include_breakdown'] = true;
       }
 
-      final response = await ApiClient.get<Map<String, dynamic>>(
-        '$_basePath/unread_count/',
-        queryParams: queryParams.isNotEmpty ? queryParams : null,
-        cancelToken: cancelToken,
-      );
+      // Build query string
+      String queryString = '';
+      if (queryParams.isNotEmpty) {
+        queryString = '?' + queryParams.entries
+            .map((e) => '${e.key}=${e.value}')
+            .join('&');
+      }
 
-      if (response.success && response.data != null) {
+      final response = await _apiService.get('$_basePath/unread_count/$queryString');
+
+      if (response.statusCode == 200 && response.data != null) {
         final unreadCountResponse = UnreadCountResponse.fromJson(response.data!);
         return ApiResponse.success(
           data: unreadCountResponse,
           message: 'Unread count fetched successfully',
           statusCode: response.statusCode,
-          metadata: response.metadata,
         );
       } else {
         return ApiResponse.error(
-          error: response.error ?? ApiError(
-            type: 'unknown_error',
+          error: ApiError(
+            type: 'api_error',
             message: 'Failed to fetch unread count',
+            statusCode: response.statusCode,
           ),
         );
       }
@@ -301,25 +316,24 @@ class NotificationApiService {
         requestData.addAll(deviceInfo);
       }
 
-      final response = await ApiClient.post<Map<String, dynamic>>(
+      final response = await _apiService.post(
         '$_preferencesPath/update_fcm_token/',
         data: requestData,
-        cancelToken: cancelToken,
       );
 
-      if (response.success && response.data != null) {
+      if (response.statusCode == 200 && response.data != null) {
         final fcmTokenResponse = FcmTokenResponse.fromJson(response.data!);
         return ApiResponse.success(
           data: fcmTokenResponse,
           message: 'FCM token updated successfully',
           statusCode: response.statusCode,
-          metadata: response.metadata,
         );
       } else {
         return ApiResponse.error(
-          error: response.error ?? ApiError(
-            type: 'unknown_error',
+          error: ApiError(
+            type: 'api_error',
             message: 'Failed to update FCM token',
+            statusCode: response.statusCode,
           ),
         );
       }
@@ -350,24 +364,23 @@ class NotificationApiService {
     CancelToken? cancelToken,
   }) async {
     try {
-      final response = await ApiClient.get<Map<String, dynamic>>(
+      final response = await _apiService.get(
         '$_preferencesPath/notification_preferences/',
-        cancelToken: cancelToken,
       );
 
-      if (response.success && response.data != null) {
+      if (response.statusCode == 200 && response.data != null) {
         final preferencesResponse = NotificationPreferencesResponse.fromJson(response.data!);
         return ApiResponse.success(
           data: preferencesResponse,
           message: 'Notification preferences fetched successfully',
           statusCode: response.statusCode,
-          metadata: response.metadata,
         );
       } else {
         return ApiResponse.error(
-          error: response.error ?? ApiError(
-            type: 'unknown_error',
+          error: ApiError(
+            type: 'api_error',
             message: 'Failed to fetch notification preferences',
+            statusCode: response.statusCode,
           ),
         );
       }
@@ -402,25 +415,24 @@ class NotificationApiService {
     CancelToken? cancelToken,
   }) async {
     try {
-      final response = await ApiClient.put<Map<String, dynamic>>(
+      final response = await _apiService.put(
         '$_preferencesPath/notification_preferences/',
         data: preferences.toJson(),
-        cancelToken: cancelToken,
       );
 
-      if (response.success && response.data != null) {
+      if (response.statusCode == 200 && response.data != null) {
         final updatedPreferences = NotificationPreferencesResponse.fromJson(response.data!);
         return ApiResponse.success(
           data: updatedPreferences,
           message: 'Notification preferences updated successfully',
           statusCode: response.statusCode,
-          metadata: response.metadata,
         );
       } else {
         return ApiResponse.error(
-          error: response.error ?? ApiError(
-            type: 'unknown_error',
+          error: ApiError(
+            type: 'api_error',
             message: 'Failed to update notification preferences',
+            statusCode: response.statusCode,
           ),
         );
       }
@@ -455,26 +467,25 @@ class NotificationApiService {
     CancelToken? cancelToken,
   }) async {
     try {
-      final response = await ApiClient.delete<Map<String, dynamic>>(
+      final response = await _apiService.delete(
         '$_basePath/$notificationId/',
-        cancelToken: cancelToken,
       );
 
-      if (response.success) {
+      if (response.statusCode == 204 || response.statusCode == 200) {
         return ApiResponse.success(
           data: EmptyResponse(
             message: 'Notification deleted',
             statusCode: response.statusCode,
-            metadata: response.metadata,
           ),
           message: 'Notification deleted successfully',
           statusCode: response.statusCode,
         );
       } else {
         return ApiResponse.error(
-          error: response.error ?? ApiError(
-            type: 'unknown_error',
+          error: ApiError(
+            type: 'api_error',
             message: 'Failed to delete notification',
+            statusCode: response.statusCode,
           ),
         );
       }
@@ -505,26 +516,25 @@ class NotificationApiService {
     CancelToken? cancelToken,
   }) async {
     try {
-      final response = await ApiClient.post<Map<String, dynamic>>(
+      final response = await _apiService.post(
         '$_basePath/clear_read/',
-        cancelToken: cancelToken,
       );
 
-      if (response.success) {
+      if (response.statusCode == 200) {
         return ApiResponse.success(
           data: EmptyResponse(
             message: 'Read notifications cleared',
             statusCode: response.statusCode,
-            metadata: response.metadata,
           ),
           message: 'Read notifications cleared successfully',
           statusCode: response.statusCode,
         );
       } else {
         return ApiResponse.error(
-          error: response.error ?? ApiError(
-            type: 'unknown_error',
+          error: ApiError(
+            type: 'api_error',
             message: 'Failed to clear read notifications',
+            statusCode: response.statusCode,
           ),
         );
       }
@@ -559,24 +569,22 @@ class NotificationApiService {
     CancelToken? cancelToken,
   }) async {
     try {
-      final response = await ApiClient.get<Map<String, dynamic>>(
-        '$_basePath/statistics/',
-        queryParams: {'days': days},
-        cancelToken: cancelToken,
+      final response = await _apiService.get(
+        '$_basePath/statistics/?days=$days',
       );
 
-      if (response.success && response.data != null) {
+      if (response.statusCode == 200 && response.data != null) {
         return ApiResponse.success(
           data: response.data!,
           message: 'Notification statistics fetched successfully',
           statusCode: response.statusCode,
-          metadata: response.metadata,
         );
       } else {
         return ApiResponse.error(
-          error: response.error ?? ApiError(
-            type: 'unknown_error',
+          error: ApiError(
+            type: 'api_error',
             message: 'Failed to fetch notification statistics',
+            statusCode: response.statusCode,
           ),
         );
       }

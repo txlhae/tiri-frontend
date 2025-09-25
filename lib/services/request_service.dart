@@ -279,9 +279,9 @@ class RequestService extends GetxController {
   /// Map Django status to Flutter RequestStatus
   String _mapDjangoStatus(dynamic status) {
     if (status == null) return 'pending';
-    
+
     final statusStr = status.toString().toLowerCase();
-    
+
     // Django → Flutter status mapping
     switch (statusStr) {
       case 'open':
@@ -298,7 +298,8 @@ class RequestService extends GetxController {
       case 'cancelled':
         return 'cancelled';
       case 'expired':
-        return 'expired';
+      case 'delayed':
+        return 'delayed';  // Map both expired and delayed to delayed status
       case 'incomplete':
         return 'incomplete';
       default:
@@ -969,10 +970,112 @@ class RequestService extends GetxController {
     }
   }
   
+  /// Start a request manually (for request owners)
+  /// POST /api/requests/{request_id}/start-request/
+  Future<Map<String, dynamic>?> startRequest(String requestId) async {
+    try {
+      log('🚀 RequestService: Starting request $requestId manually');
+
+      final response = await _apiService.post(
+        '/api/requests/$requestId/start-request/',
+        data: {},  // Empty data as per API spec
+      );
+
+      log('🌐 Start request response status: ${response.statusCode}');
+      log('🌐 Start request response data: ${response.data}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        log('✅ RequestService: Successfully started request $requestId');
+        return response.data as Map<String, dynamic>?;
+      } else {
+        log('❌ RequestService: Failed to start request $requestId - Status: ${response.statusCode}');
+
+        // Extract error message from response
+        String errorMessage = 'Failed to start request';
+        if (response.data is Map) {
+          errorMessage = response.data['error'] ??
+                        response.data['detail'] ??
+                        response.data['message'] ??
+                        errorMessage;
+        }
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      log('💥 RequestService: Error starting request $requestId - $e');
+
+      // Enhanced error logging
+      if (e is DioException) {
+        log('🚨 [SERVICE DEBUG] Start request error:');
+        log('🚨 [SERVICE DEBUG] - Status Code: ${e.response?.statusCode}');
+        log('🚨 [SERVICE DEBUG] - Response Data: ${e.response?.data}');
+
+        // Extract meaningful error message
+        if (e.response?.data is Map) {
+          final errorData = e.response!.data as Map;
+          final errorMsg = errorData['error'] ?? errorData['detail'] ?? 'Failed to start request';
+          throw Exception(errorMsg);
+        }
+      }
+
+      rethrow;
+    }
+  }
+
+  /// Start a delayed request during grace period (Start Anyway)
+  /// POST /api/requests/{request_id}/start-anyway/
+  Future<Map<String, dynamic>?> startRequestAnyway(String requestId) async {
+    try {
+      log('⚡ RequestService: Starting delayed request $requestId (grace period)');
+
+      final response = await _apiService.post(
+        '/api/requests/$requestId/start-anyway/',
+        data: {},  // Empty data as per API spec
+      );
+
+      log('🌐 Start anyway response status: ${response.statusCode}');
+      log('🌐 Start anyway response data: ${response.data}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        log('✅ RequestService: Successfully started delayed request $requestId');
+        return response.data as Map<String, dynamic>?;
+      } else {
+        log('❌ RequestService: Failed to start delayed request $requestId - Status: ${response.statusCode}');
+
+        // Extract error message from response
+        String errorMessage = 'Failed to start request during grace period';
+        if (response.data is Map) {
+          errorMessage = response.data['error'] ??
+                        response.data['detail'] ??
+                        response.data['message'] ??
+                        errorMessage;
+        }
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      log('💥 RequestService: Error starting delayed request $requestId - $e');
+
+      // Enhanced error logging
+      if (e is DioException) {
+        log('🚨 [SERVICE DEBUG] Start anyway error:');
+        log('🚨 [SERVICE DEBUG] - Status Code: ${e.response?.statusCode}');
+        log('🚨 [SERVICE DEBUG] - Response Data: ${e.response?.data}');
+
+        // Extract meaningful error message
+        if (e.response?.data is Map) {
+          final errorData = e.response!.data as Map;
+          final errorMsg = errorData['error'] ?? errorData['detail'] ?? 'This endpoint is only for delayed requests';
+          throw Exception(errorMsg);
+        }
+      }
+
+      rethrow;
+    }
+  }
+
   /// Complete request and submit feedback for all volunteers
   /// POST /api/requests/{request_id}/complete/
   Future<Map<String, dynamic>?> completeRequestWithFeedback(
-    String requestId, 
+    String requestId,
     List<Map<String, dynamic>> feedbackList,
     {String? completionNotes}
   ) async {

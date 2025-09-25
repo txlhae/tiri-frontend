@@ -333,17 +333,32 @@ class ChatApiService {
   }) async {
     try {
       log('🔄 Creating chat room between users: $userId1, $userId2', name: 'ChatAPI');
-      
-      final roomData = {
-        'participants': [userId1, userId2],
+      log('🔍 [DIRECT CHAT API] === API Call Debug ===');
+      log('🔍 [DIRECT CHAT API] User ID 1: $userId1');
+      log('🔍 [DIRECT CHAT API] User ID 2: $userId2');
+      log('🔍 [DIRECT CHAT API] Service Request ID: $serviceRequestId');
+
+      // Match the working format: service_request_id first, then participants
+      final roomData = <String, dynamic>{
         if (serviceRequestId != null) 'service_request_id': serviceRequestId,
+        'participants': [userId1, userId2],
       };
-      
+
+      log('🔍 [DIRECT CHAT API] === Request Payload ===');
+      log('🔍 [DIRECT CHAT API] participants: [$userId1, $userId2]');
+      log('🔍 [DIRECT CHAT API] service_request_id: $serviceRequestId');
+      log('🔍 [DIRECT CHAT API] Full payload: $roomData');
+      log('🔍 [DIRECT CHAT API] Endpoint: POST /api/chat/rooms/get_or_create/');
+
       // Use the get_or_create endpoint for all chat room creation for consistency
       final response = await _apiService.post(
         '/api/chat/rooms/get_or_create/',
         data: roomData,
       );
+
+      log('🔍 [DIRECT CHAT API] === API Response ===');
+      log('🔍 [DIRECT CHAT API] Status Code: ${response.statusCode}');
+      log('🔍 [DIRECT CHAT API] Response Data: ${response.data}');
       
       if (response.statusCode == 200 || response.statusCode == 201) {
         // Handle the nested chat_room structure from get_or_create endpoint

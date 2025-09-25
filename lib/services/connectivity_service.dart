@@ -60,7 +60,7 @@ class ConnectivityService extends GetxService {
 
   static const Duration _serverCheckTimeout = Duration(seconds: 3);
   static const Duration _serverCheckInterval = Duration(minutes: 2);
-  static const int _maxRetries = 3;
+  static const int _maxRetries = 1;
 
   // =============================================================================
   // INITIALIZATION
@@ -97,8 +97,8 @@ class ConnectivityService extends GetxService {
       // Start listening to connectivity changes
       _startConnectivityListener();
 
-      // Start periodic server checks
-      _startPeriodicServerChecks();
+      // Periodic server checks disabled - only check on startup and network changes
+      // _startPeriodicServerChecks();
 
       log('✅ ConnectivityService: Initialization complete', name: 'CONNECTIVITY');
     } catch (e) {
@@ -199,7 +199,7 @@ class ConnectivityService extends GetxService {
 
         // Try to reach the server health endpoint or base URL
         final response = await _dio.get(
-          '${ApiConfig.baseUrl}/health/',
+          '${ApiConfig.baseUrl}/api/health/',
           options: Options(
             validateStatus: (status) => status != null && status < 500,
           ),

@@ -23,6 +23,7 @@ import 'package:tiri/screens/auth_screens/pending_approval_screen.dart';
 import 'package:tiri/screens/auth_screens/rejection_screen.dart';
 import 'package:tiri/screens/auth_screens/expired_screen.dart';
 import 'package:tiri/screens/my_applications_screen.dart';
+import 'package:tiri/screens/notifications_page.dart';
 import 'package:tiri/screens/approval_dashboard_screen.dart';
 import 'package:tiri/screens/qr_scanner_screen.dart';
 
@@ -92,6 +93,10 @@ class Navigation {
     GetPage(
       name: Routes.contactUsPage,
       page: () => const ContactUs(),
+    ),
+    GetPage(
+      name: Routes.notificationsPage,
+      page: () => const NotificationsPage(),
     ),
     GetPage(
       name: Routes.feedbackPage,

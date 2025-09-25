@@ -158,15 +158,19 @@ class HomeScreen extends StatelessWidget {
                       GestureDetector(
                         behavior: HitTestBehavior.opaque,
                         onTap: () {
-                          Get.snackbar(
-                            "Coming Soon!",
-                            "We're working on this feature. Stay tuned!",
-                            duration: const Duration(milliseconds: 1000),
-                            snackPosition: SnackPosition.BOTTOM,
-                            backgroundColor: Colors.black87,
-                            colorText: Colors.white,
-                            margin: const EdgeInsets.all(16),
-                          );
+                          try {
+                            log('Notification button tapped - navigating to notifications page');
+                            Get.toNamed(Routes.notificationsPage);
+                          } catch (e) {
+                            log('Error navigating to notifications page: $e');
+                            Get.snackbar(
+                              "Error",
+                              "Could not open notifications. Please try again.",
+                              snackPosition: SnackPosition.BOTTOM,
+                              backgroundColor: Colors.red,
+                              colorText: Colors.white,
+                            );
+                          }
                         },
                         child: const Icon(
                           Icons.notifications,

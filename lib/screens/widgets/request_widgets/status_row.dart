@@ -42,27 +42,27 @@ class StatusRow extends StatelessWidget {
 }
 
 /// Get background color for status badge according to design requirements
-/// 🎨 DESIGN SPEC: 
+/// 🎨 DESIGN SPEC:
 /// - PENDING: Gray (#9E9E9E)
-/// - INPROGRESS: Blue (#2196F3) 
+/// - INPROGRESS: Blue (#2196F3)
 /// - ACCEPTED: Green (#4CAF50)
 /// - COMPLETED: White (#FFFFFF) with green border
-/// - EXPIRED: Red (#F44336)
+/// - DELAYED: Orange (#FF9800) (formerly EXPIRED)
 /// - INCOMPLETE: Orange (#FF9800)
 Color getStatusColor(String status) {
-  switch (status.toLowerCase()) {
+  switch (status.toLowerCase().replaceAll(' ', '')) {
     case 'pending':
       return const Color(0xFF9E9E9E); // Material Gray 500
     case 'inprogress':
-    case 'in_progress':
       return const Color(0xFF2196F3); // Material Blue 500
     case 'accepted':
       return const Color(0xFF4CAF50); // Material Green 500
     case 'complete':
     case 'completed':
       return const Color(0xFFFFFFFF); // White background
+    case 'delayed':
     case 'expired':
-      return const Color(0xFFF44336); // Material Red 500
+      return const Color(0xFFFF9800); // Material Orange 500 (warning color)
     case 'incomplete':
       return const Color(0xFFFF9800); // Material Orange 500
     default:
@@ -73,19 +73,19 @@ Color getStatusColor(String status) {
 /// Get text color for status badge with proper contrast
 /// 🎨 DESIGN SPEC: White text for colored backgrounds, dark text for white background
 Color getTextColor(String status) {
-  switch (status.toLowerCase()) {
+  switch (status.toLowerCase().replaceAll(' ', '')) {
     case 'pending':
       return const Color(0xFFFFFFFF); // White text on gray background
     case 'inprogress':
-    case 'in_progress':
       return const Color(0xFFFFFFFF); // White text on blue background
     case 'accepted':
       return const Color(0xFFFFFFFF); // White text on green background
     case 'complete':
     case 'completed':
       return const Color(0xFF2E7D32); // Dark green text on white background
+    case 'delayed':
     case 'expired':
-      return const Color(0xFFFFFFFF); // White text on red background
+      return const Color(0xFFFFFFFF); // White text on orange background
     case 'incomplete':
       return const Color(0xFFFFFFFF); // White text on orange background
     default:
@@ -96,7 +96,7 @@ Color getTextColor(String status) {
 /// Get border color for status badge (special case for completed status)
 /// 🎨 DESIGN SPEC: Green border for completed status, transparent for others
 Color? getStatusBorderColor(String status) {
-  switch (status.toLowerCase()) {
+  switch (status.toLowerCase().replaceAll(' ', '')) {
     case 'complete':
     case 'completed':
       return const Color(0xFF4CAF50); // Green border for white background

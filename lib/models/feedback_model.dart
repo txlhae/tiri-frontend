@@ -4,7 +4,6 @@ part 'feedback_model.freezed.dart';
 part 'feedback_model.g.dart';
 
 @freezed
-@JsonSerializable(explicitToJson: true)
 class FeedbackModel with _$FeedbackModel {
   const factory FeedbackModel({
     required String feedbackId,

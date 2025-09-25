@@ -39,8 +39,11 @@ class NotificationController extends GetxController {
   void onInit() {
     super.onInit();
     _initializeApiFoundation();
-    _initializeWebSocket();
-    _getNotifications();
+    // _initializeWebSocket(); // Temporarily disabled until backend WebSocket route is configured
+
+    // Don't call _getNotifications() immediately - wait until authentication is ready
+    // This prevents "Authentication failed" errors on app startup
+    // The notifications will be loaded when the user navigates to the notifications page
   }
 
   /// Initialize API foundation for Django integration
@@ -200,14 +203,18 @@ class NotificationController extends GetxController {
     isLoading.value = true;
     hasError.value = false;
     errorMessage.value = '';
-    
+
     try {
+      // Check authentication first
+      final apiService = Get.find<ApiService>();
+      if (!apiService.isAuthenticated) {
+        throw Exception('Authentication required. Please login to view notifications.');
+      }
+
       // Phase 3: Django API call
       final response = await NotificationApiService.getNotifications(
         page: 1,
-        limit: pageSize,
-        orderBy: 'created_at',
-        ordering: 'desc',
+        pageSize: pageSize,
       );
 
       if (response.success && response.data != null) {
@@ -323,14 +330,24 @@ class NotificationController extends GetxController {
 
   Future<void> loadNotification() async {
     try {
+      // Check if user is authenticated before making API calls
+      final apiService = Get.find<ApiService>();
+      if (!apiService.isAuthenticated) {
+        log('NotificationController: User not authenticated, skipping notification load');
+        hasError.value = true;
+        errorMessage.value = 'Please login to view notifications';
+        return;
+      }
+
       // Phase 3: Use Django API
       log('NotificationController: Refreshing notifications from Django API');
       await _getNotifications();
-      
-      // Auto-connect WebSocket if not connected and user is authenticated
-      if (!isWebSocketConnected.value) {
-        await connectWebSocket();
-      }
+
+      // Auto-connect WebSocket disabled to prevent connection attempts when clicking notification button
+      // WebSocket should only connect during app initialization, not when refreshing notifications
+      // if (!isWebSocketConnected.value) {
+      //   await connectWebSocket();
+      // }
     } catch (e) {
       log("Error loading notifications: $e");
       hasError.value = true;
@@ -355,9 +372,7 @@ class NotificationController extends GetxController {
       final nextPage = currentPage.value + 1;
       final response = await NotificationApiService.getNotifications(
         page: nextPage,
-        limit: pageSize,
-        orderBy: 'created_at',
-        ordering: 'desc',
+        pageSize: pageSize,
       );
 
       if (response.success && response.data != null) {
@@ -479,9 +494,9 @@ class NotificationController extends GetxController {
         }
         
         // Send WebSocket message for real-time sync
-        if (isWebSocketConnected.value) {
-          _webSocketService?.markAllNotificationsAsRead();
-        }
+        // if (isWebSocketConnected.value) {
+        //   _webSocketService?.markAllNotificationsAsRead();
+        // }
         
         // Also update SharedPreferences for offline compatibility
         final prefs = await SharedPreferences.getInstance();
@@ -535,9 +550,9 @@ class NotificationController extends GetxController {
         }
         
         // Send WebSocket message for real-time sync
-        if (isWebSocketConnected.value) {
-          _webSocketService?.markNotificationAsRead(notificationId);
-        }
+        // if (isWebSocketConnected.value) {
+        //   _webSocketService?.markNotificationAsRead(notificationId);
+        // }
         
         // Update unread count
         await _calculateUnreadCountFromApi();

@@ -4,6 +4,7 @@ import 'package:tiri/controllers/chat_controller.dart';
 import 'package:tiri/controllers/email_sent_controller.dart';
 import 'package:tiri/controllers/home_controller.dart';
 import 'package:tiri/controllers/image_controller.dart';
+import 'package:tiri/controllers/notification_controller.dart';
 import 'package:tiri/controllers/request_controller.dart';
 import 'package:tiri/controllers/request_details_controller.dart';
 // Splash controller is created directly by SplashScreen, not via AppBinding
@@ -35,6 +36,7 @@ class AppBinding extends Bindings {
     Get.put<EmailSentController>(EmailSentController());
     Get.put<HomeController>(HomeController());
     Get.put<ImageController>(ImageController());
+    Get.put<NotificationController>(NotificationController());
     // Use lazyPut for controllers that make API calls - they only initialize when first accessed
     Get.lazyPut<RequestController>(() => RequestController());
     Get.put<RequestDetailsController>(RequestDetailsController());

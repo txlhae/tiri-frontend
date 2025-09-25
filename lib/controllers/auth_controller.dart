@@ -4,6 +4,7 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer';
 import 'dart:math' as math;
 
 import 'package:country_picker/country_picker.dart';
@@ -590,28 +591,84 @@ class AuthController extends GetxController {
   // =============================================================================
   
   /// Fetch user by ID (for profile screens)
-  Future<UserModel?> fetchUser(String userId) async {
+  Future<UserModel?> fetchUser(String userId, {bool bypassCache = false}) async {
     try {
-      // If requesting current user, return from cache
-      if (currentUserStore.value?.userId == userId) {
+      // If requesting current user and not bypassing cache, return from cache
+      if (!bypassCache && currentUserStore.value?.userId == userId) {
         return currentUserStore.value;
       }
 
       final response = await _apiService.get('/api/profile/users/$userId/');
-      
+
       if (response.statusCode == 200 && response.data != null) {
         // Apply user field mapping for Django compatibility
         final userData = response.data as Map<String, dynamic>;
-        
+
         final flutterUserData = _mapDjangoUserToFlutter(userData);
-        
+
         final UserModel user = UserModel.fromJson(flutterUserData);
-        
+
+        // If this is the current user, update the cache with fresh data
+        if (currentUserStore.value?.userId == userId) {
+          currentUserStore.value = user;
+          await _saveUserToStorage(user);
+        }
+
         return user;
       } else {
         return null;
       }
     } catch (e) {
+      return null;
+    }
+  }
+
+  /// Fetch user by ID with fresh data (for profile screens that need latest data)
+  Future<UserModel?> fetchUserFresh(String userId) async {
+    try {
+      log('🔍 [FETCH FRESH] === fetchUserFresh called ===');
+      log('🔍 [FETCH FRESH] User ID: $userId');
+
+      final response = await _apiService.get('/api/profile/users/$userId/');
+
+      log('🔍 [FETCH FRESH] === API Response ===');
+      log('🔍 [FETCH FRESH] Status Code: ${response.statusCode}');
+      log('🔍 [FETCH FRESH] Raw API Data: ${response.data}');
+
+      if (response.statusCode == 200 && response.data != null) {
+        // Apply user field mapping for Django compatibility
+        final userData = response.data as Map<String, dynamic>;
+
+        log('🔍 [FETCH FRESH] === Before Mapping ===');
+        log('🔍 [FETCH FRESH] average_rating: ${userData['average_rating']}');
+        log('🔍 [FETCH FRESH] total_hours_helped: ${userData['total_hours_helped']}');
+
+        final flutterUserData = _mapDjangoUserToFlutter(userData);
+
+        log('🔍 [FETCH FRESH] === After Mapping ===');
+        log('🔍 [FETCH FRESH] rating: ${flutterUserData['rating']}');
+        log('🔍 [FETCH FRESH] hours: ${flutterUserData['hours']}');
+        log('🔍 [FETCH FRESH] Mapped data: $flutterUserData');
+
+        final UserModel user = UserModel.fromJson(flutterUserData);
+
+        log('🔍 [FETCH FRESH] === Final UserModel ===');
+        log('🔍 [FETCH FRESH] User.rating: ${user.rating}');
+        log('🔍 [FETCH FRESH] User.hours: ${user.hours}');
+
+        // If this is the current user, update the cache with fresh data
+        if (currentUserStore.value?.userId == userId) {
+          log('🔍 [FETCH FRESH] Updating current user cache');
+          currentUserStore.value = user;
+        }
+
+        return user;
+      } else {
+        log('❌ [FETCH FRESH] API returned status ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      log('❌ [FETCH FRESH] Error: $e');
       return null;
     }
   }

@@ -760,15 +760,16 @@ class FirebaseNotificationService extends GetxService {
       }
       print('✅ DETAILED FCM SETUP: Service initialization check passed');
 
-      // 2. Request permissions
-      print('📱 DETAILED FCM SETUP: Step 2 - Requesting notification permissions');
-      final hasPermission = await requestNotificationPermissions();
-      print('🔍 DETAILED FCM SETUP: Permission request result: $hasPermission');
+      // 2. Check permissions (don't request again - should be handled by NotificationPermissionService)
+      print('📱 DETAILED FCM SETUP: Step 2 - Checking notification permissions');
+      final hasPermission = await checkNotificationPermissions();
+      print('🔍 DETAILED FCM SETUP: Permission check result: $hasPermission');
       if (!hasPermission) {
         print('❌ DETAILED FCM SETUP: Push notification setup failed - no permission granted');
+        print('💡 DETAILED FCM SETUP: Permissions should be handled by NotificationPermissionService during splash');
         return false;
       }
-      print('✅ DETAILED FCM SETUP: Notification permissions granted');
+      print('✅ DETAILED FCM SETUP: Notification permissions already granted');
 
       // 3. Get FCM token
       print('🔑 DETAILED FCM SETUP: Step 3 - Getting FCM token');

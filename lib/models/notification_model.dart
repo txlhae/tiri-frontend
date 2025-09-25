@@ -4,7 +4,6 @@ part 'notification_model.freezed.dart';
 part 'notification_model.g.dart';
 
 @freezed
-@JsonSerializable(explicitToJson: true)
 class NotificationModel with _$NotificationModel {
   const factory NotificationModel({
     required String notificationId,

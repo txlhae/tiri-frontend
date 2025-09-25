@@ -68,8 +68,8 @@ class MyRequests extends StatelessWidget {
                           'completed',
                         ].contains(request.status.toString().split('.').last)
                           ? Colors.grey[200]
-                          : request.status == RequestStatus.expired
-                          ? Colors.red[50]
+                          : request.status == RequestStatus.delayed
+                          ? Colors.orange[50]
                           : const Color(0xFFF6F8F9),
                   boxShadow: [
                     BoxShadow(
@@ -151,7 +151,7 @@ class MyRequests extends StatelessWidget {
   }
 
   bool _isRequestCompleted(RequestStatus status) {
-    return status == RequestStatus.expired ||
+    return status == RequestStatus.delayed ||
         status == RequestStatus.cancelled ||
         status == RequestStatus.complete;
   }
