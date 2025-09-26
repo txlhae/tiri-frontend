@@ -26,13 +26,7 @@ class UserModel with _$UserModel {
     @Default(null) DateTime? approvalExpiresAt,
   }) = _UserModel;
 
-  factory UserModel.fromJson(Map<String, dynamic> json) {
-    print('🔧 UserModel.fromJson called with: ${json.toString()}');
-    print('🔧 hours field: ${json['hours']}, rating field: ${json['rating']}');
-    final userModel = _$UserModelFromJson(json);
-    print('🔧 Created UserModel - hours: ${userModel.hours}, rating: ${userModel.rating}');
-    return userModel;
-  }
+  factory UserModel.fromJson(Map<String, dynamic> json) => _$UserModelFromJson(json);
 
   // Factory method specifically for parsing requester objects from API
   factory UserModel.fromRequesterJson(Map<String, dynamic> json) {

@@ -21,7 +21,9 @@
       "mcp__ide__getDiagnostics",
       "Bash(timeout 30 flutter logs)",
       "Bash(dart analyze:*)",
-      "Bash(dart:*)"
+      "Bash(dart:*)",
+      "Bash(timeout 60 flutter logs)",
+      "Bash(dir:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",

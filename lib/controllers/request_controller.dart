@@ -1221,17 +1221,30 @@ class RequestController extends GetxController {
     try {
       debugLog("🔄 LoadRequestDetails: STARTING - Fetching request $requestId");
       log('🔄 LoadRequestDetails: STARTING - Fetching request $requestId');
+      log('🚨🚨 LoadRequestDetails: FORCE REFRESH - clearing cache and forcing API call');
       isLoadingRequestDetails.value = true;
       currentRequestDetails.value = null;
+
+      // FORCE clear any potential caching
+      RequestModelExtension.clearAllCache();
       
       // Fetch the request from the API (uses RequestModelExtension.fromJsonWithRequester)
+      log('🚨🚨 LoadRequestDetails: About to call requestService.getRequest($requestId)');
       final RequestModel? request = await requestService.getRequest(requestId);
+      log('🚨🚨 LoadRequestDetails: requestService.getRequest returned: ${request != null ? "SUCCESS" : "NULL"}');
       
       if (request != null) {
         currentRequestDetails.value = request;
-        
-        // ✅ ENHANCED: Debug logging to verify UserRequestStatus data
+
+        // ✅ CRITICAL DEBUG: Log accepted users data
+        log('🚨 CRITICAL: LoadRequestDetails received request with acceptedUser.length = ${request.acceptedUser.length}');
+        log('🚨 CRITICAL: LoadRequestDetails acceptedUser data = ${request.acceptedUser}');
+        log('🚨 CRITICAL: LoadRequestDetails request.status = ${request.status}');
+        log('🚨 CRITICAL: LoadRequestDetails request.numberOfPeople = ${request.numberOfPeople}');
+
         debugLog("✅ LoadRequestDetails: Successfully loaded request $requestId");
+        debugLog("🚨 CRITICAL DEBUG: acceptedUser.length = ${request.acceptedUser.length}");
+        debugLog("🚨 CRITICAL DEBUG: acceptedUser content = ${request.acceptedUser}");
         debugLog("📊 Enhanced Data Verification:");
         debugLog("   - User Request Status: ${request.userRequestStatus}");
         debugLog("   - Can Request: ${request.canRequest}");
@@ -1240,7 +1253,7 @@ class RequestController extends GetxController {
         debugLog("   - Volunteer Message: ${request.volunteerMessage ?? 'None'}");
         debugLog("   - Requested At: ${request.requestedAt?.toString() ?? 'Never'}");
         debugLog("   - Accepted At: ${request.acceptedAt?.toString() ?? 'Never'}");
-        
+
         // Verify UserRequestStatus object is available
         final statusObject = request.userRequestStatusObject;
         if (statusObject != null) {
@@ -2169,6 +2182,36 @@ class RequestController extends GetxController {
       debugLog("✅ RequestController: Loaded ${volunteers.length} volunteer requests for request $requestId");
       log('✅ RequestController: Loaded ${volunteers.length} volunteer requests for request $requestId');
       debugLog("📊 RequestController: Volunteer requests data: ${volunteers.map((v) => '${v['volunteer']?['username']}(${v['status']})').toList()}");
+
+      // 🚨 DIRECT FIX: Extract approved volunteers and update currentRequestDetails
+      if (currentRequestDetails.value != null) {
+        final approvedVolunteers = volunteers
+            .where((v) => v['status'] == 'approved')
+            .map((v) {
+              final volunteerData = v['volunteer'];
+              if (volunteerData != null) {
+                return UserModel(
+                  userId: volunteerData['userId'] ?? '',
+                  username: volunteerData['username'] ?? 'Unknown',
+                  email: volunteerData['email'] ?? '',
+                  imageUrl: volunteerData['imageUrl'],
+                );
+              }
+              return null;
+            })
+            .where((user) => user != null)
+            .cast<UserModel>()
+            .toList();
+
+        log('🚨 DIRECT FIX: Found ${approvedVolunteers.length} approved volunteers from pendingVolunteers');
+        log('🚨 DIRECT FIX: Approved volunteers: ${approvedVolunteers.map((u) => u.username).toList()}');
+
+        // Create new request with updated acceptedUser list
+        final updatedRequest = currentRequestDetails.value!.copyWith(acceptedUser: approvedVolunteers);
+        currentRequestDetails.value = updatedRequest;
+
+        log('🚨 DIRECT FIX: Updated currentRequestDetails with ${approvedVolunteers.length} accepted users');
+      }
       log('📊 RequestController: Volunteer requests data: ${volunteers.map((v) => '${v['volunteer']?['username']}(${v['status']})').toList()}');
       
     } catch (e) {

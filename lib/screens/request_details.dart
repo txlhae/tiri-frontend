@@ -68,10 +68,16 @@ class _RequestDetailsState extends State<RequestDetails> {
     
     // ✅ FIX: Move reactive updates to post-frame to prevent setState during build
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      log('🚨🚨 RequestDetails initState: Received requestId: $requestId');
+      log('🚨🚨 RequestDetails initState: Current request in controller: ${requestController.currentRequestDetails.value?.requestId}');
+
+      // ALWAYS refresh data, even if cached - for testing volunteer mapping
       if (requestId != null && requestId.isNotEmpty && requestId.trim().isNotEmpty) {
         try {
+          log('🚨🚨 RequestDetails initState: FORCE REFRESH - About to call loadRequestDetails($requestId)');
           // Load request details after build completes with error handling
           await requestController.loadRequestDetails(requestId);
+          log('🚨🚨 RequestDetails initState: loadRequestDetails completed for $requestId');
         } catch (e) {
           // Handle loading errors gracefully
           log('Error loading request details in initState: $e');
@@ -365,7 +371,13 @@ class _RequestDetailsState extends State<RequestDetails> {
               DetailsRow(
                 icon: Icons.people_outline,
                 label: "Accepted Users",
-                value: request.acceptedUser.length.toString(),
+                value: (() {
+                  log('🚨 UI DEBUG: request.acceptedUser.length = ${request.acceptedUser.length}');
+                  log('🚨 UI DEBUG: request.acceptedUser content = ${request.acceptedUser}');
+                  log('🚨 UI DEBUG: request.requestId = ${request.requestId}');
+                  log('🚨 UI DEBUG: request.status = ${request.status}');
+                  return request.acceptedUser.length.toString();
+                })(),
               ),
             ],
           ),
@@ -2097,19 +2109,11 @@ class _RequestDetailsState extends State<RequestDetails> {
   void _navigateToFeedbackScreen(RequestModel request) {
     // Get volunteers from the request
     final volunteers = request.acceptedUser;
-    
-    if (volunteers.isEmpty) {
-      Get.snackbar(
-        'No Volunteers',
-        'This request has no accepted volunteers to provide feedback for.',
-        backgroundColor: Colors.orange.shade600,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.BOTTOM,
-        margin: const EdgeInsets.all(16),
-      );
-      return;
-    }
-    
+
+    // REMOVED: Frontend volunteer validation logic
+    // If the request is in progress, the backend has already validated that volunteers exist
+    // The frontend should not block completion based on volunteer count
+
     // Navigate to feedback page with request and volunteer data
     Get.toNamed(
       Routes.addfeedbackPage,

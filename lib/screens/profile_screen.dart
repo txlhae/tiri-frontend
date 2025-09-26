@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:tiri/controllers/auth_controller.dart';
 import 'package:tiri/controllers/chat_controller.dart';
 import 'package:tiri/controllers/request_controller.dart';
@@ -16,6 +17,7 @@ import 'package:tiri/screens/widgets/dialog_widgets/edit_dialog.dart';
 import 'package:tiri/screens/widgets/dialog_widgets/logout_dialog.dart';
 import 'package:tiri/screens/widgets/dialog_widgets/qr_code_dialog.dart';
 import 'package:tiri/screens/widgets/profile_nav_button.dart';
+import 'package:tiri/services/api_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   final UserModel? user;
@@ -37,58 +39,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _loadUserProfile() async {
-    final currentUser = authController.currentUserStore.value!;
-    final targetUserId = widget.user?.userId ?? currentUser.userId;
-    final isViewingOwnProfile = widget.user == null || widget.user?.userId == currentUser.userId;
+    try {
+      final currentUser = authController.currentUserStore.value!;
+      final targetUserId = widget.user?.userId ?? currentUser.userId;
 
-    // Set initial user to avoid black screen
-    final initialUser = widget.user ?? currentUser;
-    shownUser.value = initialUser;
+      // Always fetch fresh data - no caching
+      final apiService = Get.find<ApiService>();
+      final response = await apiService.get('/api/profile/users/$targetUserId/');
 
-    log('📱 Profile Screen: Loading profile for user $targetUserId');
-    log('📱 Profile Screen: Initial data - hours: ${initialUser.hours}, rating: ${initialUser.rating}');
+      if (response.statusCode == 200 && response.data != null) {
+        final apiData = response.data as Map<String, dynamic>;
 
-    // Fetch fresh user profile data with cache bypass
-    final freshUser = await authController.fetchUser(targetUserId, bypassCache: true);
+        // Create user directly with fresh API data
+        final freshUser = UserModel(
+          userId: apiData['userId']?.toString() ?? targetUserId,
+          email: apiData['email']?.toString() ?? '',
+          username: apiData['full_name'] ?? apiData['username'] ?? 'Unknown',
+          imageUrl: apiData['profile_image'],
+          phoneNumber: apiData['phone_number']?.toString(),
+          country: apiData['country'],
+          referralCode: apiData['referralCode'],  // ← Clean - no fallbacks
+          rating: (apiData['average_rating'] as num?)?.toDouble(),
+          hours: (apiData['total_hours_helped'] as num?)?.toInt(),
+          createdAt: apiData['created_at'] != null ? DateTime.parse(apiData['created_at']) : null,
+          isVerified: apiData['is_verified'] ?? false,
+          isApproved: apiData['is_approved'] ?? false,
+          approvalStatus: apiData['approval_status'],
+          rejectionReason: apiData['rejection_reason'],
+          approvalExpiresAt: apiData['approval_expires_at'] != null ? DateTime.parse(apiData['approval_expires_at']) : null,
+        );
 
-    if (freshUser != null) {
-      log('✅ Profile Screen: Received fresh user data - hours: ${freshUser.hours}, rating: ${freshUser.rating}, name: ${freshUser.username}');
-      log('🔍 [PROFILE DEBUG] === Fresh User Data ===');
-      log('🔍 [PROFILE DEBUG] User ID: ${freshUser.userId}');
-      log('🔍 [PROFILE DEBUG] Username: ${freshUser.username}');
-      log('🔍 [PROFILE DEBUG] Hours: ${freshUser.hours}');
-      log('🔍 [PROFILE DEBUG] Rating: ${freshUser.rating}');
-      log('🔍 [PROFILE DEBUG] Rating Type: ${freshUser.rating.runtimeType}');
-      log('🔍 [PROFILE DEBUG] Expected: 5.0, Actual: ${freshUser.rating}');
-
-      // Force update the shownUser
-      log('🔍 [PROFILE DEBUG] Updating shownUser.value...');
-      log('🔍 [PROFILE DEBUG] Old shownUser rating: ${shownUser.value?.rating}');
-
-      // Create a new instance to force Obx to detect change
-      shownUser.value = null;  // First set to null to force change detection
-      await Future.delayed(Duration(milliseconds: 50));  // Small delay
-      shownUser.value = freshUser;  // Then set the new value
-
-      log('🔍 [PROFILE DEBUG] New shownUser rating: ${shownUser.value?.rating}');
-      log('🔍 [PROFILE DEBUG] Fresh user rating: ${freshUser.rating}');
-
-      // Force reactive update
-      shownUser.refresh();
-      log('🔍 [PROFILE DEBUG] Forced reactive refresh called');
-
-      // Also force setState to ensure widget rebuild
-      if (mounted) {
-        setState(() {});
-        log('🔍 [PROFILE DEBUG] setState called to force widget rebuild');
+        shownUser.value = freshUser;
+        log('✅ Fresh data loaded: hours=${freshUser.hours}, rating=${freshUser.rating}, referralCode=${freshUser.referralCode}');
       }
 
-      // Fetch feedback after updating user data
-      await requestController.fetchProfileFeedback(freshUser.userId);
-    } else {
-      log('❌ Profile Screen: fetchUser with bypassCache returned null for $targetUserId');
-      // Fallback: still try to fetch feedback with current data
+      // Fetch feedback
       await requestController.fetchProfileFeedback(targetUserId);
+    } catch (e) {
+      log('Profile load error: $e');
     }
   }
 
@@ -150,6 +138,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             children: [
                               CustomBackButton(controller: authController),
                               const Spacer(),
+                              // QR Code Scanner Button
+                              GestureDetector(
+                                behavior: HitTestBehavior.opaque,
+                                onTap: () => Get.toNamed('/qrScanner'),
+                                child: Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.9),
+                                    borderRadius: BorderRadius.circular(20),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.1),
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Icon(
+                                    Icons.qr_code_scanner,
+                                    color: Color.fromRGBO(3, 80, 135, 1),
+                                    size: 24,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
                               if (isCurrentUser)
                                 GestureDetector(
                                   behavior: HitTestBehavior.opaque,
@@ -202,27 +215,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                         ),
                         const SizedBox(height: 5),
-                        AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 300),
-                          child: Builder(
-                            builder: (context) {
-                              log('🏠 Profile Screen - User hours: ${user.hours}, rating: ${user.rating}');
-                              log('🏠 Profile Screen - Full user data: userId=${user.userId}, hours=${user.hours}, rating=${user.rating}');
-                              log('🔍 [UI DEBUG] === BuildStatsRow Input ===');
-                              log('🔍 [UI DEBUG] Hours parameter: ${user.hours}');
-                              log('🔍 [UI DEBUG] Rating parameter: ${user.rating}');
-                              log('🔍 [UI DEBUG] Rating type: ${user.rating.runtimeType}');
-                              log('🔍 [UI DEBUG] Current shownUser rating: ${shownUser.value?.rating}');
+                        // Stats row with reactive user data
+                        Obx(() {
+                          final currentUser = shownUser.value;
+                          if (currentUser == null) {
+                            return const Center(child: CircularProgressIndicator());
+                          }
 
-                              // Use null coalescing to show 0.0 for null ratings until fresh data loads
-                              final displayHours = user.hours ?? 0;
-                              final displayRating = user.rating ?? 0.0;
+                          final displayHours = currentUser.hours ?? 0;
+                          final displayRating = currentUser.rating ?? 0.0;
 
-                              return buildStatsRow(displayHours, displayRating,
-                                  key: ValueKey("${displayHours}_${displayRating}"));
-                            }
-                          ),
-                        ),
+                          return buildStatsRow(displayHours, displayRating);
+                        }),
                         const SizedBox(height: 15),
                         // CURRENT USER LAYOUT
                         if (isCurrentUser) ...[
@@ -716,11 +720,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget buildStatsRow(int? hours, double? rating, {Key? key}) {
-    log('🔍 [STATS ROW DEBUG] === buildStatsRow Called ===');
-    log('🔍 [STATS ROW DEBUG] Hours: $hours');
-    log('🔍 [STATS ROW DEBUG] Rating: $rating');
-    log('🔍 [STATS ROW DEBUG] Rating display: ${(rating ?? 0.0).toStringAsFixed(1)}');
-
     return Row(
       key: key,
       mainAxisAlignment: MainAxisAlignment.center,
@@ -733,7 +732,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         const SizedBox(width: 5),
         Text(
           "${hours ?? 0} hrs",
-          style: const TextStyle(fontSize: 15),
+          style: const TextStyle(fontSize: 15, color: Colors.white),
         ),
         const SizedBox(width: 10),
         SvgPicture.asset(
@@ -744,7 +743,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         const SizedBox(width: 5),
         Text(
           (rating ?? 0.0).toStringAsFixed(1),
-          style: const TextStyle(fontSize: 15),
+          style: const TextStyle(fontSize: 15, color: Colors.white),
         ),
       ],
     );
@@ -1249,4 +1248,5 @@ class _ProfileScreenState extends State<ProfileScreen> {
       );
     }
   }
+
 }

@@ -18,6 +18,9 @@ _$RequestModelImpl _$$RequestModelImplFromJson(Map<String, dynamic> json) =>
           ? null
           : DateTime.parse(json['requestedTime'] as String),
       status: $enumDecode(_$RequestStatusEnumMap, json['status']),
+      acceptedUser: json['acceptedUser'] == null
+          ? const []
+          : _acceptedUserFromJson(json['acceptedUser']),
       numberOfPeople: (json['numberOfPeople'] as num?)?.toInt() ?? 1,
       hoursNeeded: (json['hoursNeeded'] as num?)?.toInt() ?? 1,
     );
@@ -32,6 +35,7 @@ Map<String, dynamic> _$$RequestModelImplToJson(_$RequestModelImpl instance) =>
       'timestamp': instance.timestamp.toIso8601String(),
       'requestedTime': instance.requestedTime?.toIso8601String(),
       'status': _$RequestStatusEnumMap[instance.status]!,
+      'acceptedUser': instance.acceptedUser,
       'numberOfPeople': instance.numberOfPeople,
       'hoursNeeded': instance.hoursNeeded,
     };

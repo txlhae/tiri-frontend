@@ -220,48 +220,50 @@ class _FeedbackState extends State<Feedback> {
                             children: [
                               // Header row with name and date
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Row(
-                                    children: [
-                                      CircleAvatar(
-                                        radius: 18,
-                                        backgroundImage: imageUrl != null
-                                            ? NetworkImage(imageUrl)
-                                            : null,
-                                        backgroundColor: const Color.fromRGBO(0, 140, 170, 0.1),
-                                        child: imageUrl == null
-                                            ? const Icon(
-                                                Icons.person,
-                                                color: Color.fromRGBO(0, 140, 170, 1),
-                                                size: 18,
-                                              )
-                                            : null,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            username,
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.w600,
-                                              fontSize: 16,
-                                              color: Colors.black87,
-                                            ),
-                                          ),
-                                          if (reputationDisplay.isNotEmpty)
-                                            Text(
-                                              reputationDisplay,
-                                              style: const TextStyle(
-                                                fontSize: 12,
-                                                color: Colors.grey,
-                                              ),
-                                            ),
-                                        ],
-                                      ),
-                                    ],
+                                  CircleAvatar(
+                                    radius: 18,
+                                    backgroundImage: imageUrl != null
+                                        ? NetworkImage(imageUrl)
+                                        : null,
+                                    backgroundColor: const Color.fromRGBO(0, 140, 170, 0.1),
+                                    child: imageUrl == null
+                                        ? const Icon(
+                                            Icons.person,
+                                            color: Color.fromRGBO(0, 140, 170, 1),
+                                            size: 18,
+                                          )
+                                        : null,
                                   ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          username,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 16,
+                                            color: Colors.black87,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                          maxLines: 1,
+                                        ),
+                                        if (reputationDisplay.isNotEmpty)
+                                          Text(
+                                            reputationDisplay,
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                            maxLines: 1,
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
                                   Text(
                                     DateFormat('MMM d, yyyy').format(feedback.timestamp),
                                     style: const TextStyle(

@@ -5,6 +5,8 @@ library;
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:developer';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 import '../../config/api_config.dart';
 import '../exceptions/api_exceptions.dart';
 import '../models/api_response.dart';
@@ -38,7 +40,9 @@ class ApiClient {
     Duration? sendTimeout,
     bool enableRetry = true,
     int maxRetries = 3,
-  }) {
+    bool enableCache = true,
+    int maxCacheSizeMB = 10,
+  }) async {
     // Set base URL
     _baseUrl = baseUrl ?? ApiConfig.apiBaseUrl;
     _authToken = authToken;
@@ -55,6 +59,11 @@ class ApiClient {
         return status != null && status < 500;
       },
     ));
+
+    // Add cache interceptor with size limits if enabled
+    if (enableCache) {
+      await _addCacheInterceptor(maxCacheSizeMB);
+    }
 
     // Add interceptors
     final interceptors = ApiConfig.isDevelopment
@@ -444,6 +453,82 @@ class ApiClient {
     }
   }
 
+  /// Add cache interceptor with size limits
+  static Future<void> _addCacheInterceptor(int maxCacheSizeMB) async {
+    try {
+      // Create cache directory
+      final cacheDir = await _getCacheDirectory();
+
+      // Add cache interceptor with strict size limits
+      _dio!.interceptors.add(CacheInterceptor(
+        maxCacheSizeMB: maxCacheSizeMB,
+        cacheDirectory: cacheDir,
+        maxCacheAge: const Duration(hours: 1), // Short cache duration
+      ));
+
+      if (kDebugMode) {
+        log('💾 Cache interceptor added with ${maxCacheSizeMB}MB limit');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        log('❌ Failed to setup cache: $e');
+      }
+    }
+  }
+
+  /// Get cache directory
+  static Future<Directory> _getCacheDirectory() async {
+    final tempDir = await getTemporaryDirectory();
+    final cacheDir = Directory('${tempDir.path}/tiri_api_cache');
+
+    if (!cacheDir.existsSync()) {
+      cacheDir.createSync(recursive: true);
+    }
+
+    return cacheDir;
+  }
+
+  /// Clear API cache manually
+  static Future<void> clearCache() async {
+    try {
+      final cacheDir = await _getCacheDirectory();
+      if (cacheDir.existsSync()) {
+        await cacheDir.delete(recursive: true);
+        await cacheDir.create();
+      }
+
+      if (kDebugMode) {
+        log('🗑️ API cache cleared');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        log('❌ Failed to clear cache: $e');
+      }
+    }
+  }
+
+  /// Get cache size in MB
+  static Future<double> getCacheSizeMB() async {
+    try {
+      final cacheDir = await _getCacheDirectory();
+      if (!cacheDir.existsSync()) return 0.0;
+
+      int totalSize = 0;
+      await for (final entity in cacheDir.list(recursive: true)) {
+        if (entity is File) {
+          totalSize += await entity.length();
+        }
+      }
+
+      return totalSize / (1024 * 1024); // Convert to MB
+    } catch (e) {
+      if (kDebugMode) {
+        log('❌ Failed to get cache size: $e');
+      }
+      return 0.0;
+    }
+  }
+
   /// Create a cancel token for request cancellation
   static CancelToken createCancelToken() {
     return CancelToken();
@@ -516,8 +601,109 @@ class ApiUtils {
   }
 }
 
+/// Simple cache interceptor with size limits
+class CacheInterceptor extends Interceptor {
+  final int maxCacheSizeMB;
+  final Directory cacheDirectory;
+  final Duration maxCacheAge;
+
+  CacheInterceptor({
+    required this.maxCacheSizeMB,
+    required this.cacheDirectory,
+    this.maxCacheAge = const Duration(minutes: 30),
+  });
+
+  @override
+  void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+    // Only cache GET requests
+    if (options.method.toUpperCase() == 'GET') {
+      final cacheKey = _generateCacheKey(options);
+      final cacheFile = File('${cacheDirectory.path}/$cacheKey');
+
+      if (cacheFile.existsSync()) {
+        final lastModified = cacheFile.lastModifiedSync();
+        if (DateTime.now().difference(lastModified) < maxCacheAge) {
+          try {
+            final cachedData = cacheFile.readAsStringSync();
+            final response = Response(
+              requestOptions: options,
+              data: cachedData,
+              statusCode: 200,
+              headers: Headers.fromMap({'x-cache': ['HIT']}),
+            );
+            handler.resolve(response);
+            return;
+          } catch (e) {
+            // Cache read failed, continue with request
+          }
+        }
+      }
+    }
+
+    handler.next(options);
+  }
+
+  @override
+  void onResponse(Response response, ResponseInterceptorHandler handler) {
+    // Cache successful GET responses
+    if (response.requestOptions.method.toUpperCase() == 'GET' &&
+        response.statusCode == 200 &&
+        response.data != null) {
+      _cacheResponse(response);
+    }
+
+    handler.next(response);
+  }
+
+  void _cacheResponse(Response response) {
+    try {
+      final cacheKey = _generateCacheKey(response.requestOptions);
+      final cacheFile = File('${cacheDirectory.path}/$cacheKey');
+
+      // Check cache size before writing
+      _enforceMaxCacheSize();
+
+      cacheFile.writeAsStringSync(response.data.toString());
+    } catch (e) {
+      // Cache write failed, ignore
+    }
+  }
+
+  String _generateCacheKey(RequestOptions options) {
+    final uri = options.uri.toString();
+    return uri.hashCode.abs().toString();
+  }
+
+  void _enforceMaxCacheSize() {
+    try {
+      final files = cacheDirectory.listSync()
+          .where((entity) => entity is File)
+          .cast<File>()
+          .toList();
+
+      // Sort by last modified (oldest first)
+      files.sort((a, b) => a.lastModifiedSync().compareTo(b.lastModifiedSync()));
+
+      int totalSize = 0;
+      for (final file in files) {
+        totalSize += file.lengthSync();
+      }
+
+      final maxSizeBytes = maxCacheSizeMB * 1024 * 1024;
+
+      // Remove oldest files if over limit
+      while (totalSize > maxSizeBytes && files.isNotEmpty) {
+        final oldestFile = files.removeAt(0);
+        totalSize -= oldestFile.lengthSync();
+        oldestFile.deleteSync();
+      }
+    } catch (e) {
+      // Cache cleanup failed, ignore
+    }
+  }
+}
+
 /// TODO: Phase 2 Integration Points
-/// - Add request/response caching layer
 /// - Implement request queuing for offline scenarios
 /// - Add request prioritization system
 /// - Create specialized clients for different API domains

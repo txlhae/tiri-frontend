@@ -548,41 +548,104 @@ class AuthController extends GetxController {
     await register();
   }
 
-  /// Logout current user
-  /// 🚨 ENHANCED: Proper token cleanup
+  /// Logout current user - Bulletproof version
+  /// 🚨 ENHANCED: Proper token cleanup with maximum error protection
   Future<void> logout() async {
+    log('🔐 Starting logout process...');
+
+    // Set loading state safely
     try {
       isLoading.value = true;
-      
-      final result = await _authService.logout();
-      
-      // Update reactive state
-      currentUserStore.value = null;
-      isLoggedIn.value = false;
-      
-      // Clear storage
-      await _clearUserData();
-      
-      // 🚨 FIXED: Clear tokens
-      await _apiService.clearTokens();
-      
-      // ✅ CLEAR USER STATE: Reset approval state on logout
-      await _userStateService.clearState();
-      
+    } catch (e) {
+      log('Error setting loading state: $e');
+    }
+
+    // Force clear reactive state FIRST - this is most critical
+    try {
+      currentUserStore(null);  // Using () instead of .value =
+      isLoggedIn(false);       // Using () instead of .value =
+      log('✅ Cleared reactive state');
+    } catch (e) {
+      log('❌ Error clearing reactive state: $e');
+      // Try alternative approach
+      try {
+        currentUserStore.value = null;
+        isLoggedIn.value = false;
+      } catch (e2) {
+        log('❌ Error with fallback reactive state clear: $e2');
+      }
+    }
+
+    // Navigate to login immediately to prevent UI issues
+    try {
+      Get.offAllNamed(Routes.loginPage);
+      log('✅ Navigation completed');
+    } catch (e) {
+      log('❌ Error during navigation: $e');
+    }
+
+    // Try to show success message (but don't fail if it doesn't work)
+    try {
       Get.snackbar(
         'Logged Out',
-        result.message,
+        'Successfully logged out',
         snackPosition: SnackPosition.TOP,
-        backgroundColor: move,
+        backgroundColor: const Color.fromRGBO(0, 140, 170, 1),
         colorText: Colors.white,
       );
-      
-      // Navigate to login
-      Get.offAllNamed(Routes.loginPage);
+    } catch (e) {
+      log('❌ Error showing logout message: $e');
+    }
+
+    // Clean up in background (these can fail without affecting UX)
+    _performBackgroundCleanup();
+  }
+
+  /// Background cleanup that can fail without affecting logout UX
+  Future<void> _performBackgroundCleanup() async {
+    try {
+      log('🧹 Starting background cleanup...');
+
+      // Try API logout call
+      try {
+        await _authService.logout();
+        log('✅ API logout completed');
+      } catch (e) {
+        log('❌ API logout failed: $e');
+      }
+
+      // Clear storage
+      try {
+        await _clearUserData();
+        log('✅ User data cleared');
+      } catch (e) {
+        log('❌ Error clearing user data: $e');
+      }
+
+      // Clear tokens
+      try {
+        await _apiService.clearTokens();
+        log('✅ API tokens cleared');
+      } catch (e) {
+        log('❌ Error clearing API tokens: $e');
+      }
+
+      // Clear user state
+      try {
+        await _userStateService.clearState();
+        log('✅ User state cleared');
+      } catch (e) {
+        log('❌ Error clearing user state: $e');
+      }
 
     } catch (e) {
+      log('❌ Background cleanup error: $e');
     } finally {
-      isLoading.value = false;
+      try {
+        isLoading.value = false;
+      } catch (e) {
+        log('❌ Error clearing loading state: $e');
+      }
     }
   }
 
@@ -626,61 +689,62 @@ class AuthController extends GetxController {
   /// Fetch user by ID with fresh data (for profile screens that need latest data)
   Future<UserModel?> fetchUserFresh(String userId) async {
     try {
-      log('🔍 [FETCH FRESH] === fetchUserFresh called ===');
-      log('🔍 [FETCH FRESH] User ID: $userId');
-
       final response = await _apiService.get('/api/profile/users/$userId/');
 
-      log('🔍 [FETCH FRESH] === API Response ===');
-      log('🔍 [FETCH FRESH] Status Code: ${response.statusCode}');
-      log('🔍 [FETCH FRESH] Raw API Data: ${response.data}');
-
       if (response.statusCode == 200 && response.data != null) {
-        // Apply user field mapping for Django compatibility
         final userData = response.data as Map<String, dynamic>;
-
-        log('🔍 [FETCH FRESH] === Before Mapping ===');
-        log('🔍 [FETCH FRESH] average_rating: ${userData['average_rating']}');
-        log('🔍 [FETCH FRESH] total_hours_helped: ${userData['total_hours_helped']}');
-
         final flutterUserData = _mapDjangoUserToFlutter(userData);
-
-        log('🔍 [FETCH FRESH] === After Mapping ===');
-        log('🔍 [FETCH FRESH] rating: ${flutterUserData['rating']}');
-        log('🔍 [FETCH FRESH] hours: ${flutterUserData['hours']}');
-        log('🔍 [FETCH FRESH] Mapped data: $flutterUserData');
-
         final UserModel user = UserModel.fromJson(flutterUserData);
 
-        log('🔍 [FETCH FRESH] === Final UserModel ===');
-        log('🔍 [FETCH FRESH] User.rating: ${user.rating}');
-        log('🔍 [FETCH FRESH] User.hours: ${user.hours}');
-
-        // If this is the current user, update the cache with fresh data
+        // Update cache but don't let it block returning the user
         if (currentUserStore.value?.userId == userId) {
-          log('🔍 [FETCH FRESH] Updating current user cache');
-          currentUserStore.value = user;
+          try {
+            currentUserStore.value = user;
+            await _saveUserToStorage(user);
+          } catch (e) {
+            log('Cache update failed, but continuing: $e');
+          }
         }
 
         return user;
-      } else {
-        log('❌ [FETCH FRESH] API returned status ${response.statusCode}');
-        return null;
       }
+      return null;
     } catch (e) {
-      log('❌ [FETCH FRESH] Error: $e');
+      log('fetchUserFresh error: $e');
       return null;
     }
   }
 
-  /// Map Django user object to Flutter UserModel format
-  Map<String, dynamic> _mapDjangoUserToFlutter(dynamic djangoUser) {
-    if (djangoUser is! Map) return {};
-    
-    final userMap = djangoUser as Map<String, dynamic>;
+  /// Map API user response to Flutter UserModel format
+  /// REWRITTEN: Based on exact API response format provided
+  Map<String, dynamic> _mapDjangoUserToFlutter(dynamic apiResponse) {
+    if (apiResponse is! Map) {
+      log('❌ [MAPPING] Invalid API response type: ${apiResponse.runtimeType}');
+      return {};
+    }
+
+    final userMap = apiResponse as Map<String, dynamic>;
+
+    log('🔧 [MAPPING] === Processing API Response ===');
+    log('🔧 [MAPPING] total_hours_helped: ${userMap['total_hours_helped']} (${userMap['total_hours_helped'].runtimeType})');
+    log('🔧 [MAPPING] average_rating: ${userMap['average_rating']} (${userMap['average_rating'].runtimeType})');
+
+    // Extract values with explicit type checking
+    final hoursValue = userMap['total_hours_helped'];
+    final ratingValue = userMap['average_rating'];
+
+    int? hours;
+    if (hoursValue != null) {
+      hours = hoursValue is int ? hoursValue : int.tryParse(hoursValue.toString());
+    }
+
+    double? rating;
+    if (ratingValue != null) {
+      rating = ratingValue is double ? ratingValue : double.tryParse(ratingValue.toString());
+    }
 
     final mappedData = {
-      'userId': userMap['userId']?.toString() ?? '',
+      'userId': userMap['userId']?.toString() ?? userMap['id']?.toString() ?? '',
       'username': userMap['full_name'] ?? userMap['username'] ?? 'Unknown',
       'email': userMap['email']?.toString() ?? '',
       'imageUrl': userMap['profile_image'],
@@ -688,14 +752,24 @@ class AuthController extends GetxController {
       'phoneNumber': userMap['phone_number']?.toString(),
       'country': userMap['country'],
       'referralCode': userMap['referral_code'],
-      'rating': (userMap['average_rating'] as num?)?.toDouble(),
-      'hours': (userMap['total_hours_helped'] as num?)?.toInt(),
-      'createdAt': userMap['created_at'] != null 
-          ? DateTime.parse(userMap['created_at']) 
+      'rating': rating,
+      'hours': hours,
+      'createdAt': userMap['created_at'] != null
+          ? DateTime.parse(userMap['created_at'])
           : null,
       'isVerified': userMap['is_verified'] ?? false,
+      'isApproved': userMap['is_approved'] ?? false,
+      'approvalStatus': userMap['approval_status'],
+      'rejectionReason': userMap['rejection_reason'],
+      'approvalExpiresAt': userMap['approval_expires_at'] != null
+          ? DateTime.parse(userMap['approval_expires_at'])
+          : null,
     };
-    
+
+    log('🔧 [MAPPING] === Final Mapped Data ===');
+    log('🔧 [MAPPING] hours: ${mappedData['hours']} (${mappedData['hours'].runtimeType})');
+    log('🔧 [MAPPING] rating: ${mappedData['rating']} (${mappedData['rating'].runtimeType})');
+
     return mappedData;
   }
 
@@ -1803,7 +1877,26 @@ class AuthController extends GetxController {
       
       if (userStr != null && hasTokens) {
         final userJson = jsonDecode(userStr);
-        currentUserStore.value = UserModel.fromJson(userJson);
+        final cachedUser = UserModel.fromJson(userJson);
+
+        // 🚨 FIX: Check if cached user has complete data (hours/rating)
+        if (cachedUser.hours != null && cachedUser.rating != null) {
+          // Cached data is complete, use it
+          currentUserStore.value = cachedUser;
+          log('✅ [RELOAD TOKENS] Using complete cached user data: hours=${cachedUser.hours}, rating=${cachedUser.rating}');
+        } else {
+          // Cached data is incomplete, fetch fresh data immediately
+          log('⚠️ [RELOAD TOKENS] Cached user data incomplete (hours=${cachedUser.hours}, rating=${cachedUser.rating}), fetching fresh...');
+          final freshUser = await fetchUserFresh(cachedUser.userId);
+          if (freshUser != null) {
+            currentUserStore.value = freshUser;
+            log('✅ [RELOAD TOKENS] Updated with fresh user data: hours=${freshUser.hours}, rating=${freshUser.rating}');
+          } else {
+            // Fallback to cached data if fresh fetch fails
+            currentUserStore.value = cachedUser;
+            log('❌ [RELOAD TOKENS] Fresh fetch failed, using incomplete cached data');
+          }
+        }
         
         // Try to validate the token by checking verification status
         try {

@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:tiri/controllers/auth_controller.dart';
+import 'package:tiri/models/user_model.dart';
+import 'package:tiri/screens/profile_screen.dart';
+import 'package:tiri/services/api_service.dart';
 
 class QrScannerScreen extends StatefulWidget {
   const QrScannerScreen({super.key});
@@ -68,7 +71,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: const Text(
-                    'Scan Referral QR Code',
+                    'Scan User QR Code',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 16,
@@ -164,7 +167,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Text(
-                'Position the QR code within the frame\nThe code will be scanned automatically',
+                'Position the user\'s QR code within the frame\nThe code will be scanned automatically',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Colors.white,
@@ -205,48 +208,75 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
 
   Future<void> _processQrCode(String qrData) async {
     try {
-      // Parse QR code data (expecting format like "REFERRAL:ABC123:user-uuid")
+      log('Processing QR data: $qrData');
+
+      // Parse QR code data (expecting format like "REFERRAL:JU5NB36B:214f1153-6e37-416b-86a2-72e392b84881")
       Map<String, String> parsedData = _parseQrData(qrData);
-      
-      if (parsedData['referralCode'] != null) {
-        log("Scanned referral code: ${parsedData['referralCode']}");
-        if (parsedData['userId'] != null) {
-          log("Scanned user UUID: ${parsedData['userId']}");
-        }
-        
-        // Fetch user by referral code
-        final user = await authController.fetchUserByReferralCode(parsedData['referralCode']!);
-        
-        if (user != null) {
-          // Verify that the UUID matches if both are present
-          if (parsedData['userId'] != null && parsedData['userId'] != user.userId) {
-            log("Warning: QR UUID (${parsedData['userId']}) doesn't match user UUID (${user.userId})");
-          }
-          
-          authController.referredUid.value = user.userId;
-          authController.referredUser.value = user.username;
-          
-          // Navigate back and then to register
-          Get.back();
-          authController.navigateToRegister();
-          
-          Get.snackbar(
-            'Success',
-            'Referral code scanned successfully!',
-            snackPosition: SnackPosition.TOP,
-            duration: const Duration(seconds: 3),
-            backgroundColor: const Color.fromRGBO(0, 140, 170, 1),
-            colorText: Colors.white,
-          );
-        } else {
-          _showErrorAndGoBack('Invalid referral code. Please try again.');
-        }
+
+      if (parsedData['userId'] != null) {
+        log("Scanned user UUID: ${parsedData['userId']}");
+
+        // Navigate to user profile
+        await _navigateToUserProfile(parsedData['userId']!);
       } else {
-        _showErrorAndGoBack('This QR code does not contain a valid referral code.');
+        _showErrorAndGoBack('This QR code does not contain valid user information.');
       }
     } catch (e) {
       log("Error processing QR code: $e");
       _showErrorAndGoBack('Failed to process QR code. Please try again.');
+    }
+  }
+
+  /// Navigate to user profile by ID
+  Future<void> _navigateToUserProfile(String userId) async {
+    try {
+      // Fetch user data
+      final apiService = Get.find<ApiService>();
+      final response = await apiService.get('/api/profile/users/$userId/');
+
+      if (response.statusCode == 200 && response.data != null) {
+        final apiData = response.data as Map<String, dynamic>;
+
+        // Create user model from API data
+        final user = UserModel(
+          userId: apiData['userId']?.toString() ?? userId,
+          email: apiData['email']?.toString() ?? '',
+          username: apiData['full_name'] ?? apiData['username'] ?? 'Unknown',
+          imageUrl: apiData['profile_image'],
+          phoneNumber: apiData['phone_number']?.toString(),
+          country: apiData['country'],
+          referralCode: apiData['referralCode'],
+          rating: (apiData['average_rating'] as num?)?.toDouble(),
+          hours: (apiData['total_hours_helped'] as num?)?.toInt(),
+          createdAt: apiData['created_at'] != null ? DateTime.parse(apiData['created_at']) : null,
+          isVerified: apiData['is_verified'] ?? false,
+          isApproved: apiData['is_approved'] ?? false,
+          approvalStatus: apiData['approval_status'],
+          rejectionReason: apiData['rejection_reason'],
+          approvalExpiresAt: apiData['approval_expires_at'] != null ? DateTime.parse(apiData['approval_expires_at']) : null,
+        );
+
+        // Navigate to profile screen
+        Get.back(); // Close scanner
+        Get.to(() => ProfileScreen(user: user));
+
+        log('✅ Successfully navigated to user profile: ${user.username}');
+
+        // Show success message
+        Get.snackbar(
+          'Success',
+          'Successfully opened ${user.username}\'s profile!',
+          snackPosition: SnackPosition.TOP,
+          duration: const Duration(seconds: 3),
+          backgroundColor: const Color.fromRGBO(0, 140, 170, 1),
+          colorText: Colors.white,
+        );
+      } else {
+        _showErrorAndGoBack('User not found');
+      }
+    } catch (e) {
+      log('Error fetching user profile: $e');
+      _showErrorAndGoBack('Failed to load user profile');
     }
   }
 

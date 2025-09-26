@@ -164,46 +164,83 @@ class RequestService extends GetxController {
     try {
       // 🔍 Debug: Log original Django structure
       log('🔄 MAPPING Django JSON: ${djangoJson.keys.toList()}');
-      
+
+      // 🔍 COMPREHENSIVE DEBUG: Log volunteers_assigned structure
+      log('🚨 FULL DEBUG: Raw Django JSON keys: ${djangoJson.keys.toList()}');
+      log('🚨 FULL DEBUG: Raw volunteers_assigned: ${djangoJson['volunteers_assigned']}');
+
+      if (djangoJson['volunteers_assigned'] is List) {
+        final volunteersAssigned = djangoJson['volunteers_assigned'] as List;
+        log('🔍 volunteers_assigned count: ${volunteersAssigned.length}');
+        for (int i = 0; i < volunteersAssigned.length; i++) {
+          final va = volunteersAssigned[i];
+          log('🚨 RAW Volunteer $i: $va');
+          if (va is Map) {
+            log('🔍 Volunteer $i: status=${va['status']}, volunteer_data=${va['volunteer']}');
+            log('🔍 Volunteer $i full_name: ${va['volunteer']?['full_name']}');
+            log('🔍 Volunteer $i username: ${va['volunteer']?['username']}');
+          }
+        }
+      } else {
+        log('🚨 volunteers_assigned is NOT a List! Type: ${djangoJson['volunteers_assigned'].runtimeType}');
+      }
+
       // 📋 Django → Flutter Field Mapping
+      final mappedAcceptedUsers = _mapAcceptedUsers(djangoJson);
+      log('🎯 Final accepted users count: ${mappedAcceptedUsers.length}');
+
       final flutterJson = <String, dynamic>{
         // Core ID mapping
         'requestId': djangoJson['id']?.toString() ?? '',
         'userId': _extractUserId(djangoJson),
-        
+
         // Content fields (likely same names)
         'title': djangoJson['title'] ?? '',
         'description': djangoJson['description'] ?? '',
         'location': _buildLocationString(djangoJson),
-        
+
         // DateTime fields (handle Django format)
         'timestamp': _parseDjangoDateTime(djangoJson['created_at'] ?? djangoJson['timestamp']),
         'requestedTime': _parseDjangoDateTime(djangoJson['date_needed'] ?? djangoJson['requested_time']),
-        
+
         // Status mapping
         'status': _mapDjangoStatus(djangoJson['status']),
-        
+
         // Volunteer/People mapping
         'numberOfPeople': djangoJson['volunteers_needed'] ?? djangoJson['number_of_people'] ?? 1,
         'hoursNeeded': djangoJson['estimated_hours'] ?? djangoJson['hours_needed'] ?? 1,
-        
+
         // User arrays (accepted volunteers)
-        'acceptedUser': _mapAcceptedUsers(djangoJson),
+        'acceptedUser': mappedAcceptedUsers,
         'feedbackList': [], // Will be populated later if needed
-        
+
         // Include requester data for extension to parse
         'requester': djangoJson['requester'],
-        
+
         // 🎯 CRITICAL: Preserve user_request_status for volunteer workflow
         'user_request_status': djangoJson['user_request_status'],
-        
+
         // Add feedback and completion data
         'feedback': djangoJson['feedback'],
         'completed_at': djangoJson['completed_at']?.toString(),
         'completion_confirmed_by_requester': djangoJson['completion_confirmed_by_requester'],
       };
-      
+
       log('✅ MAPPED to Flutter: ${flutterJson.keys.toList()}');
+      log('✅ acceptedUser final count: ${mappedAcceptedUsers.length}');
+      log('🚨 FINAL FLUTTER JSON acceptedUser field: ${flutterJson['acceptedUser']}');
+      log('🚨 FINAL FLUTTER JSON acceptedUser type: ${flutterJson['acceptedUser'].runtimeType}');
+
+      // Debug: Show entire final JSON structure for debugging
+      log('🚨 COMPLETE FINAL JSON STRUCTURE:');
+      flutterJson.forEach((key, value) {
+        if (key == 'acceptedUser') {
+          log('🚨   $key: $value (${value.runtimeType})');
+        } else {
+          log('   $key: ${value.toString().length > 100 ? value.toString().substring(0, 100) + "..." : value}');
+        }
+      });
+
       return flutterJson;
       
     } catch (e) {
@@ -309,20 +346,61 @@ class RequestService extends GetxController {
   }
   
   /// Map accepted users/volunteers from Django format
+  /// FIXED: Only includes volunteers with status "approved" - Updated for exact JSON structure
   List<Map<String, dynamic>> _mapAcceptedUsers(Map<String, dynamic> djangoJson) {
     try {
-      // Handle Django volunteers_assigned structure: [{"volunteer": {...}}]
+      // Handle Django volunteers_assigned structure: [{"volunteer": {...}, "status": "approved"}]
       if (djangoJson['volunteers_assigned'] is List) {
-        return (djangoJson['volunteers_assigned'] as List)
-            .map((volunteerAssignment) {
-              // Extract the actual volunteer object from the assignment
-              final volunteerData = volunteerAssignment is Map 
-                ? volunteerAssignment['volunteer']
-                : volunteerAssignment;
-              return _mapDjangoUserToFlutter(volunteerData);
-            })
-            .toList();
+        final volunteersAssigned = djangoJson['volunteers_assigned'] as List;
+        log('🚨🚨 _mapAcceptedUsers: Processing ${volunteersAssigned.length} volunteer assignments');
+        log('🚨🚨 Raw volunteers_assigned: $volunteersAssigned');
+
+        // Process each volunteer assignment
+        final approvedVolunteers = <Map<String, dynamic>>[];
+
+        for (int i = 0; i < volunteersAssigned.length; i++) {
+          final volunteerAssignment = volunteersAssigned[i];
+          log('🚨🚨 Processing assignment $i: $volunteerAssignment');
+
+          if (volunteerAssignment is! Map) {
+            log('⚠️ Assignment $i is not a Map: ${volunteerAssignment.runtimeType}');
+            continue;
+          }
+
+          final assignment = volunteerAssignment as Map<String, dynamic>;
+          final status = assignment['status'];
+          final volunteerData = assignment['volunteer'];
+
+          log('🔍 Assignment $i - status: $status, volunteer: ${volunteerData != null ? "present" : "null"}');
+
+          // Check if approved
+          if (status == 'approved') {
+            log('✅ Assignment $i is APPROVED, processing volunteer data...');
+
+            if (volunteerData is Map<String, dynamic>) {
+              // Map the volunteer data to Flutter format
+              final mappedVolunteer = _mapDjangoUserToFlutter(volunteerData);
+              log('✅ Mapped volunteer: $mappedVolunteer');
+
+              if (mappedVolunteer.isNotEmpty) {
+                approvedVolunteers.add(mappedVolunteer);
+                log('✅ Added approved volunteer: ${mappedVolunteer['username']}');
+              } else {
+                log('⚠️ Mapped volunteer is empty');
+              }
+            } else {
+              log('⚠️ Volunteer data is not a Map: ${volunteerData.runtimeType}');
+            }
+          } else {
+            log('❌ Assignment $i status is "$status", not approved - skipping');
+          }
+        }
+
+        log('🎯🎯 FINAL RESULT: ${approvedVolunteers.length} approved volunteers mapped');
+        log('🎯🎯 FINAL DATA: $approvedVolunteers');
+        return approvedVolunteers;
       }
+
       if (djangoJson['volunteers'] is List) {
         return (djangoJson['volunteers'] as List)
             .map((v) => _mapDjangoUserToFlutter(v))
@@ -333,34 +411,44 @@ class RequestService extends GetxController {
             .map((v) => _mapDjangoUserToFlutter(v))
             .toList();
       }
+
+      log('🔍 No volunteers_assigned, volunteers, or accepted_users found in JSON');
       return [];
     } catch (e) {
-      log('⚠️ Error mapping accepted users: $e');
-      log('⚠️ Django JSON structure: ${djangoJson['volunteers_assigned']}');
+      log('💥 Error mapping accepted users: $e');
+      log('💥 Django JSON volunteers_assigned: ${djangoJson['volunteers_assigned']}');
       return [];
     }
   }
   
   /// Map Django user object to Flutter UserModel format
+  /// FIXED: Updated to match exact JSON response structure
   Map<String, dynamic> _mapDjangoUserToFlutter(dynamic djangoUser) {
     if (djangoUser is! Map) {
       log('⚠️ _mapDjangoUserToFlutter: djangoUser is not a Map: $djangoUser');
       return {};
     }
-    
+
     final userMap = djangoUser as Map<String, dynamic>;
     log('🔍 Mapping Django user: ${userMap.keys.toList()}');
-    log('🔍 Username: ${userMap['username']}, Full name: ${userMap['full_name']}');
-    
+    log('🔍 Raw user data: $userMap');
+
+    // Map according to actual JSON response structure
     final mappedUser = {
       'userId': userMap['id']?.toString() ?? '',
-      'username': userMap['username'] ?? userMap['full_name'] ?? 'Unknown', // Fixed: Use 'username' key
-      'email': userMap['email']?.toString() ?? '', // Fixed: Handle null email properly
-      'imageUrl': userMap['profile_image_url'] ?? userMap['profile_image'],
-      // Add other UserModel fields as needed
+      'username': userMap['full_name'] ?? userMap['username'] ?? 'Unknown User',
+      'email': userMap['email']?.toString() ?? '',
+      'imageUrl': userMap['profile_image_url'],
+      // Add additional fields from backend response
+      'firstName': userMap['full_name']?.toString().split(' ').first ?? '',
+      'lastName': userMap['full_name']?.toString().split(' ').skip(1).join(' ') ?? '',
+      'averageRating': userMap['average_rating'] ?? 0.0,
+      'totalHoursHelped': userMap['total_hours_helped'] ?? 0,
+      'locationDisplay': userMap['location_display'] ?? '',
+      'isVerified': userMap['is_verified'] ?? false,
     };
-    
-    log('✅ Mapped user: $mappedUser');
+
+    log('✅ Mapped user successfully: ${mappedUser['username']} (ID: ${mappedUser['userId']})');
     return mappedUser;
   }
   
@@ -476,6 +564,7 @@ class RequestService extends GetxController {
   /// 🚨 ENHANCED: Now includes Django field mapping
   Future<RequestModel?> getRequest(String requestId) async {
     try {
+      log('🚨🚨🚨 RequestService.getRequest: CALLED with requestId=$requestId');
       log('🔍 RequestService: Fetching request $requestId from Django API');
       
       final response = await _apiService.get('/api/requests/$requestId/');

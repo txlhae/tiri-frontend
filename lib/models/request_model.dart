@@ -8,6 +8,28 @@ part 'request_model.g.dart';
 
 enum RequestStatus { pending, accepted, complete, incomplete, cancelled ,inprogress, delayed}
 
+// JSON converter function for acceptedUser field
+List<UserModel> _acceptedUserFromJson(dynamic json) {
+  log('✅ _acceptedUserFromJson called with: $json');
+
+  if (json == null) return [];
+  if (json is! List) return [];
+
+  try {
+    return (json as List)
+        .map((userJson) {
+          if (userJson is! Map<String, dynamic>) return null;
+          return UserModel.fromJson(userJson);
+        })
+        .where((user) => user != null)
+        .cast<UserModel>()
+        .toList();
+  } catch (e) {
+    log('⚠️ Error parsing acceptedUser from JSON: $e');
+    return [];
+  }
+}
+
 /// Enhanced user request status for volunteer workflow
 class UserRequestStatus {
   final String requestStatus;
@@ -87,7 +109,7 @@ class RequestModel with _$RequestModel {
   required DateTime timestamp,
   DateTime? requestedTime, // Made nullable - might not always be set
   required RequestStatus status,
-  @JsonKey(ignore: true) @Default([]) List<UserModel> acceptedUser, 
+  @JsonKey(fromJson: _acceptedUserFromJson) @Default([]) List<UserModel> acceptedUser, 
   @JsonKey(ignore: true) List<FeedbackModel>? feedbackList,
   @Default(1) int numberOfPeople, // Removed required for @Default fields
   @Default(1) int hoursNeeded, // Removed required for @Default fields
@@ -110,10 +132,15 @@ extension RequestModelExtension on RequestModel {
   
   // Factory method to create RequestModel with requester and enhanced user status parsed
   static RequestModel fromJsonWithRequester(Map<String, dynamic> json) {
+    log('🚨 fromJsonWithRequester called with JSON keys: ${json.keys.toList()}');
+    log('🚨 fromJsonWithRequester acceptedUser field: ${json['acceptedUser']}');
+
     // Parse user request status from Django response
     final userRequestStatusData = json['user_request_status'] as Map<String, dynamic>?;
-    
+
+    log('🚨 About to call RequestModel.fromJson...');
     final requestModel = RequestModel.fromJson(json);
+    log('🚨 RequestModel.fromJson returned, acceptedUser.length: ${requestModel.acceptedUser.length}');
     
     // Store the requester data in cache for backward compatibility
     if (json['requester'] != null) {
@@ -180,6 +207,17 @@ extension RequestModelExtension on RequestModel {
     final cacheSize = _userRequestStatusCache.length;
     _userRequestStatusCache.clear();
     log('🗑️ RequestModelExtension: Cleared all user status cache ($cacheSize entries)');
+  }
+
+  /// Clear ALL caches - user status and requester cache
+  static void clearAllCache() {
+    final userStatusCacheSize = _userRequestStatusCache.length;
+    final requesterCacheSize = _requesterCache.length;
+
+    _userRequestStatusCache.clear();
+    _requesterCache.clear();
+
+    log('🗑️ RequestModelExtension: CLEARED ALL CACHES - UserStatus: $userStatusCacheSize, Requester: $requesterCacheSize');
   }
   
   // Get requester for this request
