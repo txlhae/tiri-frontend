@@ -11,6 +11,7 @@ import 'package:web_socket_channel/io.dart';
 import 'package:get/get.dart';
 import '../../config/api_config.dart';
 import '../models/notification_response.dart';
+import '../api_service.dart';
 
 /// WebSocket connection states
 enum WebSocketState {
@@ -358,12 +359,30 @@ class WebSocketService extends GetxService {
     if (_authToken != newToken) {
       log('WebSocketService: Updating auth token');
       _authToken = newToken;
-      
+
       // Reconnect with new token
       if (isConnected) {
         disconnect();
         connect();
       }
+    }
+  }
+
+  /// Refresh authentication token and reconnect if needed
+  Future<void> refreshAuthToken() async {
+    try {
+      // Get ApiService instance
+      final apiService = Get.find<ApiService>();
+
+      // Ensure we have fresh tokens
+      await apiService.refreshTokenIfNeeded();
+      final freshToken = apiService.accessToken;
+
+      if (freshToken != null && freshToken != _authToken) {
+        updateAuthToken(freshToken);
+      }
+    } catch (e) {
+      log('WebSocketService: Failed to refresh auth token: $e');
     }
   }
 

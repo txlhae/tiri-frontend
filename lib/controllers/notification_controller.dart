@@ -78,8 +78,10 @@ class NotificationController extends GetxController {
       final authController = Get.find<AuthController>();
       final userId = authController.currentUserStore.value?.userId;
 
-      // Access the API service to get the token
+      // Access the API service to get a fresh token
       final apiService = Get.find<ApiService>();
+      // Ensure we have fresh tokens before WebSocket connection
+      await apiService.refreshTokenIfNeeded();
       final token = apiService.accessToken;
 
       if (token == null || userId == null) {

@@ -276,4 +276,5 @@ class AppStartupHandler {
       log('❌ AppStartupHandler: Error clearing session: $e');
     }
   }
+
 }

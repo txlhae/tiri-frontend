@@ -113,7 +113,7 @@ class _RefferalDialogState extends State<RefferalDialog> {
                   child: TextButton.icon(
                     onPressed: () {
                       Get.back();
-                      Get.toNamed(Routes.qrScannerPage);
+                      Get.toNamed(Routes.qrScannerPage, arguments: {'mode': 'referral'});
                     },
                     icon: const Icon(
                       Icons.qr_code_scanner,

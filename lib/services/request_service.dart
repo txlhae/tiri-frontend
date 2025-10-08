@@ -823,13 +823,13 @@ class RequestService extends GetxController {
   // =============================================================================
   // USER OPERATIONS (For RequestController compatibility)
   // =============================================================================
-  
+
   /// Get user by ID
   /// 🚨 FIXED: Using correct endpoint /api/profile/users/{id}/
   Future<UserModel?> getUser(String userId) async {
     try {
       log('👤 RequestService: Fetching user $userId from Django API');
-      
+
       final response = await _apiService.get('/api/profile/users/$userId/');
       
       if (response.statusCode == 200 && response.data != null) {

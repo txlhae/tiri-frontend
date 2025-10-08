@@ -18,6 +18,15 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
   MobileScannerController cameraController = MobileScannerController();
   final AuthController authController = Get.find<AuthController>();
   bool isProcessing = false;
+  String? mode;
+
+  @override
+  void initState() {
+    super.initState();
+    // Get the mode from arguments if provided
+    final arguments = Get.arguments as Map<String, dynamic>?;
+    mode = arguments?['mode'];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -70,9 +79,9 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
                     color: Colors.black.withOpacity(0.7),
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: const Text(
-                    'Scan User QR Code',
-                    style: TextStyle(
+                  child: Text(
+                    mode == 'referral' ? 'Scan Referral QR Code' : 'Scan User QR Code',
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -166,10 +175,12 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
                 color: Colors.black.withOpacity(0.7),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Text(
-                'Position the user\'s QR code within the frame\nThe code will be scanned automatically',
+              child: Text(
+                mode == 'referral'
+                  ? 'Position the referral QR code within the frame\nThe code will be scanned automatically'
+                  : 'Position the user\'s QR code within the frame\nThe code will be scanned automatically',
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 14,
                 ),
@@ -209,21 +220,62 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
   Future<void> _processQrCode(String qrData) async {
     try {
       log('Processing QR data: $qrData');
+      log('Scanner mode: $mode');
 
       // Parse QR code data (expecting format like "REFERRAL:JU5NB36B:214f1153-6e37-416b-86a2-72e392b84881")
       Map<String, String> parsedData = _parseQrData(qrData);
 
-      if (parsedData['userId'] != null) {
-        log("Scanned user UUID: ${parsedData['userId']}");
-
-        // Navigate to user profile
-        await _navigateToUserProfile(parsedData['userId']!);
+      if (mode == 'referral') {
+        // Handle referral mode - same logic as verify button in referral dialog
+        if (parsedData['referralCode'] != null) {
+          await _handleReferralCode(parsedData['referralCode']!);
+        } else {
+          _showErrorAndGoBack('This QR code does not contain a valid referral code.');
+        }
       } else {
-        _showErrorAndGoBack('This QR code does not contain valid user information.');
+        // Default mode - navigate to user profile
+        if (parsedData['userId'] != null) {
+          log("Scanned user UUID: ${parsedData['userId']}");
+          await _navigateToUserProfile(parsedData['userId']!);
+        } else {
+          _showErrorAndGoBack('This QR code does not contain valid user information.');
+        }
       }
     } catch (e) {
       log("Error processing QR code: $e");
       _showErrorAndGoBack('Failed to process QR code. Please try again.');
+    }
+  }
+
+  /// Handle referral code (same logic as verify button in referral dialog)
+  Future<void> _handleReferralCode(String referralCode) async {
+    try {
+      log("Processing referral code: $referralCode");
+
+      final user = await authController.fetchUserByReferralCode(referralCode);
+
+      if (user != null) {
+        log("User is: ${user.toString()}");
+        authController.referredUid.value = user.userId;
+        authController.referredUser.value = user.username;
+
+        Get.back(); // Close scanner
+        authController.navigateToRegister();
+
+        Get.snackbar(
+          'Success',
+          'Referral code verified! Proceed with registration.',
+          snackPosition: SnackPosition.TOP,
+          duration: const Duration(seconds: 3),
+          backgroundColor: const Color.fromRGBO(0, 140, 170, 1),
+          colorText: Colors.white,
+        );
+      } else {
+        _showErrorAndGoBack('Not a valid referral code');
+      }
+    } catch (e) {
+      log("Error processing referral code: $e");
+      _showErrorAndGoBack('Not a valid referral code');
     }
   }
 

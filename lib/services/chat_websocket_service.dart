@@ -5,7 +5,7 @@ import 'dart:convert';
 import 'dart:developer';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:web_socket_channel/status.dart' as status;
-import '../services/api_service.dart';
+import 'api_service.dart';
 import '../config/api_config.dart';
 import '../models/chat_message_model.dart';
 
@@ -220,10 +220,16 @@ class ChatWebSocketService {
   // PRIVATE METHODS
   // =============================================================================
 
-  /// Get authentication token from existing auth system
+  /// Get authentication token from existing auth system with freshness check
   static Future<String?> _getAuthToken() async {
     try {
-      // Use the existing ApiService to get the token
+      // Ensure we have fresh tokens before WebSocket connection
+      final refreshed = await ApiService.instance.refreshTokenIfNeeded();
+      if (!refreshed) {
+        log('⚠️ Token refresh check completed', name: 'WebSocket');
+      }
+
+      // Get the (potentially refreshed) token
       return await ApiService.instance.getStoredAccessToken();
     } catch (e) {
       log('❌ Failed to get auth token: $e', name: 'WebSocket');

@@ -7,6 +7,7 @@ import 'package:tiri/infrastructure/routes.dart';
 import 'package:tiri/services/deep_link_service.dart';
 import 'package:tiri/services/firebase_notification_service.dart';
 import 'package:tiri/services/app_startup_handler.dart';
+import 'package:tiri/services/app_cache_manager.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -30,20 +31,29 @@ void main() async {
     // Continue app initialization even if Firebase fails
   }
   
+  // Initialize cache systems first
+  try {
+    print('💾 CACHE DEBUG: Initializing cache systems...');
+    await AppCacheManager.initializeCacheSystems();
+    print('✅ CACHE DEBUG: Cache systems initialized successfully');
+  } catch (e) {
+    print('❌ CACHE DEBUG: Cache initialization error: $e');
+  }
+
   // Initialize services with fixed circular dependency issue
   try {
     print('🔧 FCM DEBUG: Starting service initialization...');
-    
+
     print('📱 FCM DEBUG: Initializing DeepLinkService...');
     await Get.putAsync(() async => DeepLinkService());
     print('✅ FCM DEBUG: DeepLinkService initialized');
-    
+
     print('🔥 FCM DEBUG: Initializing FirebaseNotificationService...');
     final firebaseService = FirebaseNotificationService.instance;
     await firebaseService.initialize();
     Get.put(firebaseService, permanent: true);
     print('✅ FCM DEBUG: FirebaseNotificationService initialized and registered with GetX');
-    
+
     print('🎉 FCM DEBUG: All services initialized successfully');
   } catch (e) {
     print('❌ FCM DEBUG: Service initialization error: $e');

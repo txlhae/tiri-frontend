@@ -291,7 +291,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                               log('User data: userId=${user.userId}, referralCode=${user.referralCode}');
                                               log('User ID: ${user.userId}');
                                               log('Referral Code: ${user.referralCode}');
-                                              
+
                                               Get.dialog(QrCodeDialog(
                                                 referralCode: user.referralCode?.toString() ?? 'null',
                                                 username: user.username,

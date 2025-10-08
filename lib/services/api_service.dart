@@ -153,7 +153,7 @@ class ApiService {
         // Handle token expiration (401 Unauthorized)
         if (error.response?.statusCode == 401) {
           log('🔄 401 Unauthorized on ${error.requestOptions.path} - attempting token refresh', name: 'API');
-          
+
           // Prevent endless token refresh loops for the token refresh endpoint itself
           if (error.requestOptions.path == ApiConfig.authTokenRefresh) {
             log('⚠️ 401 on token refresh endpoint - refresh token is invalid, clearing tokens', name: 'API');
@@ -161,14 +161,14 @@ class ApiService {
             handler.next(error);
             return;
           }
-          
+
           if (await refreshTokenIfNeeded()) {
             log('✅ Token refreshed - retrying original request', name: 'API');
-            
+
             // Retry the original request with new token
             final options = error.requestOptions;
             options.headers['Authorization'] = 'Bearer $_accessToken';
-            
+
             try {
               final response = await _dio.fetch(options);
               // 🚨 FLAG: Mark this as a successful silent auth refresh

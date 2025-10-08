@@ -1,6 +1,8 @@
 // lib/services/auth_storage.dart
 
 import 'dart:convert';
+import 'dart:developer';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// AuthStorage class for managing authentication data locally
@@ -12,6 +14,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// - Next step routing information
 /// - Registration stage details
 class AuthStorage {
+  /// Maximum storage size in KB before cleanup
+  static const int maxStorageSizeKB = 100;
+
   // Storage keys
   static const String _accessTokenKey = 'access_token';
   static const String _refreshTokenKey = 'refresh_token';
@@ -32,9 +37,9 @@ class AuthStorage {
         await prefs.setString(_refreshTokenKey, tokens['refresh'] ?? '');
       }
 
-      // Store user data
+      // Store user data with size check
       if (authResponse['user'] != null) {
-        await prefs.setString(_userDataKey, jsonEncode(authResponse['user']));
+        await _storeWithSizeCheck(prefs, _userDataKey, jsonEncode(authResponse['user']));
       }
 
       // Store account status and next step
@@ -43,7 +48,7 @@ class AuthStorage {
 
       // Store registration stage if available
       if (authResponse['registration_stage'] != null) {
-        await prefs.setString(_registrationStageKey, jsonEncode(authResponse['registration_stage']));
+        await _storeWithSizeCheck(prefs, _registrationStageKey, jsonEncode(authResponse['registration_stage']));
       }
 
       
@@ -207,10 +212,94 @@ class AuthStorage {
         'next_step': await getNextStep(),
         'registration_stage': await getRegistrationStage(),
         'has_valid_tokens': await hasValidTokens(),
+        'storage_size_kb': await getStorageSizeKB(),
       };
     } catch (e) {
-      
+
       return {};
+    }
+  }
+
+  /// Get current storage size in KB
+  static Future<double> getStorageSizeKB() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final keys = prefs.getKeys();
+
+      int totalSize = 0;
+      for (final key in keys) {
+        final value = prefs.get(key);
+        if (value is String) {
+          totalSize += key.length * 2; // UTF-16 for key
+          totalSize += value.length * 2; // UTF-16 for value
+        } else if (value != null) {
+          totalSize += key.length * 2;
+          totalSize += value.toString().length * 2;
+        }
+      }
+
+      return totalSize / 1024.0; // Convert to KB
+    } catch (e) {
+      if (kDebugMode) {
+        log('Failed to calculate storage size: $e');
+      }
+      return 0.0;
+    }
+  }
+
+  /// Check if storage cleanup is needed
+  static Future<bool> isCleanupNeeded() async {
+    final sizeKB = await getStorageSizeKB();
+    return sizeKB > maxStorageSizeKB;
+  }
+
+  /// Perform storage cleanup (remove non-essential data)
+  static Future<void> performCleanup() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final keys = prefs.getKeys();
+
+      // Essential keys to preserve
+      final essentialKeys = {
+        _accessTokenKey,
+        _refreshTokenKey,
+        _userDataKey,
+        _accountStatusKey,
+        _nextStepKey,
+        _registrationStageKey,
+      };
+
+      final sizeBefore = await getStorageSizeKB();
+
+      // Remove non-essential keys
+      int removedCount = 0;
+      for (final key in keys) {
+        if (!essentialKeys.contains(key)) {
+          await prefs.remove(key);
+          removedCount++;
+        }
+      }
+
+      final sizeAfter = await getStorageSizeKB();
+
+      if (kDebugMode) {
+        log('AuthStorage cleanup: removed $removedCount keys, '
+            'size reduced from ${sizeBefore.toStringAsFixed(2)}KB to ${sizeAfter.toStringAsFixed(2)}KB');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        log('AuthStorage cleanup failed: $e');
+      }
+    }
+  }
+
+  /// Store data with size check
+  static Future<void> _storeWithSizeCheck(SharedPreferences prefs, String key, String value) async {
+    await prefs.setString(key, value);
+
+    // Check if cleanup is needed after storing
+    if (await isCleanupNeeded()) {
+      await performCleanup();
     }
   }
 }

@@ -652,7 +652,7 @@ class AuthController extends GetxController {
   // =============================================================================
   // USER MANAGEMENT METHODS
   // =============================================================================
-  
+
   /// Fetch user by ID (for profile screens)
   Future<UserModel?> fetchUser(String userId, {bool bypassCache = false}) async {
     try {
@@ -686,34 +686,6 @@ class AuthController extends GetxController {
     }
   }
 
-  /// Fetch user by ID with fresh data (for profile screens that need latest data)
-  Future<UserModel?> fetchUserFresh(String userId) async {
-    try {
-      final response = await _apiService.get('/api/profile/users/$userId/');
-
-      if (response.statusCode == 200 && response.data != null) {
-        final userData = response.data as Map<String, dynamic>;
-        final flutterUserData = _mapDjangoUserToFlutter(userData);
-        final UserModel user = UserModel.fromJson(flutterUserData);
-
-        // Update cache but don't let it block returning the user
-        if (currentUserStore.value?.userId == userId) {
-          try {
-            currentUserStore.value = user;
-            await _saveUserToStorage(user);
-          } catch (e) {
-            log('Cache update failed, but continuing: $e');
-          }
-        }
-
-        return user;
-      }
-      return null;
-    } catch (e) {
-      log('fetchUserFresh error: $e');
-      return null;
-    }
-  }
 
   /// Map API user response to Flutter UserModel format
   /// REWRITTEN: Based on exact API response format provided
@@ -1879,24 +1851,10 @@ class AuthController extends GetxController {
         final userJson = jsonDecode(userStr);
         final cachedUser = UserModel.fromJson(userJson);
 
-        // 🚨 FIX: Check if cached user has complete data (hours/rating)
-        if (cachedUser.hours != null && cachedUser.rating != null) {
-          // Cached data is complete, use it
-          currentUserStore.value = cachedUser;
-          log('✅ [RELOAD TOKENS] Using complete cached user data: hours=${cachedUser.hours}, rating=${cachedUser.rating}');
-        } else {
-          // Cached data is incomplete, fetch fresh data immediately
-          log('⚠️ [RELOAD TOKENS] Cached user data incomplete (hours=${cachedUser.hours}, rating=${cachedUser.rating}), fetching fresh...');
-          final freshUser = await fetchUserFresh(cachedUser.userId);
-          if (freshUser != null) {
-            currentUserStore.value = freshUser;
-            log('✅ [RELOAD TOKENS] Updated with fresh user data: hours=${freshUser.hours}, rating=${freshUser.rating}');
-          } else {
-            // Fallback to cached data if fresh fetch fails
-            currentUserStore.value = cachedUser;
-            log('❌ [RELOAD TOKENS] Fresh fetch failed, using incomplete cached data');
-          }
-        }
+        // Use cached data as-is without fetching fresh profile data
+        // Profile page will fetch fresh data when needed
+        currentUserStore.value = cachedUser;
+        log('✅ [RELOAD TOKENS] Using cached user data (profile page will fetch fresh data when needed)');
         
         // Try to validate the token by checking verification status
         try {

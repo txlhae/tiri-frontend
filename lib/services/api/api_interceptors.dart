@@ -464,11 +464,15 @@ class InterceptorFactory {
 
   /// Create interceptors for production environment
   static List<Interceptor> createProductionInterceptors() {
-    return createDefaultInterceptors(
-      enableLogging: false, // Disable verbose logging in production
-      enableRetry: true,
-      maxRetries: 2, // Fewer retries in production
-    );
+    // Create minimal interceptors for production - no logging, limited retries
+    final interceptors = <Interceptor>[];
+
+    // Only add essential interceptors
+    interceptors.add(ProductionRequestInterceptor()); // Minimal request handling
+    interceptors.add(RetryInterceptor(maxRetries: 2)); // Limited retries
+    interceptors.add(ProductionErrorInterceptor()); // Minimal error handling
+
+    return interceptors;
   }
 
   /// Create interceptors for development environment
@@ -481,9 +485,101 @@ class InterceptorFactory {
   }
 }
 
+/// Production-optimized request interceptor with minimal logging
+class ProductionRequestInterceptor extends Interceptor {
+  @override
+  void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
+    try {
+      // Add authentication headers if available
+      final token = _getStoredAuthToken();
+      if (token != null) {
+        options.headers['Authorization'] = 'Bearer $token';
+      }
+
+      // Add essential headers only
+      options.headers['Content-Type'] = 'application/json';
+      options.headers['Accept'] = 'application/json';
+
+      handler.next(options);
+    } catch (e) {
+      handler.next(options);
+    }
+  }
+
+  String? _getStoredAuthToken() {
+    // TODO: Integrate with AuthStorage
+    return null;
+  }
+}
+
+/// Production-optimized error interceptor with minimal logging
+class ProductionErrorInterceptor extends Interceptor {
+  @override
+  void onError(DioException err, ErrorInterceptorHandler handler) {
+    try {
+      // Convert to API exception without verbose logging
+      final apiException = _mapDioExceptionToApiException(err);
+
+      final newError = DioException(
+        requestOptions: err.requestOptions,
+        response: err.response,
+        type: err.type,
+        error: apiException,
+        message: apiException.message,
+      );
+
+      handler.next(newError);
+    } catch (e) {
+      handler.next(err);
+    }
+  }
+
+  ApiException _mapDioExceptionToApiException(DioException err) {
+    final statusCode = err.response?.statusCode;
+    final responseData = err.response?.data;
+
+    switch (err.type) {
+      case DioExceptionType.connectionTimeout:
+      case DioExceptionType.sendTimeout:
+      case DioExceptionType.receiveTimeout:
+        return NetworkException.timeout();
+
+      case DioExceptionType.connectionError:
+        return NetworkException.noConnection();
+
+      case DioExceptionType.badResponse:
+        return _mapStatusCodeToException(statusCode!, responseData);
+
+      case DioExceptionType.cancel:
+        return UnknownApiException('Request cancelled');
+
+      default:
+        return UnknownApiException.unexpected();
+    }
+  }
+
+  ApiException _mapStatusCodeToException(int statusCode, dynamic responseData) {
+    switch (statusCode) {
+      case 400:
+        return ValidationException('Invalid request data');
+      case 401:
+        return AuthenticationException.invalidCredentials();
+      case 403:
+        return AuthorizationException.insufficientPermissions();
+      case 404:
+        return NotFoundException('Resource not found');
+      case 429:
+        return RateLimitException.fromHeaders({});
+      case >= 500:
+        return ServerException.internalError();
+      default:
+        return UnknownApiException('HTTP $statusCode error');
+    }
+  }
+}
+
 /// TODO: Phase 2 Integration Points
 /// - Integrate with AuthService for automatic token management
-/// - Add request/response caching interceptor
 /// - Implement request queuing for offline scenarios
 /// - Add performance monitoring and analytics tracking
 /// - Create custom interceptors for specific API endpoints
