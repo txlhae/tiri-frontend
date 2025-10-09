@@ -1,6 +1,6 @@
 {
-    "name": "kind_clock",
-    "short_name": "kind_clock",
+    "name": "tiri",
+    "short_name": "tiri",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

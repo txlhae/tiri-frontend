@@ -48,28 +48,28 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyDummyAndroidKeyForCompilation123456789',
-    appId: '1:123456789:android:abcdef123456',
-    messagingSenderId: '123456789',
-    projectId: 'tiri-project-placeholder',
-    storageBucket: 'tiri-project-placeholder.appspot.com',
+    apiKey: 'AIzaSyATbIGrhg9FLL9LW07nf_tPK724X4RV7BQ',
+    appId: '1:869913529630:android:7637a39112a998546c4d0f',
+    messagingSenderId: '869913529630',
+    projectId: 'tiri-ca1ca',
+    storageBucket: 'tiri-ca1ca.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyDummyiOSKeyForCompilation123456789',
-    appId: '1:123456789:ios:abcdef123456',
-    messagingSenderId: '123456789',
-    projectId: 'tiri-project-placeholder',
-    storageBucket: 'tiri-project-placeholder.appspot.com',
+    apiKey: 'AIzaSyB4aWXcs2_9C-WjU9KvdnaKz8JfFo1hndI',
+    appId: '1:869913529630:ios:d5365a978e86c5996c4d0f',
+    messagingSenderId: '869913529630',
+    projectId: 'tiri-ca1ca',
+    storageBucket: 'tiri-ca1ca.firebasestorage.app',
     iosBundleId: 'com.example.tiri',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyDummyMacOSKeyForCompilation123456789',
-    appId: '1:123456789:macos:abcdef123456',
-    messagingSenderId: '123456789',
-    projectId: 'tiri-project-placeholder',
-    storageBucket: 'tiri-project-placeholder.appspot.com',
+    apiKey: 'AIzaSyB4aWXcs2_9C-WjU9KvdnaKz8JfFo1hndI',
+    appId: '1:869913529630:ios:d5365a978e86c5996c4d0f',
+    messagingSenderId: '869913529630',
+    projectId: 'tiri-ca1ca',
+    storageBucket: 'tiri-ca1ca.firebasestorage.app',
     iosBundleId: 'com.example.tiri',
   );
 }
