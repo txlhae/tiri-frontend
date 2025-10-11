@@ -1228,30 +1228,6 @@ class AuthService {
     // TEMPORARILY DISABLED: Registration status endpoint doesn't exist
     return null;
     
-    // ORIGINAL CODE COMMENTED OUT:
-    // try {
-    //   if (ApiConfig.enableLogging) {
-    //     log('Fetching registration status', name: 'AUTH');
-    //   }
-    //
-    //   final response = await _apiService.get(ApiConfig.authRegistrationStatus);
-    //
-    //   if (response.statusCode == 200) {
-    //     final data = response.data;
-    //     
-    //     if (ApiConfig.enableLogging) {
-    //       log('Registration status response: ${data.toString()}', name: 'AUTH');
-    //     }
-    //     
-    //     return RegistrationStatusResponse.fromJson(data);
-    //   }
-    //   
-    //   throw Exception('Failed to fetch registration status - HTTP ${response.statusCode}');
-    //   
-    // } catch (e) {
-    //   log('Get registration status error: $e', name: 'AUTH');
-    //   return null;
-    // }
   }
 
   /// Check current user's approval status (for polling)

@@ -210,8 +210,6 @@ extension RequestModelExtension on RequestModel {
   String? get volunteerMessage {
     final statusObject = userRequestStatusObject;
     final message = statusObject?.messageContent;
-    // Debug logging can be removed in production
-    // print('🔍 volunteerMessage getter DEBUG for requestId: $requestId');
     return message;
   }
   bool get hasVolunteered => userRequestStatusObject?.hasVolunteered ?? false;

@@ -143,8 +143,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
       // // Handle different verification states
       // switch (status.nextStep) {
       //   case 'waiting_for_approval':
-      //     log('✅ EmailVerificationScreen: Email verified - now waiting for approval');
-      //     
+      //
       //     Get.snackbar(
       //       'Email Verified!',
       //       'Your email has been verified! Now waiting for referrer approval.',
@@ -154,15 +153,14 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
       //       duration: const Duration(seconds: 3),
       //       icon: const Icon(Icons.check_circle, color: Colors.white),
       //     );
-      //     
+      //
       //     // Route to approval waiting screen
       //     await Future.delayed(const Duration(seconds: 1));
       //     Get.offAllNamed('/pending-approval');
       //     break;
-      //     
+      //
       //   case 'ready':
-      //     log('✅ EmailVerificationScreen: Email verified and fully approved - going to home');
-      //     
+      //
       //     Get.snackbar(
       //       'Welcome to TIRI!',
       //       'Your account is fully set up and ready to use!',
@@ -172,15 +170,14 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
       //       duration: const Duration(seconds: 3),
       //       icon: const Icon(Icons.celebration, color: Colors.white),
       //     );
-      //     
+      //
       //     // Route to home
       //     await Future.delayed(const Duration(seconds: 1));
       //     Get.offAllNamed('/home');
       //     break;
-      //     
+      //
       //   case 'verify_email':
       //   default:
-      //     log('❌ EmailVerificationScreen: Email still not verified');
       //     
       //     Get.snackbar(
       //       'Email Not Verified Yet',
