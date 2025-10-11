@@ -24,9 +24,9 @@ class LogoutDialog extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 15.0),
-        child: SizedBox(
-          height: MediaQuery.of(context).size.height * 0.55,
+        child: IntrinsicHeight(
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
@@ -42,11 +42,15 @@ class LogoutDialog extends StatelessWidget {
                   ),
                 ],
               ),
-              SvgPicture.asset(
-                'assets/icons/logout_picture.svg',
-                height: 180,
-                width: 100,
+              Flexible(
+                child: SvgPicture.asset(
+                  'assets/icons/logout_picture.svg',
+                  height: 180,
+                  width: 100,
+                  fit: BoxFit.contain,
+                ),
               ),
+              const SizedBox(height: 10),
               const Text(
                 "Come back soon!",
                 textAlign: TextAlign.center,
@@ -55,11 +59,13 @@ class LogoutDialog extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                     color: Colors.black),
               ),
+              const SizedBox(height: 5),
               Text(
                 questionText,
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 18, color: Colors.black),
               ),
+              const SizedBox(height: 10),
               Padding(
                 padding: const EdgeInsets.symmetric(
                     horizontal: 40.0, vertical: 10.0),

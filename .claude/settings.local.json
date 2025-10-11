@@ -37,7 +37,14 @@
       "Bash(git checkout:*)",
       "Bash(git add:*)",
       "Bash(git commit -m \"$(cat <<''EOF''\nAdd iOS/macOS support with Firebase and camera permissions\n\n- Renamed app from kind_clock to tiri across all platforms\n- Added Firebase GoogleService-Info.plist for iOS/macOS  \n- Added camera permission (NSCameraUsageDescription) for QR code scanning on iOS\n- Configured CocoaPods for macOS build with proper xcconfig includes\n- Updated bundle IDs to com.example.tiri for consistency\n- Updated Firebase options with real API keys and app IDs\n- Added iOS/macOS Podfiles and lock files\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(xcrun simctl list:*)",
+      "Bash(xcrun simctl create:*)",
+      "Bash(xcrun simctl boot:*)",
+      "Bash(open:*)",
+      "Bash(echo $PATH)",
+      "Bash(fvm flutter:*)",
+      "Bash(sips:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",

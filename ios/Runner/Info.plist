@@ -74,5 +74,10 @@
 	<!-- Camera Permission -->
 	<key>NSCameraUsageDescription</key>
 	<string>Tiri needs access to your camera to scan QR codes for user profiles and referrals.</string>
+	<!-- Photo Library Permission for Sharing -->
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Tiri needs permission to save QR codes to share them with others.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Tiri needs access to your photo library to share QR codes.</string>
 </dict>
 </plist>

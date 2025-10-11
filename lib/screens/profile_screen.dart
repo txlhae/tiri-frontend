@@ -554,14 +554,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                                 Row(
                                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                                   children: [
-                                                    Text(
-                                                      "Given by: $username",
-                                                      style: const TextStyle(
-                                                        fontSize: 14,
-                                                        fontWeight: FontWeight.w600,
-                                                        color: Color.fromRGBO(3, 80, 135, 1),
+                                                    Expanded(
+                                                      child: Text(
+                                                        "Given by: $username",
+                                                        style: const TextStyle(
+                                                          fontSize: 14,
+                                                          fontWeight: FontWeight.w600,
+                                                          color: Color.fromRGBO(3, 80, 135, 1),
+                                                        ),
+                                                        overflow: TextOverflow.ellipsis,
+                                                        maxLines: 1,
                                                       ),
                                                     ),
+                                                    const SizedBox(width: 8),
                                                     Icon(
                                                       Icons.arrow_forward_ios,
                                                       size: 16,
@@ -816,12 +821,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       size: 20,
                     ),
                     const SizedBox(width: 8),
-                    Text(
-                      "Given by: $username",
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Color.fromRGBO(3, 80, 135, 1),
+                    Expanded(
+                      child: Text(
+                        "Given by: $username",
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Color.fromRGBO(3, 80, 135, 1),
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
                     ),
                   ],
@@ -1077,14 +1086,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text(
-                                  "Given by: $username",
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: Color.fromRGBO(3, 80, 135, 1),
+                                Expanded(
+                                  child: Text(
+                                    "Given by: $username",
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color.fromRGBO(3, 80, 135, 1),
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
                                   ),
                                 ),
+                                const SizedBox(width: 8),
                                 Text(
                                   "${feedback.timestamp.day}/${feedback.timestamp.month}/${feedback.timestamp.year}",
                                   style: const TextStyle(
