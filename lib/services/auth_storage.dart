@@ -279,13 +279,7 @@ class AuthStorage {
       }
 
       final sizeAfter = await getStorageSizeKB();
-
-      if (kDebugMode) {
-            'size reduced from ${sizeBefore.toStringAsFixed(2)}KB to ${sizeAfter.toStringAsFixed(2)}KB');
-      }
     } catch (e) {
-      if (kDebugMode) {
-      }
     }
   }
 

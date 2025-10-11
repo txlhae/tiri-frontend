@@ -105,8 +105,6 @@ class _CancelDialogState extends State<CancelDialog> {
 
                       final isRequester =  widget.request.userId == currentUserId;
 
-                          ? "Inside your helps"
-                          : "Inside not User");
                       if (isRequester) {
                         // For request owners: DELETE the request entirely
                         await requestController.deleteRequest(widget.request.requestId);
