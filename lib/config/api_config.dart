@@ -1,6 +1,5 @@
 // lib/config/api_config.dart
 
-import 'dart:developer';
 
 // Enterprise API Configuration
 /// This file contains all API-related configuration for TIRI app
@@ -238,16 +237,6 @@ class ApiConfig {
   /// Print configuration details (development only)
   static void printConfig() {
     if (isDevelopment) {
-      log('=== TIRI API Configuration ===');
-      log('Environment: $environment');
-      log('Base URL: $baseUrl');
-      log('API Base URL: $apiBaseUrl');
-      log('WebSocket URL: $webSocketBaseUrl');
-      log('Logging Enabled: $enableLogging');
-      log('Connect Timeout: ${connectTimeout.inSeconds}s');
-      log('Receive Timeout: ${receiveTimeout.inSeconds}s');
-      log('Max Retry Attempts: $maxRetryAttempts');
-      log('==============================');
     }
   }
 }

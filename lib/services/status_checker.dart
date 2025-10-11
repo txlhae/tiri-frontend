@@ -1,7 +1,6 @@
 // lib/services/status_checker.dart
 
 import 'dart:async';
-import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:tiri/infrastructure/routes.dart';
@@ -28,7 +27,6 @@ class StatusChecker extends GetxService {
 
   /// Start periodic status checks for current user
   void startPeriodicChecks() {
-    log('📡 StatusChecker: Periodic checks DISABLED to prevent token refresh loops');
     // 🚨 DISABLED: These timers were causing infinite token refresh loops
     // The backend authentication issue needs to be fixed first
 
@@ -43,7 +41,6 @@ class StatusChecker extends GetxService {
 
   /// Start verification-specific checks (more frequent during email verification)
   void startVerificationChecks() {
-    log('📧 StatusChecker: Verification checks DISABLED to prevent token refresh loops');
     // 🚨 DISABLED: This was making API calls every 10 seconds causing the issue!
 
     // // Check every 10 seconds during verification
@@ -57,7 +54,6 @@ class StatusChecker extends GetxService {
 
   /// Stop all periodic checks
   void stopPeriodicChecks() {
-    log('🛑 StatusChecker: Stopping periodic checks...');
 
     _statusTimer?.cancel();
     _statusTimer = null;
@@ -68,7 +64,6 @@ class StatusChecker extends GetxService {
 
   /// Stop only verification checks (keep status checks running)
   void stopVerificationChecks() {
-    log('🛑 StatusChecker: Stopping verification checks...');
 
     _verificationTimer?.cancel();
     _verificationTimer = null;
@@ -77,7 +72,6 @@ class StatusChecker extends GetxService {
   /// Check for status updates from the backend
   Future<void> _checkStatusUpdate() async {
     try {
-      log('🔍 StatusChecker: Checking status update...');
 
       final response = await _apiService.get('/api/auth/registration-status/');
 
@@ -90,7 +84,6 @@ class StatusChecker extends GetxService {
         final approved = data['is_approved'] == true;
         final canAccess = data['can_access_app'] == true;
 
-        log('📊 StatusChecker: New status - account: $newStatus, next: $newNextStep, verified: $verified, approved: $approved');
 
         // Get current stored status
         final currentStoredStatus = await AuthStorage.getAccountStatus();
@@ -98,7 +91,6 @@ class StatusChecker extends GetxService {
 
         // Check if status changed
         if (currentStoredStatus != newStatus || currentStoredNextStep != newNextStep) {
-          log('🔄 StatusChecker: Status changed! Old: $currentStoredStatus -> New: $newStatus');
 
           // Update local storage
           await AuthStorage.storeAuthData(data);
@@ -112,11 +104,9 @@ class StatusChecker extends GetxService {
           // Handle status change
           await _handleStatusChange(newStatus, newNextStep);
         } else {
-          log('✅ StatusChecker: No status change detected');
         }
       }
     } catch (e) {
-      log('❌ StatusChecker: Error checking status update: $e');
       // Don't show errors for silent polling
     }
   }
@@ -124,7 +114,6 @@ class StatusChecker extends GetxService {
   /// Check verification status specifically
   Future<void> _checkVerificationStatus() async {
     try {
-      log('📧 StatusChecker: Checking verification status...');
 
       final response = await _apiService.get('/api/auth/verification-status/');
 
@@ -135,10 +124,8 @@ class StatusChecker extends GetxService {
         final autoLogin = data['auto_login'] == true;
         final approvalStatus = data['approval_status'] ?? '';
 
-        log('📧 StatusChecker: Verification status - verified: $verified, autoLogin: $autoLogin, approval: $approvalStatus');
 
         if (verified && isVerified.value != verified) {
-          log('✅ StatusChecker: Email verification detected!');
 
           // Update status
           isVerified.value = verified;
@@ -161,14 +148,12 @@ class StatusChecker extends GetxService {
         }
       }
     } catch (e) {
-      log('❌ StatusChecker: Error checking verification status: $e');
     }
   }
 
   /// Handle status changes and navigate accordingly
   Future<void> _handleStatusChange(String newStatus, String newNextStep) async {
     try {
-      log('🔄 StatusChecker: Handling status change - Status: $newStatus, NextStep: $newNextStep');
 
       switch (newNextStep) {
         case 'ready':
@@ -206,17 +191,14 @@ class StatusChecker extends GetxService {
           break;
 
         default:
-          log('⚠️ StatusChecker: Unknown next step: $newNextStep');
       }
     } catch (e) {
-      log('❌ StatusChecker: Error handling status change: $e');
     }
   }
 
   /// Navigate to a specific route with a message
   Future<void> _navigateToRoute(String route, String message) async {
     try {
-      log('🛤️ StatusChecker: Navigating to $route with message: $message');
 
       // Show success/info message
       Get.snackbar(
@@ -235,13 +217,11 @@ class StatusChecker extends GetxService {
       Get.offAllNamed(route);
 
     } catch (e) {
-      log('❌ StatusChecker: Error navigating to route: $e');
     }
   }
 
   /// Manually trigger a status check (for pull-to-refresh)
   Future<void> checkStatusNow() async {
-    log('🔄 StatusChecker: Manual status check triggered');
     await _checkStatusUpdate();
   }
 
@@ -252,7 +232,6 @@ class StatusChecker extends GetxService {
       final accountStatus = await AuthStorage.getAccountStatus();
       final nextStep = await AuthStorage.getNextStep();
 
-      log('🤔 StatusChecker: Should redirect? Route: $currentRoute, Status: $accountStatus, NextStep: $nextStep');
 
       // Define route-status mappings
       const routeStatusMap = {
@@ -270,7 +249,6 @@ class StatusChecker extends GetxService {
         if (currentRoute == route) {
           final shouldBeHere = statuses.contains(accountStatus) || statuses.contains(nextStep);
           if (!shouldBeHere) {
-            log('🚨 StatusChecker: User should not be on $route with status $accountStatus/$nextStep');
             return true;
           }
         }
@@ -278,7 +256,6 @@ class StatusChecker extends GetxService {
 
       return false;
     } catch (e) {
-      log('❌ StatusChecker: Error checking redirect: $e');
       return false;
     }
   }
@@ -289,7 +266,6 @@ class StatusChecker extends GetxService {
       final nextStep = await AuthStorage.getNextStep();
       final accountStatus = await AuthStorage.getAccountStatus();
 
-      log('🛤️ StatusChecker: Getting correct route for status: $accountStatus, nextStep: $nextStep');
 
       if (nextStep != null) {
         switch (nextStep) {
@@ -323,7 +299,6 @@ class StatusChecker extends GetxService {
       // Default fallback
       return Routes.emailVerificationPage;
     } catch (e) {
-      log('❌ StatusChecker: Error getting correct route: $e');
       return Routes.loginPage;
     }
   }

@@ -8,7 +8,6 @@
 library;
 
 import 'dart:convert';
-import 'dart:developer';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// User approval state enumeration
@@ -158,10 +157,7 @@ class UserStateService {
   Future<void> initialize() async {
     try {
       await _loadStateFromStorage();
-      log('🚀 UserStateService: Initialized successfully', name: _logTag);
-      log('   - Current state: ${_currentState?.state.value ?? 'none'}', name: _logTag);
     } catch (e) {
-      log('❌ UserStateService: Initialization failed: $e', name: _logTag);
     }
   }
   
@@ -187,7 +183,6 @@ class UserStateService {
     bool? hasShownCongratulations,
   }) async {
     try {
-      log('🔄 UserStateService: Updating state from ${currentApprovalState.value} to ${newState.value}', name: _logTag);
       
       _currentState = UserStateData(
         state: newState,
@@ -199,10 +194,8 @@ class UserStateService {
       );
       
       await _saveStateToStorage();
-      log('✅ UserStateService: State updated successfully', name: _logTag);
       
     } catch (e) {
-      log('❌ UserStateService: Failed to update state: $e', name: _logTag);
     }
   }
   
@@ -219,17 +212,14 @@ class UserStateService {
   /// Clear all state data (used during logout)
   Future<void> clearState() async {
     try {
-      log('🧹 UserStateService: Clearing all state data', name: _logTag);
       
       _currentState = null;
       
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_stateKey);
       
-      log('✅ UserStateService: State cleared successfully', name: _logTag);
       
     } catch (e) {
-      log('❌ UserStateService: Failed to clear state: $e', name: _logTag);
     }
   }
   
@@ -240,7 +230,6 @@ class UserStateService {
     // Only make API call for pending approval users
     final needsApiCall = state == UserApprovalState.emailVerifiedPendingApproval;
     
-    log('🔍 UserStateService: API call needed? $needsApiCall (state: ${state.value})', name: _logTag);
     return needsApiCall;
   }
   
@@ -274,7 +263,6 @@ class UserStateService {
         break;
     }
     
-    log('🗺️  UserStateService: Route for state ${state.value}: $route', name: _logTag);
     return route;
   }
   
@@ -286,10 +274,6 @@ class UserStateService {
       final autoLogin = response['auto_login'] == true;
       final userData = response['user'] ?? {};
       
-      log('📡 UserStateService: Processing API response:', name: _logTag);
-      log('   - is_verified: $isVerified', name: _logTag);
-      log('   - approval_status: $approvalStatus', name: _logTag);
-      log('   - auto_login: $autoLogin', name: _logTag);
       
       UserApprovalState newState;
       String? referrerName;
@@ -303,7 +287,6 @@ class UserStateService {
         if (currentState == UserApprovalState.emailVerifiedPendingApproval || 
             currentState == UserApprovalState.fullyApproved) {
           // Don't downgrade already verified users - assume API response is stale/incorrect
-          log('⚠️ UserStateService: API says not verified but user is already verified. Keeping current state.', name: _logTag);
           return; // Don't update state - maintain current verified status
         } else {
           // Safe to set as unverified
@@ -339,7 +322,6 @@ class UserStateService {
       );
       
     } catch (e) {
-      log('❌ UserStateService: Failed to process API response: $e', name: _logTag);
     }
   }
   
@@ -350,7 +332,6 @@ class UserStateService {
     final age = DateTime.now().difference(_currentState!.lastUpdated);
     final isStale = age > maxAge;
     
-    log('⏰ UserStateService: State age: ${age.inMinutes}min, stale: $isStale', name: _logTag);
     return isStale;
   }
   
@@ -367,15 +348,10 @@ class UserStateService {
       if (stateJson != null) {
         final stateMap = jsonDecode(stateJson) as Map<String, dynamic>;
         _currentState = UserStateData.fromJson(stateMap);
-        log('📱 UserStateService: State loaded from storage', name: _logTag);
-        log('   - State: ${_currentState!.state.value}', name: _logTag);
-        log('   - Last updated: ${_currentState!.lastUpdated}', name: _logTag);
       } else {
-        log('ℹ️  UserStateService: No stored state found', name: _logTag);
       }
       
     } catch (e) {
-      log('❌ UserStateService: Failed to load state from storage: $e', name: _logTag);
       // Clear corrupted data
       try {
         final prefs = await SharedPreferences.getInstance();
@@ -394,10 +370,8 @@ class UserStateService {
       final stateJson = jsonEncode(_currentState!.toJson());
       await prefs.setString(_stateKey, stateJson);
       
-      log('💾 UserStateService: State saved to storage', name: _logTag);
       
     } catch (e) {
-      log('❌ UserStateService: Failed to save state to storage: $e', name: _logTag);
     }
   }
 }

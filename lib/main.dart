@@ -11,59 +11,40 @@ import 'package:tiri/services/app_cache_manager.dart';
 import 'firebase_options.dart';
 
 void main() async {
-  print('🔥 FCM DEBUG: Starting main() function...');
   WidgetsFlutterBinding.ensureInitialized();
-  print('🔥 FCM DEBUG: WidgetsFlutterBinding initialized');
   
   // Initialize Firebase with proper error handling
   try {
-    print('🔥 FCM DEBUG: Starting Firebase initialization...');
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    print('✅ FCM DEBUG: Firebase initialized successfully');
   } catch (e) {
     if (e.toString().contains('duplicate-app')) {
-      print('✅ FCM DEBUG: Firebase already initialized (duplicate app)');
     } else {
-      print('❌ FCM DEBUG: Firebase initialization error: $e');
     }
     // Continue app initialization even if Firebase fails
   }
   
   // Initialize cache systems first
   try {
-    print('💾 CACHE DEBUG: Initializing cache systems...');
     await AppCacheManager.initializeCacheSystems();
-    print('✅ CACHE DEBUG: Cache systems initialized successfully');
   } catch (e) {
-    print('❌ CACHE DEBUG: Cache initialization error: $e');
   }
 
   // Initialize services with fixed circular dependency issue
   try {
-    print('🔧 FCM DEBUG: Starting service initialization...');
 
-    print('📱 FCM DEBUG: Initializing DeepLinkService...');
     await Get.putAsync(() async => DeepLinkService());
-    print('✅ FCM DEBUG: DeepLinkService initialized');
 
-    print('🔥 FCM DEBUG: Initializing FirebaseNotificationService...');
     final firebaseService = FirebaseNotificationService.instance;
     await firebaseService.initialize();
     Get.put(firebaseService, permanent: true);
-    print('✅ FCM DEBUG: FirebaseNotificationService initialized and registered with GetX');
 
-    print('🎉 FCM DEBUG: All services initialized successfully');
   } catch (e) {
-    print('❌ FCM DEBUG: Service initialization error: $e');
-    print('📝 FCM DEBUG: Stack trace: ${StackTrace.current}');
     // Continue app initialization even if services fail
   }
   
-  print('🔥 FCM DEBUG: About to run app...');
   runApp(const MyApp());
-  print('🔥 FCM DEBUG: App started successfully');
 }
 
 class MyApp extends StatefulWidget {
@@ -85,7 +66,6 @@ class _MyAppState extends State<MyApp> {
 
   Future<void> _determineInitialRoute() async {
     try {
-      print('🚀 MyApp: Determining initial route...');
 
       // Wait a bit for services to initialize
       await Future.delayed(const Duration(milliseconds: 500));
@@ -93,7 +73,6 @@ class _MyAppState extends State<MyApp> {
       // Determine the correct initial route
       final initialRoute = await AppStartupHandler.determineInitialRoute();
 
-      print('✅ MyApp: Initial route determined: $initialRoute');
 
       if (mounted) {
         setState(() {
@@ -102,7 +81,6 @@ class _MyAppState extends State<MyApp> {
         });
       }
     } catch (e) {
-      print('❌ MyApp: Error determining initial route: $e');
 
       // Fallback to splash page on error
       if (mounted) {

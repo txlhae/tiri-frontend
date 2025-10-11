@@ -1,7 +1,6 @@
 // lib/services/connectivity_service.dart
 
 import 'dart:async';
-import 'dart:developer';
 import 'dart:io';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
@@ -82,7 +81,6 @@ class ConnectivityService extends GetxService {
   /// Initialize the connectivity service
   Future<void> _initializeService() async {
     try {
-      log('🌐 ConnectivityService: Initializing connectivity monitoring', name: 'CONNECTIVITY');
 
       // Initialize Dio for server checks
       _dio = Dio(BaseOptions(
@@ -100,9 +98,7 @@ class ConnectivityService extends GetxService {
       // Periodic server checks disabled - only check on startup and network changes
       // _startPeriodicServerChecks();
 
-      log('✅ ConnectivityService: Initialization complete', name: 'CONNECTIVITY');
     } catch (e) {
-      log('❌ ConnectivityService: Initialization failed: $e', name: 'CONNECTIVITY');
       _updateState(ConnectivityState.offline, 'Failed to initialize connectivity service');
     }
   }
@@ -115,11 +111,9 @@ class ConnectivityService extends GetxService {
   void _startConnectivityListener() {
     _connectivitySubscription = _connectivity.onConnectivityChanged.listen(
       (List<ConnectivityResult> results) async {
-        log('📡 ConnectivityService: Connectivity changed: $results', name: 'CONNECTIVITY');
         await _handleConnectivityChange(results);
       },
       onError: (error) {
-        log('❌ ConnectivityService: Connectivity listener error: $error', name: 'CONNECTIVITY');
         _updateState(ConnectivityState.offline, 'Connectivity monitoring failed');
       },
     );
@@ -133,19 +127,16 @@ class ConnectivityService extends GetxService {
       );
 
       if (hasConnection) {
-        log('🟢 ConnectivityService: Internet connection detected', name: 'CONNECTIVITY');
         isOnline.value = true;
 
         // Check if server is reachable
         await _checkServerReachability();
       } else {
-        log('🔴 ConnectivityService: No internet connection', name: 'CONNECTIVITY');
         isOnline.value = false;
         isServerReachable.value = false;
         _updateState(ConnectivityState.offline, 'No internet connection');
       }
     } catch (e) {
-      log('❌ ConnectivityService: Error handling connectivity change: $e', name: 'CONNECTIVITY');
       _updateState(ConnectivityState.offline, 'Failed to check connectivity');
     }
   }
@@ -166,7 +157,6 @@ class ConnectivityService extends GetxService {
   /// Check if the backend server is reachable
   Future<void> _checkServerReachability() async {
     try {
-      log('🔍 ConnectivityService: Checking server reachability...', name: 'CONNECTIVITY');
 
       currentState.value = ConnectivityState.checking;
 
@@ -174,18 +164,15 @@ class ConnectivityService extends GetxService {
       final isReachable = await _pingServerWithRetry();
 
       if (isReachable) {
-        log('✅ ConnectivityService: Server is reachable', name: 'CONNECTIVITY');
         isServerReachable.value = true;
         _updateState(ConnectivityState.online, 'Connected');
       } else {
-        log('❌ ConnectivityService: Server is not reachable', name: 'CONNECTIVITY');
         isServerReachable.value = false;
         _updateState(ConnectivityState.serverOffline, 'Server offline - unable to reach backend');
       }
 
       lastChecked.value = DateTime.now();
     } catch (e) {
-      log('❌ ConnectivityService: Server reachability check failed: $e', name: 'CONNECTIVITY');
       isServerReachable.value = false;
       _updateState(ConnectivityState.serverOffline, 'Server offline - unable to reach backend');
     }
@@ -195,7 +182,6 @@ class ConnectivityService extends GetxService {
   Future<bool> _pingServerWithRetry() async {
     for (int attempt = 1; attempt <= _maxRetries; attempt++) {
       try {
-        log('🏓 ConnectivityService: Server ping attempt $attempt/$_maxRetries', name: 'CONNECTIVITY');
 
         // Try to reach the server health endpoint or base URL
         final response = await _dio.get(
@@ -206,11 +192,9 @@ class ConnectivityService extends GetxService {
         );
 
         if (response.statusCode != null && response.statusCode! < 500) {
-          log('✅ ConnectivityService: Server ping successful (${response.statusCode})', name: 'CONNECTIVITY');
           return true;
         }
       } catch (e) {
-        log('⚠️ ConnectivityService: Server ping attempt $attempt failed: $e', name: 'CONNECTIVITY');
 
         if (attempt < _maxRetries) {
           await Future.delayed(Duration(seconds: attempt * 2)); // Exponential backoff
@@ -218,7 +202,6 @@ class ConnectivityService extends GetxService {
       }
     }
 
-    log('❌ ConnectivityService: All server ping attempts failed', name: 'CONNECTIVITY');
     return false;
   }
 
@@ -229,7 +212,6 @@ class ConnectivityService extends GetxService {
   /// Perform a comprehensive connectivity check
   Future<ConnectivityState> checkConnectivity() async {
     try {
-      log('🔄 ConnectivityService: Performing comprehensive connectivity check', name: 'CONNECTIVITY');
 
       currentState.value = ConnectivityState.checking;
 
@@ -240,14 +222,12 @@ class ConnectivityService extends GetxService {
       );
 
       if (!hasInternet) {
-        log('🔴 ConnectivityService: No internet connection detected', name: 'CONNECTIVITY');
         isOnline.value = false;
         isServerReachable.value = false;
         _updateState(ConnectivityState.offline, 'Not connected to the internet');
         return ConnectivityState.offline;
       }
 
-      log('🟢 ConnectivityService: Internet connection detected', name: 'CONNECTIVITY');
       isOnline.value = true;
 
       // Check server reachability
@@ -255,7 +235,6 @@ class ConnectivityService extends GetxService {
 
       return currentState.value;
     } catch (e) {
-      log('❌ ConnectivityService: Connectivity check failed: $e', name: 'CONNECTIVITY');
       _updateState(ConnectivityState.offline, 'Failed to check connectivity');
       return ConnectivityState.offline;
     }
@@ -264,7 +243,6 @@ class ConnectivityService extends GetxService {
   /// Force a server reachability check
   Future<bool> checkServerReachability() async {
     if (!isOnline.value) {
-      log('⚠️ ConnectivityService: Cannot check server - no internet connection', name: 'CONNECTIVITY');
       return false;
     }
 
@@ -276,7 +254,6 @@ class ConnectivityService extends GetxService {
   Future<bool> waitForConnectivity({
     Duration timeout = const Duration(seconds: 30),
   }) async {
-    log('⏳ ConnectivityService: Waiting for connectivity (timeout: ${timeout.inSeconds}s)', name: 'CONNECTIVITY');
 
     final completer = Completer<bool>();
     Timer? timeoutTimer;
@@ -285,7 +262,6 @@ class ConnectivityService extends GetxService {
     // Set up timeout
     timeoutTimer = Timer(timeout, () {
       if (!completer.isCompleted) {
-        log('⏰ ConnectivityService: Connectivity wait timed out', name: 'CONNECTIVITY');
         completer.complete(false);
       }
     });
@@ -293,7 +269,6 @@ class ConnectivityService extends GetxService {
     // Listen for connectivity restoration
     stateSubscription = currentState.listen((state) {
       if (state == ConnectivityState.online && !completer.isCompleted) {
-        log('✅ ConnectivityService: Connectivity restored', name: 'CONNECTIVITY');
         completer.complete(true);
       }
     });
@@ -322,7 +297,6 @@ class ConnectivityService extends GetxService {
     errorMessage.value = message;
     lastChecked.value = DateTime.now();
 
-    log('📊 ConnectivityService: State updated - ${state.name}: $message', name: 'CONNECTIVITY');
   }
 
   /// Get user-friendly connectivity status message

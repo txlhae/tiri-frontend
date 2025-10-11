@@ -2,7 +2,6 @@
 /// Handles periodic cleanup of various app caches to maintain storage limits
 library;
 
-import 'dart:developer';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
@@ -25,7 +24,6 @@ class CacheCleanupService {
   static Future<void> performCleanup({bool force = false}) async {
     try {
       if (kDebugMode) {
-        log('🧹 [$_tag] Starting cache cleanup...');
       }
 
       final sizeBefore = await getTotalCacheSizeMB();
@@ -46,12 +44,9 @@ class CacheCleanupService {
       final cleaned = sizeBefore - sizeAfter;
 
       if (kDebugMode) {
-        log('✅ [$_tag] Cleanup complete. Freed ${cleaned.toStringAsFixed(2)}MB');
-        log('📊 [$_tag] Cache size: ${sizeBefore.toStringAsFixed(2)}MB → ${sizeAfter.toStringAsFixed(2)}MB');
       }
     } catch (e) {
       if (kDebugMode) {
-        log('❌ [$_tag] Cleanup failed: $e');
       }
     }
   }
@@ -64,12 +59,10 @@ class CacheCleanupService {
       if (cacheSize > maxApiCacheMB) {
         await ApiClient.clearCache();
         if (kDebugMode) {
-          log('🗑️ [$_tag] API cache cleared (${cacheSize.toStringAsFixed(2)}MB)');
         }
       }
     } catch (e) {
       if (kDebugMode) {
-        log('❌ [$_tag] Failed to clean API cache: $e');
       }
     }
   }
@@ -88,13 +81,11 @@ class CacheCleanupService {
           await imageCacheDir.create();
 
           if (kDebugMode) {
-            log('🗑️ [$_tag] Image cache cleared (${size.toStringAsFixed(2)}MB)');
           }
         }
       }
     } catch (e) {
       if (kDebugMode) {
-        log('❌ [$_tag] Failed to clean image cache: $e');
       }
     }
   }
@@ -119,11 +110,9 @@ class CacheCleanupService {
       }
 
       if (kDebugMode) {
-        log('🗑️ [$_tag] Old temporary files cleaned');
       }
     } catch (e) {
       if (kDebugMode) {
-        log('❌ [$_tag] Failed to clean temp files: $e');
       }
     }
   }
@@ -163,12 +152,10 @@ class CacheCleanupService {
         }
 
         if (kDebugMode) {
-          log('🗑️ [$_tag] SharedPreferences cleaned (${sizeMB.toStringAsFixed(2)}MB)');
         }
       }
     } catch (e) {
       if (kDebugMode) {
-        log('❌ [$_tag] Failed to clean SharedPreferences: $e');
       }
     }
   }
@@ -194,7 +181,6 @@ class CacheCleanupService {
       return totalSize;
     } catch (e) {
       if (kDebugMode) {
-        log('❌ [$_tag] Failed to calculate cache size: $e');
       }
       return 0.0;
     }

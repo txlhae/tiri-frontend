@@ -23,9 +23,6 @@ class QrCodeDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Debug logging to track the issue
-    print('QrCodeDialog - referralCode: $referralCode');
-    print('QrCodeDialog - userId: $userId');
-    print('QrCodeDialog - username: $username');
     
     final qrData = "REFERRAL:$referralCode:$userId";
 

@@ -1,6 +1,5 @@
 import 'package:defer_pointer/defer_pointer.dart';
 import 'package:flutter/material.dart';
-import 'dart:developer';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:tiri/controllers/auth_controller.dart';
@@ -68,19 +67,14 @@ class _RequestDetailsState extends State<RequestDetails> {
     
     // ✅ FIX: Move reactive updates to post-frame to prevent setState during build
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      log('🚨🚨 RequestDetails initState: Received requestId: $requestId');
-      log('🚨🚨 RequestDetails initState: Current request in controller: ${requestController.currentRequestDetails.value?.requestId}');
 
       // ALWAYS refresh data, even if cached - for testing volunteer mapping
       if (requestId != null && requestId.isNotEmpty && requestId.trim().isNotEmpty) {
         try {
-          log('🚨🚨 RequestDetails initState: FORCE REFRESH - About to call loadRequestDetails($requestId)');
           // Load request details after build completes with error handling
           await requestController.loadRequestDetails(requestId);
-          log('🚨🚨 RequestDetails initState: loadRequestDetails completed for $requestId');
         } catch (e) {
           // Handle loading errors gracefully
-          log('Error loading request details in initState: $e');
           if (mounted) {
             Get.snackbar(
               'Loading Error',
@@ -94,7 +88,6 @@ class _RequestDetailsState extends State<RequestDetails> {
         }
       } else {
         // Handle error case where no valid requestId is provided
-        log('Warning: No valid requestId provided to RequestDetails');
         requestController.currentRequestDetails.value = null;
         requestController.isLoadingRequestDetails.value = false;
         
@@ -129,8 +122,6 @@ class _RequestDetailsState extends State<RequestDetails> {
 
   @override
   Widget build(BuildContext context) {
-    print('🔍 RequestDetails: build() called');
-    log('🔍 RequestDetails: build() called');
     // final request = detailsController.requestModel.value ?? widget.request;
     return Scaffold(
       backgroundColor: Colors.white,
@@ -224,10 +215,6 @@ class _RequestDetailsState extends State<RequestDetails> {
     final request = requestController.currentRequestDetails.value;
     final currentUser = authController.currentUserStore.value;
     
-    print('🔍 _buildLoadedContent: called');
-    log('🔍 _buildLoadedContent: called');
-    print('🔍 _buildLoadedContent: request ID = ${request?.requestId}');
-    log('🔍 _buildLoadedContent: request ID = ${request?.requestId}');
     
     // Enhanced error state handling with multiple scenarios
     if (request == null) {
@@ -372,10 +359,6 @@ class _RequestDetailsState extends State<RequestDetails> {
                 icon: Icons.people_outline,
                 label: "Accepted Users",
                 value: (() {
-                  log('🚨 UI DEBUG: request.acceptedUser.length = ${request.acceptedUser.length}');
-                  log('🚨 UI DEBUG: request.acceptedUser content = ${request.acceptedUser}');
-                  log('🚨 UI DEBUG: request.requestId = ${request.requestId}');
-                  log('🚨 UI DEBUG: request.status = ${request.status}');
                   return request.acceptedUser.length.toString();
                 })(),
               ),
@@ -801,22 +784,16 @@ class _RequestDetailsState extends State<RequestDetails> {
           width: double.infinity,
           child: OutlinedButton.icon(
             onPressed: requestController.isLoading.value ? null : () async {
-              log('🔍 UI: Cancel button pressed for request ${request.requestId}');
               
               // Show cancel reason dialog
-              log('🔍 UI: Showing cancel reason dialog...');
               final String? reason = await _showCancelReasonDialog();
               
-              log('🔍 UI: Dialog result - reason: $reason');
               
               // If user didn't cancel the dialog
               if (reason != null) {
-                log('🔍 UI: User provided reason, calling controller...');
                 try {
-                  log('🔍 UI: About to call cancelVolunteerRequest with requestId: ${request.requestId}, reason: $reason');
                   await requestController.cancelVolunteerRequest(request.requestId, reason: reason);
                   
-                  log('✅ UI: Successfully canceled volunteer request');
                   Get.snackbar(
                     'Success',
                     'Your volunteer request has been cancelled',
@@ -827,7 +804,6 @@ class _RequestDetailsState extends State<RequestDetails> {
                     duration: const Duration(seconds: 3),
                   );
                 } catch (e) {
-                  log('❌ UI: Error canceling volunteer request - $e');
                   Get.snackbar(
                     'Error',
                     'Failed to cancel request. Please try again.',
@@ -836,7 +812,6 @@ class _RequestDetailsState extends State<RequestDetails> {
                   );
                 }
               } else {
-                log('🔍 UI: User canceled the dialog');
               }
             },
             icon: requestController.isLoading.value
@@ -946,22 +921,16 @@ class _RequestDetailsState extends State<RequestDetails> {
           width: double.infinity,
           child: OutlinedButton.icon(
             onPressed: requestController.isLoading.value ? null : () async {
-              log('🔍 UI: Cancel button pressed for request ${request.requestId} (second handler)');
               
               // Show cancel reason dialog
-              log('🔍 UI: Showing cancel reason dialog...');
               final String? reason = await _showCancelReasonDialog();
               
-              log('🔍 UI: Dialog result - reason: $reason');
               
               // If user didn't cancel the dialog
               if (reason != null) {
-                log('🔍 UI: User provided reason, calling controller...');
                 try {
-                  log('🔍 UI: About to call cancelVolunteerRequest with requestId: ${request.requestId}, reason: $reason');
                   await requestController.cancelVolunteerRequest(request.requestId, reason: reason);
                   
-                  log('✅ UI: Successfully canceled volunteer request');
                   Get.snackbar(
                     'Success',
                     'Volunteer request canceled successfully',
@@ -973,7 +942,6 @@ class _RequestDetailsState extends State<RequestDetails> {
                   // Reload request details to get updated status
                   await requestController.loadRequestDetails(request.requestId);
                 } catch (e) {
-                  log('❌ UI: Error canceling volunteer request - $e');
                   Get.snackbar(
                     'Error',
                     'Failed to cancel volunteer request: $e',
@@ -984,7 +952,6 @@ class _RequestDetailsState extends State<RequestDetails> {
                   );
                 }
               } else {
-                log('🔍 UI: User canceled the dialog');
               }
             },
             icon: requestController.isLoading.value 
@@ -1224,22 +1191,16 @@ class _RequestDetailsState extends State<RequestDetails> {
           width: double.infinity,
           child: OutlinedButton.icon(
             onPressed: requestController.isLoading.value ? null : () async {
-              log('🔍 UI: Cancel button pressed for request ${request.requestId} (approved state)');
               
               // Show cancel reason dialog
-              log('🔍 UI: Showing cancel reason dialog...');
               final String? reason = await _showCancelReasonDialog();
               
-              log('🔍 UI: Dialog result - reason: $reason');
               
               // If user didn't cancel the dialog
               if (reason != null) {
-                log('🔍 UI: User provided reason, calling controller...');
                 try {
-                  log('🔍 UI: About to call cancelVolunteerRequest with requestId: ${request.requestId}, reason: $reason');
                   await requestController.cancelVolunteerRequest(request.requestId, reason: reason);
                   
-                  log('✅ UI: Successfully canceled volunteer request');
                   Get.snackbar(
                     'Success',
                     'Your volunteer request has been cancelled',
@@ -1250,7 +1211,6 @@ class _RequestDetailsState extends State<RequestDetails> {
                     duration: const Duration(seconds: 3),
                   );
                 } catch (e) {
-                  log('❌ UI: Error canceling volunteer request - $e');
                   Get.snackbar(
                     'Error',
                     'Failed to cancel request. Please try again.',
@@ -1259,7 +1219,6 @@ class _RequestDetailsState extends State<RequestDetails> {
                   );
                 }
               } else {
-                log('🔍 UI: User canceled the dialog');
               }
             },
             icon: requestController.isLoading.value
@@ -1601,7 +1560,6 @@ class _RequestDetailsState extends State<RequestDetails> {
                   if (volunteerId == currentUserId) {
                     // For current user, navigate without passing user data to force fresh fetch
                     Get.to(() => ProfileScreen());
-                    log('🔍 [REQUEST DETAILS] Navigating to own profile (as volunteer) without stale data');
                   } else {
                     // Navigate to profile screen and let it fetch fresh data from API
                     // Don't pass incomplete user data from request details
@@ -1615,7 +1573,6 @@ class _RequestDetailsState extends State<RequestDetails> {
                       isApproved: volunteerData['isApproved'] ?? false,
                     );
                     Get.to(() => ProfileScreen(user: volunteerUser));
-                    log('🔍 [REQUEST DETAILS] Navigating to other user profile (volunteer) with partial data');
                   }
                 },
                 child: CircleAvatar(
@@ -1830,15 +1787,12 @@ class _RequestDetailsState extends State<RequestDetails> {
     
     // 🎯 PRIMARY: Use the userRequestStatus from RequestModel extension (this is the authoritative source)
     final userStatus = request.userRequestStatus;
-    log("🔍 DEBUG: _getCurrentUserVolunteerStatus - userStatus from backend: '$userStatus'"); // Debug log
     
     if (userStatus.isNotEmpty && userStatus != 'not_requested') {
       // The backend provides the actual status - use it directly!
-      log("🔍 DEBUG: Using backend status: '$userStatus'"); // Debug log
       return userStatus;
     }
     
-    log("🔍 DEBUG: Backend status was '$userStatus', trying fallbacks..."); // Debug log
     
     // 🔄 FALLBACK 1: Check volunteer requests data if available (for request owners)
     final volunteerRequests = requestController.pendingVolunteers;
@@ -1846,7 +1800,6 @@ class _RequestDetailsState extends State<RequestDetails> {
       final volunteer = volunteerRequest['volunteer'];
       if (volunteer != null && volunteer['userId'] == currentUserId) {
         final status = volunteerRequest['status']?.toString();
-        log("🔍 DEBUG: Found status in volunteer requests: '$status'"); // Debug log
         return status;
       }
     }
@@ -1856,18 +1809,15 @@ class _RequestDetailsState extends State<RequestDetails> {
       (user) => user.userId == currentUserId
     );
     if (isAcceptedVolunteer) {
-      log("🔍 DEBUG: Found user in acceptedUser list - status: 'approved'"); // Debug log
       return 'approved';
     }
     
     // 🔄 FALLBACK 3: If we have volunteer message or hasVolunteered flag, likely pending
     if (request.hasVolunteered || 
         (request.volunteerMessage != null && request.volunteerMessage!.isNotEmpty)) {
-      log("🔍 DEBUG: hasVolunteered or volunteerMessage exists - status: 'pending'"); // Debug log
       return 'pending';
     }
     
-    log("🔍 DEBUG: No status found, returning null"); // Debug log
     return null;
   }
 
@@ -2025,7 +1975,6 @@ class _RequestDetailsState extends State<RequestDetails> {
       // Get current user ID
       final currentUserId = authController.currentUserStore.value?.userId;
       if (currentUserId == null) {
-        log('❌ [CHAT VOLUNTEER] No current user ID available');
         Get.snackbar(
           'Error',
           'Unable to get current user information',
@@ -2035,12 +1984,6 @@ class _RequestDetailsState extends State<RequestDetails> {
         return;
       }
 
-      log('🔍 [CHAT VOLUNTEER] Starting chat creation...');
-      log('🔍 [CHAT VOLUNTEER] Current User ID (Requester): $currentUserId');
-      log('🔍 [CHAT VOLUNTEER] Volunteer ID: $volunteerId');
-      log('🔍 [CHAT VOLUNTEER] Volunteer Name: $volunteerName');
-      log('🔍 [CHAT VOLUNTEER] Service Request ID: $requestId');
-      log('🔍 [CHAT VOLUNTEER] User Role: REQUEST OWNER (requester)');
 
       // Show loading indicator
       Get.dialog(
@@ -2052,8 +1995,6 @@ class _RequestDetailsState extends State<RequestDetails> {
 
       // Create or get chat room using existing ChatController
       final chatController = Get.put(ChatController());
-      log('🔍 [CHAT VOLUNTEER] About to call createOrGetChatRoom...');
-      log('🔍 [CHAT VOLUNTEER] Parameters: userA=$currentUserId, userB=$volunteerId, serviceRequestId=$requestId');
       
       final roomId = await chatController.createOrGetChatRoom(
         currentUserId,
@@ -2061,15 +2002,11 @@ class _RequestDetailsState extends State<RequestDetails> {
         serviceRequestId: requestId,
       );
 
-      log('✅ [CHAT VOLUNTEER] Chat room created successfully: $roomId');
-      log('🔍 [CHAT VOLUNTEER] Room ID length: ${roomId.length}');
 
       // Close loading dialog
       Get.back();
 
       // Navigate to chat page
-      log('🔍 [CHAT VOLUNTEER] Navigating to chat page...');
-      log('🔍 [CHAT VOLUNTEER] Chat arguments: roomId=$roomId, receiverId=$volunteerId, receiverName=$volunteerName');
       
       Get.toNamed(
         Routes.chatPage,
@@ -2081,12 +2018,8 @@ class _RequestDetailsState extends State<RequestDetails> {
         },
       );
 
-      log('✅ [CHAT VOLUNTEER] Successfully navigated to chat page');
 
     } catch (e) {
-      log('❌ [CHAT VOLUNTEER] Error in _openChatWithVolunteer: $e');
-      log('❌ [CHAT VOLUNTEER] Error type: ${e.runtimeType}');
-      log('❌ [CHAT VOLUNTEER] Stack trace: ${StackTrace.current}');
       
       // Close loading dialog if still open
       if (Get.isDialogOpen ?? false) {
@@ -2138,7 +2071,6 @@ class _RequestDetailsState extends State<RequestDetails> {
     // Attempt to refresh user data automatically
     Future.microtask(() async {
       try {
-        log('🔄 RequestDetails: Attempting to refresh user data...');
         
         // Try to refresh user profile from the server
         await authController.refreshUserProfile();
@@ -2146,18 +2078,15 @@ class _RequestDetailsState extends State<RequestDetails> {
         // Check if we now have valid user ID
         final refreshedUser = authController.currentUserStore.value;
         if (refreshedUser != null && refreshedUser.userId.isNotEmpty) {
-          log('✅ RequestDetails: User data refreshed successfully - userId: ${refreshedUser.userId}');
           isRefreshing.value = false;
           refreshAttempted.value = true;
           // The Obx will automatically rebuild and show the proper content
         } else {
-          log('⚠️ RequestDetails: User data refresh failed - still no valid userId');
           // After failed refresh, still mark as attempted for error handling
           isRefreshing.value = false;
           refreshAttempted.value = true;
         }
       } catch (e) {
-        log('❌ RequestDetails: Error during user data refresh: $e');
         isRefreshing.value = false;
         refreshAttempted.value = true;
       }
@@ -2620,11 +2549,9 @@ class _RequestDetailsState extends State<RequestDetails> {
                               if (requester?.userId == currentUserId) {
                                 // For current user, navigate without passing user data to force fresh fetch
                                 Get.to(() => ProfileScreen());
-                                log('🔍 [REQUEST DETAILS] Navigating to own profile without stale data');
                               } else {
                                 // For other users, pass the user data
                                 Get.to(() => ProfileScreen(user: requester));
-                                log('🔍 [REQUEST DETAILS] Navigating to other user profile with passed data');
                               }
                             },
                           ),

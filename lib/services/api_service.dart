@@ -1,6 +1,5 @@
 // lib/services/api_service.dart
 
-import 'dart:developer';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -120,50 +119,39 @@ class ApiService {
         if (options.path == ApiConfig.authTokenRefresh ||
             options.path == ApiConfig.authLogin ||
             options.path == ApiConfig.authRegister) {
-          log('🔓 Skipping auth header for public endpoint: ${options.path}', name: 'API');
           handler.next(options);
           return;
         }
 
         // Check if token needs proactive refresh before making the request
         if (_shouldProactivelyRefreshToken()) {
-          log('🔄 Proactively refreshing token before request to: ${options.path}', name: 'API');
           final refreshSuccess = await refreshTokenIfNeeded();
           if (!refreshSuccess && _accessToken == null) {
-            log('❌ Failed to refresh token - proceeding without auth', name: 'API');
           }
         }
 
         // Add access token to other requests if available
         if (_accessToken != null) {
           options.headers['Authorization'] = 'Bearer $_accessToken';
-          log('🔐 Added auth header to: ${options.path} (token: ${_accessToken!.substring(0, 20)}...)', name: 'API');
-          log('🔐 Full Authorization header: Bearer ${_accessToken!.substring(0, 30)}...', name: 'API');
-          log('🔐 Token length: ${_accessToken!.length} characters', name: 'API');
         } else {
-          log('⚠️ No access token available for: ${options.path} (isAuthenticated: $isAuthenticated)', name: 'API');
         }
         
         handler.next(options);
       },
       
       onError: (DioException error, ErrorInterceptorHandler handler) async {
-        log('🔍 API Error - Status: ${error.response?.statusCode}, Path: ${error.requestOptions.path}', name: 'API');
         
         // Handle token expiration (401 Unauthorized)
         if (error.response?.statusCode == 401) {
-          log('🔄 401 Unauthorized on ${error.requestOptions.path} - attempting token refresh', name: 'API');
 
           // Prevent endless token refresh loops for the token refresh endpoint itself
           if (error.requestOptions.path == ApiConfig.authTokenRefresh) {
-            log('⚠️ 401 on token refresh endpoint - refresh token is invalid, clearing tokens', name: 'API');
             await clearTokens();
             handler.next(error);
             return;
           }
 
           if (await refreshTokenIfNeeded()) {
-            log('✅ Token refreshed - retrying original request', name: 'API');
 
             // Retry the original request with new token
             final options = error.requestOptions;
@@ -176,12 +164,10 @@ class ApiService {
               handler.resolve(response);
               return;
             } catch (retryError) {
-              log('❌ Retry failed after token refresh: $retryError', name: 'API');
               handler.next(error);
               return;
             }
           } else {
-            log('❌ Token refresh failed - user needs to login', name: 'API');
           }
         }
         
@@ -239,7 +225,6 @@ class ApiService {
       responseHeader: false,
       error: true,
       logPrint: (obj) {
-        log(obj.toString(), name: 'API');
       },
     );
   }
@@ -260,25 +245,17 @@ class ApiService {
         try {
           _tokenLastRefreshed = DateTime.parse(refreshTimeStr);
         } catch (e) {
-          log('⚠️ Error parsing token refresh time: $e', name: 'API');
         }
       }
       
       if (ApiConfig.enableLogging) {
-        log('📱 Tokens loaded from storage', name: 'API');
-        log('   - Access token: ${_accessToken != null ? "available (${_accessToken!.length} chars)" : "missing"}', name: 'API');
-        log('   - Refresh token: ${_refreshToken != null ? "available (${_refreshToken!.length} chars)" : "missing"}', name: 'API');
-        log('   - Last refreshed: $_tokenLastRefreshed', name: 'API');
-        log('   - Is authenticated: $isAuthenticated', name: 'API');
       }
       
       // Check if token needs proactive refresh
       if (_shouldProactivelyRefreshToken()) {
-        log('🔄 Access token is near expiry - proactively refreshing', name: 'API');
         await refreshTokenIfNeeded();
       }
     } catch (e) {
-      log('❌ Error loading tokens: $e', name: 'API');
     }
   }
 
@@ -294,10 +271,8 @@ class ApiService {
       await _secureStorage.write(key: 'token_refresh_time', value: _tokenLastRefreshed!.toIso8601String());
       
       if (ApiConfig.enableLogging) {
-        log('💾 Tokens saved to secure storage with refresh timestamp', name: 'API');
       }
     } catch (e) {
-      log('❌ Error saving tokens: $e', name: 'API');
     }
   }
 
@@ -314,10 +289,8 @@ class ApiService {
       await _secureStorage.delete(key: _userDataKey);
       
       if (ApiConfig.enableLogging) {
-        log('🧹 All tokens, timestamps, and user data cleared', name: 'API');
       }
     } catch (e) {
-      log('❌ Error clearing tokens: $e', name: 'API');
     }
   }
 
@@ -334,7 +307,6 @@ class ApiService {
       _accessToken = await _secureStorage.read(key: _accessTokenKey);
       return _accessToken;
     } catch (e) {
-      log('Error getting stored access token: $e', name: 'API');
       return null;
     }
   }
@@ -351,15 +323,12 @@ class ApiService {
     }
 
     if (_refreshToken == null) {
-      log('❌ No refresh token available for token refresh', name: 'API');
       return false;
     }
 
     _isRefreshing = true;
     
     try {
-      log('🔄 Starting automatic token refresh...', name: 'API');
-      log('🔐 Using refresh token: ${_refreshToken!.substring(0, 20)}...', name: 'API');
       
       // Create a separate Dio instance to avoid interceptor loops
       final refreshDio = Dio(BaseOptions(
@@ -381,11 +350,9 @@ class ApiService {
         },
       );
 
-      log('📊 Token refresh response status: ${response.statusCode}', name: 'API');
       
       if (response.statusCode == 200 && response.data != null) {
         final responseData = response.data as Map<String, dynamic>;
-        log('📊 Token refresh response data: $responseData', name: 'API');
         
         final newAccessToken = responseData['access'];
         final newRefreshToken = responseData['refresh'];
@@ -397,38 +364,28 @@ class ApiService {
           // Save new access token and refresh timestamp
           await _secureStorage.write(key: _accessTokenKey, value: newAccessToken);
           await _secureStorage.write(key: 'token_refresh_time', value: _tokenLastRefreshed!.toIso8601String());
-          log('💾 New access token and timestamp saved to secure storage', name: 'API');
           
           // Handle refresh token rotation if enabled in Django
           if (newRefreshToken != null && newRefreshToken != _refreshToken) {
             _refreshToken = newRefreshToken;
             await _secureStorage.write(key: _refreshTokenKey, value: newRefreshToken);
-            log('🔄 Refresh token rotated and saved', name: 'API');
           }
           
-          log('✅ Token refresh successful - new access token acquired', name: 'API');
-          log('🔐 New access token: ${newAccessToken.substring(0, 20)}...', name: 'API');
           return true;
         } else {
-          log('❌ Token refresh failed - no access token in response', name: 'API');
         }
       } else {
-        log('❌ Token refresh failed - HTTP ${response.statusCode}', name: 'API');
         if (response.data != null) {
-          log('❌ Response data: ${response.data}', name: 'API');
         }
       }
       
     } catch (e) {
-      log('❌ Token refresh exception: $e', name: 'API');
       
       // Handle invalid refresh token
       if (e is DioException) {
         final statusCode = e.response?.statusCode;
-        log('❌ Refresh token error - Status: $statusCode', name: 'API');
         
         if (statusCode == 401 || statusCode == 403) {
-          log('🚨 Refresh token is invalid/expired - clearing all tokens', name: 'API');
           await clearTokens();
         }
       }
@@ -453,7 +410,6 @@ class ApiService {
     final shouldRefresh = tokenAge > refreshThreshold;
     
     if (ApiConfig.enableLogging && shouldRefresh) {
-      log('⏰ Token age: ${tokenAge.inMinutes} minutes (threshold: ${refreshThreshold.inMinutes} minutes)', name: 'API');
     }
     
     return shouldRefresh;
@@ -483,7 +439,6 @@ class ApiService {
       final connectivityResult = await _connectivity.checkConnectivity();
       return connectivityResult.first != ConnectivityResult.none;
     } catch (e) {
-      log('Error checking connectivity: $e', name: 'API');
       return false;
     }
   }
@@ -674,8 +629,6 @@ class ApiService {
     switch (statusCode) {
       case 400:
         // 🚨 DEBUG FIX: Preserve original DioException for debugging Django validation errors
-        log('🚨 [API_SERVICE DEBUG] 400 Bad Request detected');
-        log('🚨 [API_SERVICE DEBUG] Response data: $data');
         
         // Throw the original DioException so RequestService can extract Django errors
         throw error;

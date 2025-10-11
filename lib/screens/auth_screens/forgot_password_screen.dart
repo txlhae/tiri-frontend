@@ -1,4 +1,3 @@
-import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
@@ -39,7 +38,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
    Future<void> checkEmailVerified() async {
     try {
-      log('🔍 ForgotPasswordScreen: Checking email verification status...');
       
       // Show loading indicator
       Get.dialog(
@@ -61,7 +59,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       
     } catch (e) {
       Get.back(); // Close loading dialog if still open
-      log('❌ ForgotPasswordScreen: Error checking verification: $e');
       
       Get.snackbar(
         "Verification Check Failed", 

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:tiri/controllers/auth_controller.dart';
@@ -57,7 +56,6 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
       final cachedStatus = await accountStatusService.getStoredAccountStatus();
       
       if (cachedStatus != null) {
-        log('📱 EmailVerificationScreen: Using cached status', name: 'EMAIL_VERIFICATION');
         return;
       }
       
@@ -67,21 +65,17 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
       //   currentStatus.value = status;
       //   await accountStatusService.storeAccountStatus(status);
       // }
-      log('⚠️ EmailVerificationScreen: Registration status check disabled (endpoint not available)', name: 'EMAIL_VERIFICATION');
     } catch (e) {
-      log('❌ EmailVerificationScreen: Error loading status: $e', name: 'EMAIL_VERIFICATION');
     }
   }
 
   /// Handle "I have verified" button press with enhanced status checking
   Future<void> handleVerificationCheck() async {
     try {
-      log('🔍 EmailVerificationScreen: User clicked "I have verified"');
 
       isCheckingVerification.value = true;
 
       // 🚨 CRITICAL FIX: Ensure tokens are loaded and check verification status
-      log('🔐 EmailVerificationScreen: Loading current tokens and checking verification status...');
       await authController.reloadTokens();
 
       // 🚨 CRITICAL FIX: Verify we have tokens before proceeding
@@ -92,7 +86,6 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
       // Check if user is now verified (reloadTokens already checked this)
       final user = authController.currentUserStore.value;
       if (user != null && user.isVerified == true) {
-        log('✅ EmailVerificationScreen: User is now verified!');
 
         // Show success message and navigate based on approval status
         if (user.isApproved == true) {
@@ -202,7 +195,6 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
       // }
       
     } catch (e) {
-      log('❌ EmailVerificationScreen: Error during verification check: $e');
       
       Get.snackbar(
         'Verification Error',
@@ -234,7 +226,6 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
     }
 
     try {
-      log('📧 EmailVerificationScreen: Resending verification email');
 
       final userEmail = authController.currentUserStore.value?.email;
       if (userEmail == null) {
@@ -276,7 +267,6 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
       }
 
     } catch (e) {
-      log('❌ EmailVerificationScreen: Error resending email: $e');
 
       Get.snackbar(
         'Resend Failed',

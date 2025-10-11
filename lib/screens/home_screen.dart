@@ -1,4 +1,3 @@
-import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -40,7 +39,6 @@ class HomeScreen extends StatelessWidget {
           requestController.requestList.isEmpty && 
           requestController.myRequestList.isEmpty &&
           !requestController.isLoading.value) {
-        log("🚨 HomeScreen: Detected empty requests - triggering reload");
         requestController.loadRequests();
       }
     });
@@ -78,7 +76,6 @@ class HomeScreen extends StatelessWidget {
                           behavior: HitTestBehavior.opaque,
                           onTap: () {
                             if (authController.currentUserStore.value != null) {
-                              log('User ID: ${authController.currentUserStore.value!.userId}');
                               homeController.navigateToProfile();
                             }
                           },
@@ -159,10 +156,8 @@ class HomeScreen extends StatelessWidget {
                         behavior: HitTestBehavior.opaque,
                         onTap: () {
                           try {
-                            log('Notification button tapped - navigating to notifications page');
                             Get.toNamed(Routes.notificationsPage);
                           } catch (e) {
-                            log('Error navigating to notifications page: $e');
                             Get.snackbar(
                               "Error",
                               "Could not open notifications. Please try again.",
@@ -369,7 +364,6 @@ class HomeScreen extends StatelessWidget {
         ),
         floatingActionButton: GestureDetector(
           onTap: () {
-            log("Add Request");
             Get.toNamed(Routes.addRequestPage);
           },
           child: Container(

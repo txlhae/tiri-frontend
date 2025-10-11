@@ -2,7 +2,6 @@
 
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:web_socket_channel/status.dart' as status;
 import 'api_service.dart';
@@ -82,7 +81,6 @@ class ChatWebSocketService {
   /// [userId] - The current user ID for message handling
   static Future<void> connect(String roomId, String userId) async {
     if (_currentRoomId == roomId && isConnected) {
-      log('⚡ Already connected to room: $roomId', name: 'WebSocket');
       return;
     }
     
@@ -96,7 +94,6 @@ class ChatWebSocketService {
     _updateConnectionState(ConnectionState.connecting);
     
     try {
-      log('🔌 Connecting WebSocket for room: $roomId');
       
       // Get JWT token from existing auth system
       final token = await _getAuthToken();
@@ -106,7 +103,6 @@ class ChatWebSocketService {
       
       // Build WebSocket URL
       final wsUrl = _buildWebSocketUrl(roomId, token);
-      log('🔗 WebSocket URL: $wsUrl', name: 'WebSocket');
       
       // Create WebSocket connection
       _channel = WebSocketChannel.connect(Uri.parse(wsUrl));
@@ -116,7 +112,6 @@ class ChatWebSocketService {
       
       // Set connection as ready immediately since backend is working fine
       _isConnected = true;
-      log('✅ WebSocket connection established and ready');
       
       // Start heartbeat
       _startHeartbeat();
@@ -125,12 +120,9 @@ class ChatWebSocketService {
       _reconnectAttempts = 0;
       _updateConnectionState(ConnectionState.connected);
       
-      log('✅ WebSocket connected successfully to room: $roomId', name: 'WebSocket');
       
     } catch (e) {
       _isConnected = false;
-      log('❌ WebSocket connection failed: $e');
-      log('❌ WebSocket connection failed: $e', name: 'WebSocket');
       _updateConnectionState(ConnectionState.error);
       _scheduleReconnect();
       rethrow;
@@ -141,7 +133,6 @@ class ChatWebSocketService {
   static Future<void> disconnect() async {
     if (_channel == null) return;
     
-    log('🔌 Disconnecting WebSocket from room: $_currentRoomId', name: 'WebSocket');
     
     _stopHeartbeat();
     _stopReconnectTimer();
@@ -149,7 +140,6 @@ class ChatWebSocketService {
     try {
       await _channel?.sink.close(status.normalClosure);
     } catch (e) {
-      log('⚠️ Error during WebSocket disconnect: $e', name: 'WebSocket');
     } finally {
       _channel = null;
       _currentRoomId = null;
@@ -177,7 +167,6 @@ class ChatWebSocketService {
   /// Note: This should be used alongside REST API calls for reliability
   static void sendMessage(String content) {
     if (!isConnected || _channel == null) {
-      log('⚠️ Cannot send message - WebSocket not connected', name: 'WebSocket');
       return;
     }
     
@@ -190,10 +179,8 @@ class ChatWebSocketService {
       };
       
       _channel!.sink.add(json.encode(message));
-      log('📤 Message sent via WebSocket: ${content.substring(0, content.length > 50 ? 50 : content.length)}...', name: 'WebSocket');
       
     } catch (e) {
-      log('❌ Failed to send message via WebSocket: $e', name: 'WebSocket');
     }
   }
 
@@ -212,7 +199,6 @@ class ChatWebSocketService {
       _channel!.sink.add(json.encode(message));
       
     } catch (e) {
-      log('❌ Failed to send typing indicator: $e', name: 'WebSocket');
     }
   }
 
@@ -226,13 +212,11 @@ class ChatWebSocketService {
       // Ensure we have fresh tokens before WebSocket connection
       final refreshed = await ApiService.instance.refreshTokenIfNeeded();
       if (!refreshed) {
-        log('⚠️ Token refresh check completed', name: 'WebSocket');
       }
 
       // Get the (potentially refreshed) token
       return await ApiService.instance.getStoredAccessToken();
     } catch (e) {
-      log('❌ Failed to get auth token: $e', name: 'WebSocket');
       return null;
     }
   }
@@ -251,31 +235,25 @@ class ChatWebSocketService {
   static void _setupMessageListener() {
     _channel?.stream.listen(
       (data) {
-        log('🚨 RAW WebSocket data received: $data');
         
         // First message received confirms connection is working
         if (!_isConnected) {
           _isConnected = true;
           _updateConnectionState(ConnectionState.connected);
-          log('✅ WebSocket connection confirmed via first message');
         }
         
         try {
           final Map<String, dynamic> messageData = json.decode(data);
-          log('🚨 Parsed WebSocket data: $messageData');
           _handleIncomingMessage(messageData);
         } catch (e) {
-          log('❌ Error parsing WebSocket message: $e', name: 'WebSocket');
         }
       },
       onError: (error) {
-        log('❌ WebSocket stream error: $error', name: 'WebSocket');
         _isConnected = false;
         _updateConnectionState(ConnectionState.error);
         _scheduleReconnect();
       },
       onDone: () {
-        log('🔌 WebSocket connection closed', name: 'WebSocket');
         _isConnected = false;
         if (_currentState == ConnectionState.connected) {
           _updateConnectionState(ConnectionState.disconnected);
@@ -298,40 +276,28 @@ class ChatWebSocketService {
           _handleTypingIndicator(messageData);
           break;
         case 'connection_ack':
-          log('✅ WebSocket connection acknowledged', name: 'WebSocket');
           break;
         case 'error':
-          log('❌ WebSocket error: ${messageData['message']}', name: 'WebSocket');
           break;
         default:
-          log('⚠️ Unknown message type: $messageType', name: 'WebSocket');
       }
     } catch (e) {
-      log('❌ Error handling WebSocket message: $e', name: 'WebSocket');
     }
   }
 
   /// Handle incoming chat messages
   static void _handleChatMessage(Map<String, dynamic> messageData) {
-    log('🚀 ENTERING _handleChatMessage with data: ${messageData.keys}', name: 'WebSocket');
     
     // Add debug logging BEFORE processing
-    log('📥 Full WebSocket payload: ${json.encode(messageData)}', name: 'WebSocket');
-    log('📥 Message object exists: ${messageData['message'] != null}', name: 'WebSocket');
     
     // Verify nested message object exists
     final messagePayload = messageData['message'];
     if (messagePayload == null) {
-      log('❌ WebSocket message missing nested message object', name: 'WebSocket');
       return;
     }
     
     try {
       // Verify stream controller is initialized and ready
-      log('🔧 Stream controller state check:', name: 'WebSocket');
-      log('   Controller closed: ${_messageController.isClosed}', name: 'WebSocket');
-      log('   Controller has listeners: ${_messageController.hasListener}', name: 'WebSocket');
-      log('   Current user ID: "$_currentUserId"', name: 'WebSocket');
       
       // Extract senderId from sender object or fallback to string
       String senderId = '';
@@ -359,10 +325,6 @@ class ChatWebSocketService {
                      messageData['receiver']?.toString() ?? '';
       }
       
-      log('🔍 Extracted IDs:', name: 'WebSocket');
-      log('   Sender ID: "$senderId"', name: 'WebSocket');
-      log('   Receiver ID: "$receiverId"', name: 'WebSocket');
-      log('   Current User ID: "$_currentUserId"', name: 'WebSocket');
       
       // Map WebSocket message format to ChatMessageModel
       final message = ChatMessageModel(
@@ -379,28 +341,15 @@ class ChatWebSocketService {
         senderProfilePic: messagePayload['sender_profile_pic'],
       );
       
-      log('✅ ChatMessageModel created:', name: 'WebSocket');
-      log('   Message ID: ${message.messageId}', name: 'WebSocket');
-      log('   Content: "${message.message}"', name: 'WebSocket');
-      log('   Sender ID: "${message.senderId}"', name: 'WebSocket');
       
       // Robust echo prevention with normalized string comparison
       final normalizedSenderId = message.senderId.toString().trim().toLowerCase();
       final normalizedCurrentUserId = (_currentUserId ?? '').toString().trim().toLowerCase();
       
       // Debug logging for message processing
-      log('🔍 Processing WebSocket message:', name: 'WebSocket');
-      log('   Message ID: ${message.messageId}', name: 'WebSocket');
-      log('   Raw Sender ID: "${message.senderId}" (${message.senderId.runtimeType})', name: 'WebSocket');
-      log('   Raw Current ID: "$_currentUserId" (${_currentUserId.runtimeType})', name: 'WebSocket');
-      log('   Normalized Sender: "$normalizedSenderId"', name: 'WebSocket');
-      log('   Normalized Current: "$normalizedCurrentUserId"', name: 'WebSocket');
-      log('   Stream controller closed: ${_messageController.isClosed}', name: 'WebSocket');
-      log('   Stream has listeners: ${_messageController.hasListener}', name: 'WebSocket');
       
       // Verify stream controller state before emission
       if (_messageController.isClosed) {
-        log('❌ Message controller is closed - cannot emit message', name: 'WebSocket');
         return;
       }
       
@@ -408,40 +357,21 @@ class ChatWebSocketService {
       final isFromCurrentUser = normalizedSenderId == normalizedCurrentUserId;
       final hasValidCurrentUser = normalizedCurrentUserId.isNotEmpty;
       
-      log('🎯 Filter decision:', name: 'WebSocket');
-      log('   Is from current user: $isFromCurrentUser', name: 'WebSocket');
-      log('   Has valid current user: $hasValidCurrentUser', name: 'WebSocket');
-      log('   Should emit: ${!isFromCurrentUser && hasValidCurrentUser}', name: 'WebSocket');
       
       // CRITICAL: Add explicit execution tracking
-      log('🔥 ABOUT TO CHECK EMISSION CONDITION...', name: 'WebSocket');
       
       // Only emit messages that are not from the current user (avoid echo)
       if (!isFromCurrentUser && hasValidCurrentUser) {
-        log('�🔥 EMISSION CONDITION TRUE - ENTERING EMISSION BLOCK', name: 'WebSocket');
-        log('�📤 ATTEMPTING to emit message to stream...', name: 'WebSocket');
-        log('   Message details: ID=${message.messageId}, Content="${message.message}"', name: 'WebSocket');
         
         try {
-          log('🔥🔥🔥 CALLING _messageController.add(message) NOW...', name: 'WebSocket');
           _messageController.add(message);
-          log('📥 ✅ MESSAGE SUCCESSFULLY EMITTED TO STREAM: ${message.messageId}', name: 'WebSocket');
-          log('   Content: "${message.message}"', name: 'WebSocket');
-          log('   Timestamp: ${message.timestamp}', name: 'WebSocket');
         } catch (streamError) {
-          log('❌ FAILED to emit message to stream: $streamError', name: 'WebSocket');
-          log('❌ Stack trace: ${StackTrace.current}', name: 'WebSocket');
         }
       } else {
-        log('🔥🔥 EMISSION CONDITION FALSE - SKIPPING EMISSION', name: 'WebSocket');
-        log('📥 ⏭️ Message filtered (echo prevention): ${message.messageId}', name: 'WebSocket');
-        log('   Reason: ${isFromCurrentUser ? "From current user" : "No valid current user"}', name: 'WebSocket');
       }
       
-      log('🔥 COMPLETED EMISSION CHECK', name: 'WebSocket');
       
     } catch (e) {
-      log('❌ Error processing chat message: $e', name: 'WebSocket');
     }
   }
 
@@ -449,7 +379,6 @@ class ChatWebSocketService {
   static void _handleTypingIndicator(Map<String, dynamic> messageData) {
     // TODO: Implement typing indicator handling
     // This would emit to a separate typing indicator stream
-    log('⌨️ Typing indicator: ${messageData['is_typing']}', name: 'WebSocket');
   }
 
   /// Update connection state and notify listeners
@@ -457,27 +386,23 @@ class ChatWebSocketService {
     if (_currentState != newState) {
       _currentState = newState;
       _connectionStateController.add(newState);
-      log('🔄 Connection state changed to: $newState', name: 'WebSocket');
     }
   }
 
   /// Schedule reconnection with exponential backoff
   static void _scheduleReconnect() {
     if (_reconnectAttempts >= _maxReconnectAttempts) {
-      log('❌ Max reconnect attempts reached. Giving up.', name: 'WebSocket');
       _updateConnectionState(ConnectionState.error);
       return;
     }
     
     if (_currentRoomId == null || _currentUserId == null) {
-      log('⚠️ Cannot reconnect - missing room or user ID', name: 'WebSocket');
       return;
     }
     
     _reconnectAttempts++;
     final delay = _baseReconnectDelay * (1 << (_reconnectAttempts - 1)); // Exponential backoff
     
-    log('🔄 Scheduling reconnect attempt $_reconnectAttempts in ${delay}ms', name: 'WebSocket');
     _updateConnectionState(ConnectionState.reconnecting);
     
     _reconnectTimer = Timer(Duration(milliseconds: delay), () {
@@ -496,7 +421,6 @@ class ChatWebSocketService {
           };
           _channel!.sink.add(json.encode(heartbeat));
         } catch (e) {
-          log('❌ Heartbeat failed: $e', name: 'WebSocket');
         }
       }
     });
@@ -530,6 +454,5 @@ class ChatWebSocketService {
       await _connectionStateController.close();
     }
     
-    log('🧹 WebSocket service disposed', name: 'WebSocket');
   }
 }

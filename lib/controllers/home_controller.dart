@@ -1,4 +1,3 @@
-import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:tiri/controllers/request_controller.dart';
@@ -18,7 +17,6 @@ class HomeController extends GetxController
   void onInit() {
     super.onInit();
 
-    log('🏠 HomeController: Initializing home page controller', name: 'HOME_CONTROLLER');
 
     // Initialize home page components
     // Note: AuthGuard validation moved to HomeScreen widget initState
@@ -27,7 +25,6 @@ class HomeController extends GetxController
 
   /// Initialize home page components
   void _initializeHomePage() {
-    log('🏠🔥🔥🔥 HomeController: Setting up FCM token registration!', name: 'HOME_CONTROLLER');
     _setupFCMTokenOnHomeLoad();
 
     searchController.addListener(() {
@@ -53,10 +50,8 @@ class HomeController extends GetxController
 
   Future<void> _setupFCMTokenOnHomeLoad() async {
     try {
-      log('🏠🚀 HomeController: Setting up FCM token on home page load...', name: 'HOME_CONTROLLER');
       
       if (Get.isRegistered<FirebaseNotificationService>()) {
-        log('🏠✅ HomeController: Found FirebaseNotificationService, setting up full FCM flow...', name: 'HOME_CONTROLLER');
         final firebaseService = Get.find<FirebaseNotificationService>();
         
         // 🔥 CRITICAL FIX: Use setupPushNotifications instead of registerTokenWithBackend
@@ -64,21 +59,16 @@ class HomeController extends GetxController
         final success = await firebaseService.setupPushNotifications();
         
         if (success) {
-          log('🏠🎉 FCM setup completed successfully with backend from home page!', name: 'HOME_CONTROLLER');
         } else {
-          log('🏠❌ FCM setup failed from home page - check permissions and Firebase config', name: 'HOME_CONTROLLER');
         }
       } else {
-        log('🏠❌ FirebaseNotificationService not registered with GetX', name: 'HOME_CONTROLLER');
       }
     } catch (e) {
-      log('🏠❌ Error setting up FCM token on home load: $e', name: 'HOME_CONTROLLER');
     }
   }
 
   // Show confirmation dialog
   void showConfirmationDialog(int index) {
-    log("Go for request $index");
     Get.dialog(
       const LogoutDialog(
         questionText: "Are you sure you want to go?",

@@ -1,4 +1,3 @@
-import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -50,7 +49,6 @@ class _RefferalDialogState extends State<RefferalDialog> {
                         .fetchUserByReferralCode(referralCodeController.text)
                         .then(
                       (value) {
-                        log("User is: ${value.toString()}");
                         if (value != null) {
                           authController.referredUid.value = value.userId;
                           authController.referredUser.value = value.username;
@@ -70,7 +68,6 @@ class _RefferalDialogState extends State<RefferalDialog> {
                       },
                     ).onError(
                       (error, stackTrace) {
-                        log(error.toString());
                         Get.snackbar(
                           'Error',
                           'Not a valid user',

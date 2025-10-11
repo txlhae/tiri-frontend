@@ -1,6 +1,5 @@
 // lib/services/app_startup_handler.dart
 
-import 'dart:developer';
 import 'package:dio/dio.dart';
 import 'package:get/get.dart';
 import 'package:tiri/config/api_config.dart';
@@ -21,14 +20,11 @@ class AppStartupHandler {
   /// Determine the initial route for the application
   static Future<String> determineInitialRoute() async {
     try {
-      log('🚀 AppStartupHandler: Determining initial route...');
 
       // Check if we have stored tokens
       final hasTokens = await AuthStorage.hasValidTokens();
-      log('📱 AppStartupHandler: Has stored tokens: $hasTokens');
 
       if (!hasTokens) {
-        log('❌ AppStartupHandler: No tokens found, routing to login');
         return Routes.loginPage;
       }
 
@@ -37,17 +33,14 @@ class AppStartupHandler {
 
       // Validate tokens with backend
       final isValid = await _validateStoredTokens();
-      log('🔍 AppStartupHandler: Token validation result: $isValid');
 
       if (!isValid) {
         // Try to refresh tokens
         final refreshed = await _tryRefreshToken();
-        log('🔄 AppStartupHandler: Token refresh result: $refreshed');
 
         if (!refreshed) {
           // Tokens are invalid and refresh failed
           await AuthStorage.clearAuthData();
-          log('🧹 AppStartupHandler: Cleared invalid tokens, routing to login');
           return Routes.loginPage;
         }
       }
@@ -56,8 +49,6 @@ class AppStartupHandler {
       final nextStep = await AuthStorage.getNextStep();
       final accountStatus = await AuthStorage.getAccountStatus();
 
-      log('📊 AppStartupHandler: Account status: $accountStatus');
-      log('➡️ AppStartupHandler: Next step: $nextStep');
 
       // If we have a next step, use it; otherwise determine from account status
       if (nextStep != null && nextStep.isNotEmpty) {
@@ -70,7 +61,6 @@ class AppStartupHandler {
       }
 
     } catch (e) {
-      log('❌ AppStartupHandler: Error determining route: $e');
       // Clear potentially corrupted data and route to login
       await AuthStorage.clearAuthData();
       return Routes.loginPage;
@@ -82,9 +72,7 @@ class AppStartupHandler {
     try {
       final apiService = Get.find<ApiService>();
       await apiService.loadTokensFromStorage();
-      log('✅ AppStartupHandler: Tokens loaded into API service');
     } catch (e) {
-      log('❌ AppStartupHandler: Error loading tokens into API service: $e');
     }
   }
 
@@ -107,11 +95,9 @@ class AppStartupHandler {
       );
 
       final isValid = response.statusCode == 200;
-      log('🔍 AppStartupHandler: Token validation - Status: ${response.statusCode}, Valid: $isValid');
       return isValid;
 
     } catch (e) {
-      log('❌ AppStartupHandler: Token validation error: $e');
       return false;
     }
   }
@@ -146,23 +132,19 @@ class AppStartupHandler {
           final apiService = Get.find<ApiService>();
           await apiService.saveTokens(newAccessToken, refreshToken);
 
-          log('✅ AppStartupHandler: Token refreshed successfully');
           return true;
         }
       }
 
-      log('❌ AppStartupHandler: Token refresh failed - Status: ${response.statusCode}');
       return false;
 
     } catch (e) {
-      log('❌ AppStartupHandler: Token refresh error: $e');
       return false;
     }
   }
 
   /// Get route from next_step value
   static String _getRouteFromNextStep(String nextStep) {
-    log('🛤️ AppStartupHandler: Routing based on next_step: $nextStep');
 
     switch (nextStep) {
       case 'verify_email':
@@ -178,14 +160,12 @@ class AppStartupHandler {
       case 'ready':
         return Routes.homePage;
       default:
-        log('⚠️ AppStartupHandler: Unknown next_step: $nextStep, defaulting to email verification');
         return Routes.emailVerificationPage;
     }
   }
 
   /// Get route from account_status value
   static String _getRouteFromAccountStatus(String accountStatus) {
-    log('🛤️ AppStartupHandler: Routing based on account_status: $accountStatus');
 
     switch (accountStatus) {
       case 'email_pending':
@@ -202,7 +182,6 @@ class AppStartupHandler {
       case 'expired':
         return Routes.loginPage; // Fallback to login since expiredScreen doesn't exist
       default:
-        log('⚠️ AppStartupHandler: Unknown account_status: $accountStatus, checking backend');
         return Routes.emailVerificationPage;
     }
   }
@@ -210,7 +189,6 @@ class AppStartupHandler {
   /// Get route by checking verification status from backend
   static Future<String> _getRouteFromBackendStatus() async {
     try {
-      log('🔍 AppStartupHandler: Checking verification status from backend...');
 
       final apiService = Get.find<ApiService>();
       final response = await apiService.get('/api/auth/verification-status/');
@@ -223,7 +201,6 @@ class AppStartupHandler {
         final approvalStatus = data['approval_status'] ?? 'unknown';
         final canAccessApp = data['can_access_app'] == true;
 
-        log('📊 AppStartupHandler: Backend status - verified: $isVerified, approved: $isApproved, status: $approvalStatus, canAccess: $canAccessApp');
 
         // Update local storage with backend data
         await AuthStorage.updateAccountStatus(approvalStatus);
@@ -246,11 +223,9 @@ class AppStartupHandler {
       }
 
       // Fallback if backend check fails
-      log('⚠️ AppStartupHandler: Backend status check failed, defaulting to email verification');
       return Routes.emailVerificationPage;
 
     } catch (e) {
-      log('❌ AppStartupHandler: Backend status check error: $e');
       return Routes.emailVerificationPage;
     }
   }
@@ -261,7 +236,6 @@ class AppStartupHandler {
       // For basic implementation, just check if tokens exist and are valid
       return !(await _validateStoredTokens());
     } catch (e) {
-      log('❌ AppStartupHandler: Session check error: $e');
       return true;
     }
   }
@@ -271,9 +245,7 @@ class AppStartupHandler {
     try {
       await AuthStorage.clearAuthData();
       Get.offAllNamed(Routes.loginPage);
-      log('✅ AppStartupHandler: Session cleared and redirected to login');
     } catch (e) {
-      log('❌ AppStartupHandler: Error clearing session: $e');
     }
   }
 

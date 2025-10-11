@@ -1,5 +1,4 @@
 ﻿import 'dart:async';
-import 'dart:developer';
 import 'package:get/get.dart';
 import 'package:tiri/controllers/auth_controller.dart';
 import 'package:tiri/infrastructure/routes.dart';
@@ -58,21 +57,18 @@ class SplashController extends GetxController {
   /// Perform optimized app initialization with state-based routing
   Future<void> _performSmartInitialization() async {
     try {
-      log('🚀 SplashController: Starting smart initialization', name: 'SPLASH');
 
       // Step 1: Check network connectivity first
       initializationStatus.value = 'Checking connection...';
       final connectivityState = await _connectivityService.checkConnectivity();
 
       if (connectivityState == ConnectivityState.offline) {
-        log('🔴 SplashController: No internet connection detected', name: 'SPLASH');
         initializationStatus.value = 'Not connected to the internet';
         await Future.delayed(const Duration(seconds: 3));
         // Show offline screen or retry
         await _handleOfflineState();
         return;
       } else if (connectivityState == ConnectivityState.serverOffline) {
-        log('🔴 SplashController: Server offline detected', name: 'SPLASH');
         initializationStatus.value = 'Server offline - unable to reach backend';
         await Future.delayed(const Duration(seconds: 3));
         // Show server offline screen or retry
@@ -80,7 +76,6 @@ class SplashController extends GetxController {
         return;
       }
 
-      log('✅ SplashController: Network connectivity confirmed', name: 'SPLASH');
 
       // Step 2: Initialize user state service
       initializationStatus.value = 'Loading user state...';
@@ -92,19 +87,15 @@ class SplashController extends GetxController {
 
       // Step 4: Load authentication tokens and user data
       initializationStatus.value = 'Checking authentication...';
-      log('🔄 DEBUG: About to reload tokens...');
       await _authController.reloadTokens(); // Load JWT tokens
-      log('🔄 DEBUG: Tokens reloaded. IsLoggedIn: ${_authController.isLoggedIn.value}');
 
       // 🚨 CRITICAL FIX: Check verification status before routing (only if connected)
       if (_authController.isLoggedIn.value && _authController.currentUserStore.value != null) {
-        log('🔍 User has tokens - checking verification status before routing...', name: 'SPLASH');
         initializationStatus.value = 'Checking account status...';
 
         try {
           // Verify connectivity before making API call
           if (!_connectivityService.canMakeApiCalls) {
-            log('⚠️ Cannot make API calls - connectivity issue detected', name: 'SPLASH');
             throw Exception('No network connectivity for API calls');
           }
 
@@ -113,16 +104,13 @@ class SplashController extends GetxController {
           final statusResult = await authService.checkVerificationStatus();
 
           final autoLogin = statusResult['auto_login'] == true;
-          log('📊 Verification status result: auto_login = $autoLogin', name: 'SPLASH');
 
           if (autoLogin) {
-            log('✅ Auto-login enabled - routing to home', name: 'SPLASH');
             initializationStatus.value = 'Welcome back!';
             await Future.delayed(const Duration(milliseconds: 500));
             Get.offAllNamed(Routes.homePage);
             return;
           } else {
-            log('❌ Auto-login disabled - clearing data and routing to login', name: 'SPLASH');
             initializationStatus.value = 'Please login again...';
 
             // Clear all local data and cache
@@ -133,7 +121,6 @@ class SplashController extends GetxController {
             return;
           }
         } catch (e) {
-          log('⚠️ Verification status check failed: $e', name: 'SPLASH');
 
           // Check if it's a connectivity issue
           if (!_connectivityService.canMakeApiCalls) {
@@ -150,12 +137,10 @@ class SplashController extends GetxController {
       
       // Step 4: Determine routing strategy based on current state
       final currentState = _userStateService.currentApprovalState;
-      log('📊 SplashController: Current user state: ${currentState.value}', name: 'SPLASH');
       
       await _routeBasedOnState(currentState);
       
     } catch (e, stackTrace) {
-      log('❌ SplashController: Initialization failed: $e', stackTrace: stackTrace, name: 'SPLASH');
       
       // Fallback routing on error
       await _handleInitializationError();
@@ -166,27 +151,21 @@ class SplashController extends GetxController {
 
   /// Route user based on their current approval state
   Future<void> _routeBasedOnState(UserApprovalState state) async {
-    log('🗺️  SplashController: Routing for state: ${state.value}', name: 'SPLASH');
-    log('🗺️  DEBUG SplashController: Current state = ${state.value}');
     
     switch (state) {
       case UserApprovalState.notLoggedIn:
-        log('🗺️  DEBUG: Handling notLoggedIn state');
         await _handleNotLoggedIn();
         break;
         
       case UserApprovalState.emailUnverified:
-        log('🗺️  DEBUG: Handling emailUnverified state');
         await _handleEmailUnverified();
         break;
         
       case UserApprovalState.emailVerifiedPendingApproval:
-        log('🗺️  DEBUG: Handling emailVerifiedPendingApproval state');
         await _handlePendingApproval();
         break;
         
       case UserApprovalState.fullyApproved:
-        log('🗺️  DEBUG: Handling fullyApproved state - should go to home');
         await _handleFullyApproved();
         break;
         
@@ -199,10 +178,8 @@ class SplashController extends GetxController {
         break;
         
       case UserApprovalState.unknown:
-        log('🗺️  DEBUG: Handling unknown state - checking if user is actually logged in');
         // Check if user is actually logged in despite unknown state
         if (_authController.isLoggedIn.value && _authController.currentUserStore.value != null) {
-          log('🗺️  DEBUG: User is logged in despite unknown state - going to home');
           await _handleFullyApproved();
         } else {
           await _handleUnknownState();
@@ -217,7 +194,6 @@ class SplashController extends GetxController {
 
   /// Handle not logged in state
   Future<void> _handleNotLoggedIn() async {
-    log('🔓 SplashController: User not logged in - routing to onboarding', name: 'SPLASH');
     initializationStatus.value = 'Welcome!';
     
     await Future.delayed(const Duration(milliseconds: 500));
@@ -226,7 +202,6 @@ class SplashController extends GetxController {
 
   /// Handle email unverified state  
   Future<void> _handleEmailUnverified() async {
-    log('📧 SplashController: Email unverified - routing to email verification screen', name: 'SPLASH');
     initializationStatus.value = 'Please verify your email...';
     
     await Future.delayed(const Duration(milliseconds: 500));
@@ -236,7 +211,6 @@ class SplashController extends GetxController {
 
   /// Handle pending approval state with optional API check
   Future<void> _handlePendingApproval() async {
-    log('⏳ SplashController: Pending approval - checking current status', name: 'SPLASH');
     initializationStatus.value = 'Checking approval status...';
     
     // 🚨 CRITICAL FIX: Minimize API calls for verified users to prevent state corruption
@@ -245,32 +219,27 @@ class SplashController extends GetxController {
     final shouldMakeApiCall = stateIsVeryOld;
     
     if (shouldMakeApiCall) {
-      log('📡 SplashController: State is old - making API call to check approval status', name: 'SPLASH');
       
       try {
         final success = await _authController.checkVerificationStatus();
         
         if (success) {
           // Status changed to approved - let AuthController handle routing
-          log('✅ SplashController: Approval status changed - AuthController handling routing', name: 'SPLASH');
           return;
         }
         
         // Still pending - route to pending screen
-        log('⏳ SplashController: Still pending approval - routing to pending screen', name: 'SPLASH');
         initializationStatus.value = 'Awaiting approval...';
         await Future.delayed(const Duration(milliseconds: 500));
         Get.offAllNamed(Routes.pendingApprovalPage);
         
       } catch (e) {
-        log('❌ SplashController: API call failed, routing to pending screen anyway: $e', name: 'SPLASH');
         initializationStatus.value = 'Awaiting approval...';
         await Future.delayed(const Duration(milliseconds: 500));
         Get.offAllNamed(Routes.pendingApprovalPage);
       }
     } else {
       // No API call needed - direct routing to maintain consistent state
-      log('⚡ SplashController: No API call needed - direct routing to pending screen (preserving verified state)', name: 'SPLASH');
       initializationStatus.value = 'Awaiting approval...';
       await Future.delayed(const Duration(milliseconds: 500));
       Get.offAllNamed(Routes.pendingApprovalPage);
@@ -279,11 +248,9 @@ class SplashController extends GetxController {
 
   /// Handle fully approved state with congratulations flow
   Future<void> _handleFullyApproved() async {
-    log('🎉 SplashController: User fully approved', name: 'SPLASH');
     
     // Always go directly to home page for approved users
     // The approval congratulations are handled in the AuthController when status changes
-    log('✅ SplashController: Routing approved user directly to home', name: 'SPLASH');
     initializationStatus.value = 'Welcome back!';
     await Future.delayed(const Duration(milliseconds: 500));
     Get.offAllNamed(Routes.homePage);
@@ -291,7 +258,6 @@ class SplashController extends GetxController {
 
   /// Handle rejected state
   Future<void> _handleRejected() async {
-    log('❌ SplashController: User registration rejected - routing to rejection screen', name: 'SPLASH');
     initializationStatus.value = 'Registration status...';
     
     await Future.delayed(const Duration(milliseconds: 500));
@@ -300,7 +266,6 @@ class SplashController extends GetxController {
 
   /// Handle expired state
   Future<void> _handleExpired() async {
-    log('⏰ SplashController: Approval request expired - routing to expired screen', name: 'SPLASH');
     initializationStatus.value = 'Registration status...';
     
     await Future.delayed(const Duration(milliseconds: 500));
@@ -309,16 +274,13 @@ class SplashController extends GetxController {
 
   /// Handle unknown state (fallback)
   Future<void> _handleUnknownState() async {
-    log('❓ SplashController: Unknown state - checking authentication fallback', name: 'SPLASH');
     
     // Check basic authentication as fallback
     if (_authController.isLoggedIn.value && _authController.currentUserStore.value != null) {
-      log('🔐 SplashController: User authenticated but state unknown - routing to home', name: 'SPLASH');
       initializationStatus.value = 'Loading...';
       await Future.delayed(const Duration(milliseconds: 500));
       Get.offAllNamed(Routes.homePage);
     } else {
-      log('🔓 SplashController: No authentication - routing to onboarding', name: 'SPLASH');
       initializationStatus.value = 'Welcome!';
       await Future.delayed(const Duration(milliseconds: 500));
       Get.offAllNamed(Routes.onboardingPage);
@@ -332,23 +294,19 @@ class SplashController extends GetxController {
 
   /// Handle initialization errors with graceful fallback
   Future<void> _handleInitializationError() async {
-    log('🚨 SplashController: Handling initialization error with fallback', name: 'SPLASH');
     
     initializationStatus.value = 'Initializing...';
     
     try {
       // Try basic authentication check as fallback
       if (_authController.isLoggedIn.value && _authController.currentUserStore.value != null) {
-        log('🔐 SplashController: Fallback - user authenticated, going to home', name: 'SPLASH');
         await Future.delayed(const Duration(milliseconds: 500));
         Get.offAllNamed(Routes.homePage);
       } else {
-        log('🔓 SplashController: Fallback - no authentication, going to onboarding', name: 'SPLASH');
         await Future.delayed(const Duration(milliseconds: 500));
         Get.offAllNamed(Routes.onboardingPage);
       }
     } catch (e) {
-      log('❌ SplashController: Even fallback failed: $e', name: 'SPLASH');
       // Ultimate fallback
       Get.offAllNamed(Routes.onboardingPage);
     }
@@ -360,7 +318,6 @@ class SplashController extends GetxController {
 
   /// Handle offline state with retry option
   Future<void> _handleOfflineState() async {
-    log('🔴 SplashController: Handling offline state', name: 'SPLASH');
 
     // For now, retry after showing message
     initializationStatus.value = 'Retrying in 5 seconds...';
@@ -372,7 +329,6 @@ class SplashController extends GetxController {
 
   /// Handle server offline state with retry option
   Future<void> _handleServerOfflineState() async {
-    log('🔴 SplashController: Handling server offline state', name: 'SPLASH');
 
     // For now, retry after showing message
     initializationStatus.value = 'Retrying connection...';
@@ -384,7 +340,6 @@ class SplashController extends GetxController {
 
   /// Handle connectivity errors during operations
   Future<void> _handleConnectivityError() async {
-    log('⚠️ SplashController: Handling connectivity error during operation', name: 'SPLASH');
 
     final currentState = _connectivityService.currentState.value;
 
@@ -421,7 +376,6 @@ class SplashController extends GetxController {
   /// Clear all user data and cache
   Future<void> _clearAllUserData() async {
     try {
-      log('🗑️ SplashController: Clearing all user data and cache...', name: 'SPLASH');
 
       // Clear auth controller data
       await _authController.logout();
@@ -433,9 +387,7 @@ class SplashController extends GetxController {
       // Clear user state service
       await _userStateService.clearState();
       
-      log('✅ SplashController: All user data cleared successfully', name: 'SPLASH');
     } catch (e) {
-      log('❌ SplashController: Error clearing user data: $e', name: 'SPLASH');
     }
   }
 }

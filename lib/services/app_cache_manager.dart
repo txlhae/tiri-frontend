@@ -2,7 +2,6 @@
 /// Centralized service for initializing and managing all app caches
 library;
 
-import 'dart:developer';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -33,7 +32,6 @@ class AppCacheManager extends GetxService {
   static Future<void> initializeCacheSystems() async {
     try {
       if (kDebugMode) {
-        log('🚀 [$_tag] Initializing cache systems with strict limits...');
       }
 
       // 1. Initialize API client with minimal cache
@@ -52,12 +50,10 @@ class AppCacheManager extends GetxService {
       await performInitialCleanup();
 
       if (kDebugMode) {
-        log('✅ [$_tag] All cache systems initialized successfully');
         await logCacheStatus();
       }
     } catch (e) {
       if (kDebugMode) {
-        log('❌ [$_tag] Cache initialization failed: $e');
       }
     }
   }
@@ -66,7 +62,6 @@ class AppCacheManager extends GetxService {
   static Future<void> performInitialCleanup() async {
     try {
       if (kDebugMode) {
-        log('🧹 [$_tag] Performing initial cache cleanup...');
       }
 
       // Get current sizes
@@ -76,13 +71,11 @@ class AppCacheManager extends GetxService {
         await CacheCleanupService.performCleanup(force: true);
 
         if (kDebugMode) {
-          log('✅ [$_tag] Initial cleanup completed');
           await logCacheStatus();
         }
       }
     } catch (e) {
       if (kDebugMode) {
-        log('❌ [$_tag] Initial cleanup failed: $e');
       }
     }
   }
@@ -123,18 +116,11 @@ class AppCacheManager extends GetxService {
       final status = await getCacheStatus();
 
       if (kDebugMode) {
-        log('📊 [$_tag] Cache Status:');
-        log('   Total Cache: ${(status['total_cache_mb'] ?? 0).toStringAsFixed(2)}MB / ${targets.cacheSizeMB}MB');
-        log('   API Cache: ${(status['api_cache_mb'] ?? 0).toStringAsFixed(2)}MB');
-        log('   Image Cache: ${(status['image_cache_mb'] ?? 0).toStringAsFixed(2)}MB');
-        log('   Auth Storage: ${(status['auth_storage_kb'] ?? 0).toStringAsFixed(2)}KB');
 
         final withinLimits = status['within_limits'] as Map<String, dynamic>? ?? {};
-        log('   Within Limits: ${withinLimits.values.every((v) => v == true) ? "✅" : "❌"}');
       }
     } catch (e) {
       if (kDebugMode) {
-        log('❌ [$_tag] Failed to log cache status: $e');
       }
     }
   }
@@ -143,7 +129,6 @@ class AppCacheManager extends GetxService {
   static Future<void> aggressiveCleanup() async {
     try {
       if (kDebugMode) {
-        log('🧹 [$_tag] Performing aggressive cleanup...');
       }
 
       // 1. Clear all caches
@@ -155,12 +140,10 @@ class AppCacheManager extends GetxService {
       await CacheCleanupService.performCleanup(force: true);
 
       if (kDebugMode) {
-        log('✅ [$_tag] Aggressive cleanup completed');
         await logCacheStatus();
       }
     } catch (e) {
       if (kDebugMode) {
-        log('❌ [$_tag] Aggressive cleanup failed: $e');
       }
     }
   }
@@ -195,7 +178,6 @@ class AppCacheManager extends GetxService {
   static Future<void> emergencyCleanup() async {
     try {
       if (kDebugMode) {
-        log('🚨 [$_tag] Emergency cleanup initiated!');
       }
 
       // Clear everything aggressively
@@ -207,17 +189,14 @@ class AppCacheManager extends GetxService {
         PaintingBinding.instance.imageCache.clearLiveImages();
       } catch (e) {
         if (kDebugMode) {
-          log('❌ [$_tag] Failed to clear Flutter image cache: $e');
         }
       }
 
       if (kDebugMode) {
-        log('✅ [$_tag] Emergency cleanup completed');
         await logCacheStatus();
       }
     } catch (e) {
       if (kDebugMode) {
-        log('❌ [$_tag] Emergency cleanup failed: $e');
       }
     }
   }

@@ -4,7 +4,6 @@
 library;
 
 import 'dart:async';
-import 'dart:developer';
 import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -29,30 +28,24 @@ class DeepLinkService extends GetxService {
   /// Initialize deep linking and set up listeners
   Future<void> _initializeDeepLinking() async {
     try {
-      log('🔗 DeepLinkService: Initializing enhanced deep linking...');
       
       // Check for initial link if app was launched via deep link
       final initialLink = await _appLinks.getInitialLink();
       if (initialLink != null) {
-        log('📱 DeepLinkService: App launched with initial link: $initialLink');
         await _handleDeepLink(initialLink);
       }
       
       // Listen for incoming deep links while app is running
       _linkSubscription = _appLinks.uriLinkStream.listen(
         (Uri uri) {
-          log('📱 DeepLinkService: Received deep link: $uri');
           _handleDeepLink(uri);
         },
         onError: (err) {
-          log('❌ DeepLinkService: Error listening to deep links: $err');
         },
       );
       
-      log('✅ DeepLinkService: Enhanced deep linking initialized successfully');
       
     } catch (e) {
-      log('❌ DeepLinkService: Failed to initialize deep linking: $e');
     }
   }
 
@@ -63,11 +56,6 @@ class DeepLinkService extends GetxService {
   /// Handle incoming deep links and route to appropriate handlers
   Future<void> _handleDeepLink(Uri uri) async {
     try {
-      log('🔍 DeepLinkService: Processing deep link: ${uri.toString()}');
-      log('   - Scheme: ${uri.scheme}');
-      log('   - Host: ${uri.host}');
-      log('   - Path: ${uri.path}');
-      log('   - Query params: ${uri.queryParameters}');
       
       // Handle different types of deep links
       if (_isEmailVerificationLink(uri)) {
@@ -75,12 +63,10 @@ class DeepLinkService extends GetxService {
       } else if (_isPasswordResetLink(uri)) {
         await _handlePasswordResetLink(uri);
       } else {
-        log('⚠️ DeepLinkService: Unknown deep link type: ${uri.toString()}');
         _handleGenericLink(uri);
       }
       
     } catch (e) {
-      log('❌ DeepLinkService: Error handling deep link: $e');
       Get.snackbar(
         'Link Error',
         'Unable to process the link. Please try again.',
@@ -125,8 +111,6 @@ class DeepLinkService extends GetxService {
   /// Handle email verification deep links with enhanced JWT token workflow
   Future<void> _handleEmailVerificationLink(Uri uri) async {
     try {
-      log('📧 DeepLinkService: Processing email verification link with enhanced JWT workflow');
-      log('   - Link: ${uri.toString()}');
       
       // Show processing indicator
       _showProcessingDialog('Verifying your email and checking status...');
@@ -145,7 +129,6 @@ class DeepLinkService extends GetxService {
         return;
       }
       
-      log('🔍 DeepLinkService: User is authenticated, calling enhanced verification status API...');
       
       // Call enhanced verification status API (with JWT token support)
       final success = await authController.checkVerificationStatus();
@@ -153,15 +136,12 @@ class DeepLinkService extends GetxService {
       _closeProcessingDialog();
       
       if (success) {
-        log('✅ DeepLinkService: Email verification and auto-login successful');
         // Success is handled by AuthController - it will save tokens, navigate and show messages
       } else {
-        log('❌ DeepLinkService: Verification check failed, expired, or user not verified');
         // Failure cases are handled by AuthController with appropriate navigation
       }
       
     } catch (e) {
-      log('❌ DeepLinkService: Error processing enhanced email verification: $e');
       _closeProcessingDialog();
       _showErrorSnackbar(
         'Verification Failed', 
@@ -180,7 +160,6 @@ class DeepLinkService extends GetxService {
   /// Handle password reset deep links
   Future<void> _handlePasswordResetLink(Uri uri) async {
     try {
-      log('🔑 DeepLinkService: Processing password reset link');
       
       final token = uri.queryParameters['token'];
       final uid = uri.queryParameters['uid'];
@@ -198,7 +177,6 @@ class DeepLinkService extends GetxService {
       });
       
     } catch (e) {
-      log('❌ DeepLinkService: Error processing password reset: $e');
     }
   }
 
@@ -208,7 +186,6 @@ class DeepLinkService extends GetxService {
   
   /// Handle generic deep links (navigation, etc.)
   void _handleGenericLink(Uri uri) {
-    log('🔗 DeepLinkService: Handling generic link: ${uri.toString()}');
     
     // Navigate based on authentication status
     final authController = Get.find<AuthController>();

@@ -1,4 +1,3 @@
-import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -159,7 +158,6 @@ class MyRequests extends StatelessWidget {
   Widget _buildCancelButton(RequestModel request) {
     return GestureDetector(
       onTap: () {
-        log("Cancel it");
         if (request.status != RequestStatus.complete) {
           Get.dialog(
             CancelDialog(

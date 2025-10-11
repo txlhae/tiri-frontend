@@ -1,7 +1,6 @@
 // lib/services/auth_storage.dart
 
 import 'dart:convert';
-import 'dart:developer';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -241,7 +240,6 @@ class AuthStorage {
       return totalSize / 1024.0; // Convert to KB
     } catch (e) {
       if (kDebugMode) {
-        log('Failed to calculate storage size: $e');
       }
       return 0.0;
     }
@@ -283,12 +281,10 @@ class AuthStorage {
       final sizeAfter = await getStorageSizeKB();
 
       if (kDebugMode) {
-        log('AuthStorage cleanup: removed $removedCount keys, '
             'size reduced from ${sizeBefore.toStringAsFixed(2)}KB to ${sizeAfter.toStringAsFixed(2)}KB');
       }
     } catch (e) {
       if (kDebugMode) {
-        log('AuthStorage cleanup failed: $e');
       }
     }
   }

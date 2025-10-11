@@ -4,7 +4,6 @@ library;
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'dart:developer';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import '../../config/api_config.dart';
@@ -77,7 +76,6 @@ class ApiClient {
     _isInitialized = true;
 
     if (kDebugMode) {
-      log('🚀 ApiClient initialized with base URL: $_baseUrl');
     }
   }
 
@@ -100,7 +98,6 @@ class ApiClient {
     }
 
     if (kDebugMode) {
-      log('🔐 Auth token ${token != null ? 'set' : 'removed'}');
     }
   }
 
@@ -115,7 +112,6 @@ class ApiClient {
     }
 
     if (kDebugMode) {
-      log('🔄 Base URL updated to: $newBaseUrl');
     }
   }
 
@@ -449,7 +445,6 @@ class ApiClient {
     _isInitialized = false;
 
     if (kDebugMode) {
-      log('🔄 ApiClient reset');
     }
   }
 
@@ -467,11 +462,9 @@ class ApiClient {
       ));
 
       if (kDebugMode) {
-        log('💾 Cache interceptor added with ${maxCacheSizeMB}MB limit');
       }
     } catch (e) {
       if (kDebugMode) {
-        log('❌ Failed to setup cache: $e');
       }
     }
   }
@@ -498,11 +491,9 @@ class ApiClient {
       }
 
       if (kDebugMode) {
-        log('🗑️ API cache cleared');
       }
     } catch (e) {
       if (kDebugMode) {
-        log('❌ Failed to clear cache: $e');
       }
     }
   }
@@ -523,7 +514,6 @@ class ApiClient {
       return totalSize / (1024 * 1024); // Convert to MB
     } catch (e) {
       if (kDebugMode) {
-        log('❌ Failed to get cache size: $e');
       }
       return 0.0;
     }

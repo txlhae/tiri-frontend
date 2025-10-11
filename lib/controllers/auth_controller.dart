@@ -4,7 +4,6 @@
 
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer';
 import 'dart:math' as math;
 
 import 'package:country_picker/country_picker.dart';
@@ -551,37 +550,30 @@ class AuthController extends GetxController {
   /// Logout current user - Bulletproof version
   /// 🚨 ENHANCED: Proper token cleanup with maximum error protection
   Future<void> logout() async {
-    log('🔐 Starting logout process...');
 
     // Set loading state safely
     try {
       isLoading.value = true;
     } catch (e) {
-      log('Error setting loading state: $e');
     }
 
     // Force clear reactive state FIRST - this is most critical
     try {
       currentUserStore(null);  // Using () instead of .value =
       isLoggedIn(false);       // Using () instead of .value =
-      log('✅ Cleared reactive state');
     } catch (e) {
-      log('❌ Error clearing reactive state: $e');
       // Try alternative approach
       try {
         currentUserStore.value = null;
         isLoggedIn.value = false;
       } catch (e2) {
-        log('❌ Error with fallback reactive state clear: $e2');
       }
     }
 
     // Navigate to login immediately to prevent UI issues
     try {
       Get.offAllNamed(Routes.loginPage);
-      log('✅ Navigation completed');
     } catch (e) {
-      log('❌ Error during navigation: $e');
     }
 
     // Try to show success message (but don't fail if it doesn't work)
@@ -594,7 +586,6 @@ class AuthController extends GetxController {
         colorText: Colors.white,
       );
     } catch (e) {
-      log('❌ Error showing logout message: $e');
     }
 
     // Clean up in background (these can fail without affecting UX)
@@ -604,47 +595,36 @@ class AuthController extends GetxController {
   /// Background cleanup that can fail without affecting logout UX
   Future<void> _performBackgroundCleanup() async {
     try {
-      log('🧹 Starting background cleanup...');
 
       // Try API logout call
       try {
         await _authService.logout();
-        log('✅ API logout completed');
       } catch (e) {
-        log('❌ API logout failed: $e');
       }
 
       // Clear storage
       try {
         await _clearUserData();
-        log('✅ User data cleared');
       } catch (e) {
-        log('❌ Error clearing user data: $e');
       }
 
       // Clear tokens
       try {
         await _apiService.clearTokens();
-        log('✅ API tokens cleared');
       } catch (e) {
-        log('❌ Error clearing API tokens: $e');
       }
 
       // Clear user state
       try {
         await _userStateService.clearState();
-        log('✅ User state cleared');
       } catch (e) {
-        log('❌ Error clearing user state: $e');
       }
 
     } catch (e) {
-      log('❌ Background cleanup error: $e');
     } finally {
       try {
         isLoading.value = false;
       } catch (e) {
-        log('❌ Error clearing loading state: $e');
       }
     }
   }
@@ -691,15 +671,11 @@ class AuthController extends GetxController {
   /// REWRITTEN: Based on exact API response format provided
   Map<String, dynamic> _mapDjangoUserToFlutter(dynamic apiResponse) {
     if (apiResponse is! Map) {
-      log('❌ [MAPPING] Invalid API response type: ${apiResponse.runtimeType}');
       return {};
     }
 
     final userMap = apiResponse as Map<String, dynamic>;
 
-    log('🔧 [MAPPING] === Processing API Response ===');
-    log('🔧 [MAPPING] total_hours_helped: ${userMap['total_hours_helped']} (${userMap['total_hours_helped'].runtimeType})');
-    log('🔧 [MAPPING] average_rating: ${userMap['average_rating']} (${userMap['average_rating'].runtimeType})');
 
     // Extract values with explicit type checking
     final hoursValue = userMap['total_hours_helped'];
@@ -738,9 +714,6 @@ class AuthController extends GetxController {
           : null,
     };
 
-    log('🔧 [MAPPING] === Final Mapped Data ===');
-    log('🔧 [MAPPING] hours: ${mappedData['hours']} (${mappedData['hours'].runtimeType})');
-    log('🔧 [MAPPING] rating: ${mappedData['rating']} (${mappedData['rating'].runtimeType})');
 
     return mappedData;
   }
@@ -1854,7 +1827,6 @@ class AuthController extends GetxController {
         // Use cached data as-is without fetching fresh profile data
         // Profile page will fetch fresh data when needed
         currentUserStore.value = cachedUser;
-        log('✅ [RELOAD TOKENS] Using cached user data (profile page will fetch fresh data when needed)');
         
         // Try to validate the token by checking verification status
         try {

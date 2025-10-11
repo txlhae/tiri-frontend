@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:tiri/controllers/auth_controller.dart';
@@ -48,42 +47,34 @@ class _PendingApprovalScreenState extends State<PendingApprovalScreen>
 
   void _checkApprovalStatus() async {
     try {
-      log('🔍 PendingApprovalScreen: Check Status button clicked');
       
       // Use checkVerificationStatus which returns full approval info  
       final isApproved = await authController.checkVerificationStatus();
       
-      log('📊 PendingApprovalScreen: checkVerificationStatus returned: $isApproved');
       
       if (isApproved) {
         // User is approved! 
-        log('✅ PendingApprovalScreen: User approved');
         
         // The checkVerificationStatus method handles all navigation and notifications
         
       } else {
         // User is not approved yet - check for other status changes
-        log('⏳ PendingApprovalScreen: Still not approved, checking status: ${authController.approvalStatus.value}');
         
         // Handle rejection or expiration cases
         switch (authController.approvalStatus.value) {
           case 'rejected':
-            log('❌ PendingApprovalScreen: User rejected - navigating to rejection screen');
             Get.offAllNamed(Routes.rejectionScreen);
             break;
           case 'expired':
-            log('⏰ PendingApprovalScreen: Approval expired - navigating to expired screen');
             Get.offAllNamed(Routes.expiredScreen);
             break;
           case 'pending':
           default:
             // Still pending, stay on current screen
-            log('⏳ PendingApprovalScreen: Still pending approval');
             break;
         }
       }
     } catch (e) {
-      log('❌ PendingApprovalScreen: Error in _checkApprovalStatus: $e');
       
       // Show user-friendly error
       Get.snackbar(

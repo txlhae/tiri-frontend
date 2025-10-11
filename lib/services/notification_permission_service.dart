@@ -1,4 +1,3 @@
-import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -17,17 +16,13 @@ class NotificationPermissionService {
       final hasRequestedBefore = prefs.getBool(_permissionRequestedKey) ?? false;
 
       if (!hasRequestedBefore) {
-        log('NotificationPermissionService: First launch detected, requesting notification permission');
 
         await _showPermissionDialog();
 
         await prefs.setBool(_permissionRequestedKey, true);
-        log('NotificationPermissionService: Permission request completed');
       } else {
-        log('NotificationPermissionService: Permission already requested before');
       }
     } catch (e) {
-      log('NotificationPermissionService: Error requesting permission: $e');
     }
   }
 
@@ -88,7 +83,6 @@ class NotificationPermissionService {
           TextButton(
             onPressed: () {
               Navigator.pop(Get.context!);
-              log('NotificationPermissionService: User declined notification permission');
             },
             child: const Text(
               'Not Now',
@@ -123,7 +117,6 @@ class NotificationPermissionService {
       
       switch (status) {
         case PermissionStatus.granted:
-          log('NotificationPermissionService: Notification permission granted');
           Get.snackbar(
             'Notifications Enabled',
             'You will now receive important updates',
@@ -134,17 +127,13 @@ class NotificationPermissionService {
           );
           break;
         case PermissionStatus.denied:
-          log('NotificationPermissionService: Notification permission denied');
           break;
         case PermissionStatus.permanentlyDenied:
-          log('NotificationPermissionService: Notification permission permanently denied');
           _showSettingsDialog();
           break;
         default:
-          log('NotificationPermissionService: Notification permission status: $status');
       }
     } catch (e) {
-      log('NotificationPermissionService: Error requesting permissions: $e');
     }
   }
 
@@ -166,13 +155,10 @@ class NotificationPermissionService {
       await _notificationsPlugin.initialize(
         initializationSettings,
         onDidReceiveNotificationResponse: (details) {
-          log('NotificationPermissionService: Notification tapped: ${details.payload}');
         },
       );
       
-      log('NotificationPermissionService: Local notifications initialized');
     } catch (e) {
-      log('NotificationPermissionService: Error initializing local notifications: $e');
     }
   }
 
@@ -217,9 +203,7 @@ class NotificationPermissionService {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_permissionRequestedKey);
-      log('NotificationPermissionService: Permission request flag reset');
     } catch (e) {
-      log('NotificationPermissionService: Error resetting permission request: $e');
     }
   }
 }

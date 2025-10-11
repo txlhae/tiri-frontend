@@ -1,5 +1,4 @@
 // File: lib/screens/profile_screen.dart
-import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
@@ -70,13 +69,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         );
 
         shownUser.value = freshUser;
-        log('✅ Fresh data loaded: hours=${freshUser.hours}, rating=${freshUser.rating}, referralCode=${freshUser.referralCode}');
       }
 
       // Fetch feedback
       await requestController.fetchProfileFeedback(targetUserId);
     } catch (e) {
-      log('Profile load error: $e');
     }
   }
 
@@ -167,7 +164,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 GestureDetector(
                                   behavior: HitTestBehavior.opaque,
                                   onTap: () async {
-                                    log("Edit");
                                     Get.dialog(EditDialog(
                                         user: authController.currentUserStore.value!));
                                   },
@@ -287,10 +283,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                           GestureDetector(
                                             onTap: () {
                                               // Debug logging
-                                              log('Profile Screen - Opening QR Dialog');
-                                              log('User data: userId=${user.userId}, referralCode=${user.referralCode}');
-                                              log('User ID: ${user.userId}');
-                                              log('Referral Code: ${user.referralCode}');
 
                                               Get.dialog(QrCodeDialog(
                                                 referralCode: user.referralCode?.toString() ?? 'null',
@@ -512,7 +504,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   ),
                                   const SizedBox(height: 15),
                                   Obx(() {
-                                    log('📝 Profile Screen: profileFeedbackList length: ${requestController.profileFeedbackList.length}');
 
                                     if (requestController.profileFeedbackList.isEmpty) {
                                       return const Padding(
@@ -1182,7 +1173,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     try {
       final currentUserId = authController.currentUserStore.value?.userId;
       if (currentUserId == null) {
-        log('❌ [PROFILE CHAT] No current user ID available');
         Get.snackbar(
           'Error',
           'Unable to get current user information',
@@ -1192,11 +1182,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         return;
       }
 
-      log('🔍 [PROFILE CHAT] Starting chat creation...');
-      log('🔍 [PROFILE CHAT] Current User ID: $currentUserId');
-      log('🔍 [PROFILE CHAT] Target User ID: ${user.userId}');
-      log('🔍 [PROFILE CHAT] Target User Name: ${user.username}');
-      log('🔍 [PROFILE CHAT] User Role: DIRECT MESSAGE (no service request)');
 
       // Show loading indicator
       Get.dialog(
@@ -1210,8 +1195,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       // Create or get chat room using existing ChatController
       final chatController = Get.put(ChatController());
-      log('🔍 [PROFILE CHAT] About to call createOrGetChatRoom...');
-      log('🔍 [PROFILE CHAT] Parameters: userA=$currentUserId, userB=${user.userId}, serviceRequestId=null');
 
       final roomId = await chatController.createOrGetChatRoom(
         currentUserId,
@@ -1219,15 +1202,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         // No serviceRequestId for direct messaging
       );
 
-      log('✅ [PROFILE CHAT] Chat room created successfully: $roomId');
-      log('🔍 [PROFILE CHAT] Room ID length: ${roomId.length}');
 
       // Close loading dialog
       Get.back();
 
       // Navigate to chat page
-      log('🔍 [PROFILE CHAT] Navigating to chat page...');
-      log('🔍 [PROFILE CHAT] Chat arguments: roomId=$roomId, receiverId=${user.userId}, receiverName=${user.username}');
 
       Get.toNamed(
         Routes.chatPage,
@@ -1239,12 +1218,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         },
       );
 
-      log('✅ [PROFILE CHAT] Successfully navigated to chat page');
 
     } catch (e) {
-      log('❌ [PROFILE CHAT] Error in _openChatWithUser: $e');
-      log('❌ [PROFILE CHAT] Error type: ${e.runtimeType}');
-      log('❌ [PROFILE CHAT] Stack trace: ${StackTrace.current}');
 
       // Close loading dialog if still open
       if (Get.isDialogOpen ?? false) {

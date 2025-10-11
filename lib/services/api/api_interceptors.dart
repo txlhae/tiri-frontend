@@ -4,7 +4,6 @@ library;
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'dart:developer';
 import '../exceptions/api_exceptions.dart';
 
 /// Request interceptor for adding authentication headers and logging
@@ -35,7 +34,6 @@ class RequestInterceptor extends Interceptor {
     } catch (e) {
       // If there's an error in the interceptor, log it and continue
       if (kDebugMode) {
-        log('$_tag Error in onRequest: $e');
       }
       handler.next(options);
     }
@@ -75,21 +73,17 @@ class RequestInterceptor extends Interceptor {
   /// Log request details
   void _logRequest(RequestOptions options) {
     final requestId = options.extra['request_id'];
-    log('🚀 [$_tag] [$requestId] ${options.method} ${options.uri}');
     
     if (options.queryParameters.isNotEmpty) {
-      log('📋 [$_tag] [$requestId] Query: ${options.queryParameters}');
     }
     
     if (options.data != null) {
-      log('📦 [$_tag] [$requestId] Data: ${_sanitizeLogData(options.data)}');
     }
     
     if (options.headers.isNotEmpty) {
       final sanitizedHeaders = Map<String, dynamic>.from(options.headers);
       // Remove sensitive headers from logs
       sanitizedHeaders.remove('Authorization');
-      log('📝 [$_tag] [$requestId] Headers: $sanitizedHeaders');
     }
   }
 
@@ -152,7 +146,6 @@ class ResponseInterceptor extends Interceptor {
     } catch (e) {
       // If there's an error in the interceptor, log it and continue
       if (kDebugMode) {
-        log('$_tag Error in onResponse: $e');
       }
       handler.next(response);
     }
@@ -172,11 +165,9 @@ class ResponseInterceptor extends Interceptor {
     final requestId = response.requestOptions.extra['request_id'];
     final durationText = duration != null ? ' (${duration}ms)' : '';
     
-    log('✅ [$_tag] [$requestId] ${response.statusCode} ${response.requestOptions.method} ${response.requestOptions.uri}$durationText');
     
     if (response.data != null) {
       final dataPreview = _getDataPreview(response.data);
-      log('📦 [$_tag] [$requestId] Response: $dataPreview');
     }
   }
 
@@ -241,7 +232,6 @@ class ErrorInterceptor extends Interceptor {
     } catch (e) {
       // If there's an error in the interceptor, log it and continue with original error
       if (kDebugMode) {
-        log('$_tag Error in onError: $e');
       }
       handler.next(err);
     }
@@ -252,11 +242,8 @@ class ErrorInterceptor extends Interceptor {
     final requestId = err.requestOptions.extra['request_id'];
     final durationText = duration != null ? ' (${duration}ms)' : '';
     
-    log('❌ [$_tag] [$requestId] ${err.response?.statusCode ?? 'NO_STATUS'} ${err.requestOptions.method} ${err.requestOptions.uri}$durationText');
-    log('❌ [$_tag] [$requestId] Error: ${err.type} - ${err.message}');
     
     if (err.response?.data != null) {
-      log('❌ [$_tag] [$requestId] Response Data: ${err.response!.data}');
     }
   }
 
@@ -389,7 +376,6 @@ class RetryInterceptor extends Interceptor {
         
         if (kDebugMode) {
           final requestId = err.requestOptions.extra['request_id'];
-          log('🔄 [$_tag] [$requestId] Retry attempt ${retryCount + 1}/$maxRetries after ${delay.inMilliseconds}ms');
         }
         
         // Wait before retrying
@@ -403,7 +389,6 @@ class RetryInterceptor extends Interceptor {
       } catch (e) {
         // If retry fails, continue with original error
         if (kDebugMode) {
-          log('❌ [$_tag] Retry failed: $e');
         }
       }
     }

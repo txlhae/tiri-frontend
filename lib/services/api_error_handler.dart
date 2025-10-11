@@ -1,6 +1,5 @@
 // lib/services/api_error_handler.dart
 
-import 'dart:developer';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -19,7 +18,6 @@ class ApiErrorHandler {
 
   /// Handle authentication-related errors and return user-friendly messages
   static String handleAuthError(int statusCode, Map<String, dynamic>? errorBody) {
-    log('🚨 ApiErrorHandler: Handling auth error - Status: $statusCode, Body: $errorBody');
 
     switch (statusCode) {
       case 400:
@@ -166,7 +164,6 @@ class ApiErrorHandler {
   /// Handle token expiry by clearing local data and redirecting
   static void _handleTokenExpiry() async {
     try {
-      log('🧹 ApiErrorHandler: Handling token expiry - clearing auth data');
       await AuthStorage.clearAuthData();
 
       // Navigate to login screen
@@ -182,14 +179,12 @@ class ApiErrorHandler {
         duration: const Duration(seconds: 4),
       );
     } catch (e) {
-      log('❌ ApiErrorHandler: Error handling token expiry: $e');
     }
   }
 
   /// Handle account deletion scenarios
   static void _handleAccountDeletion() async {
     try {
-      log('🧹 ApiErrorHandler: Handling account deletion - clearing auth data');
       await AuthStorage.clearAuthData();
 
       // Navigate to login screen
@@ -219,7 +214,6 @@ class ApiErrorHandler {
         barrierDismissible: false,
       );
     } catch (e) {
-      log('❌ ApiErrorHandler: Error handling account deletion: $e');
     }
   }
 
@@ -229,7 +223,6 @@ class ApiErrorHandler {
       final response = error.response;
       final statusCode = response?.statusCode ?? 0;
 
-      log('🚨 ApiErrorHandler: Extracting error - Type: ${error.type}, Status: $statusCode');
 
       // Handle network errors
       if (error.type == DioExceptionType.connectionTimeout ||
@@ -261,7 +254,6 @@ class ApiErrorHandler {
 
       return 'Network error. Please try again';
     } catch (e) {
-      log('❌ ApiErrorHandler: Error extracting message: $e');
       return 'An unexpected error occurred';
     }
   }

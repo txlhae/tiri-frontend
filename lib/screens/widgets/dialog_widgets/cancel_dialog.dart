@@ -1,4 +1,3 @@
-import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -106,7 +105,6 @@ class _CancelDialogState extends State<CancelDialog> {
 
                       final isRequester =  widget.request.userId == currentUserId;
 
-                      log(isAcceptedUser
                           ? "Inside your helps"
                           : "Inside not User");
                       if (isRequester) {
@@ -141,7 +139,6 @@ class _CancelDialogState extends State<CancelDialog> {
                           numberOfPeople: widget.request.numberOfPeople,
                           hoursNeeded: widget.request.hoursNeeded
                         );
-                        log("Updated Request Data: ${requestUpdate.toJson()}");
 
                         await requestController.controllerUpdateRequest(
                             widget.request.requestId, requestUpdate);
@@ -188,7 +185,6 @@ class _CancelDialogState extends State<CancelDialog> {
 
                       Get.back();
                     } catch (e) {
-                      log("Error canceling request: $e");
                       Get.snackbar("Error",
                           "Failed to cancel request. Please try again.");
                     }
@@ -200,7 +196,6 @@ class _CancelDialogState extends State<CancelDialog> {
                 child: CustomCancel(
                   buttonText: 'No',
                   onButtonPressed: () {
-                    log("No");
                     Get.back();
                   },
                 ),

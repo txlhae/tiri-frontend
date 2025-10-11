@@ -1,4 +1,3 @@
-import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -219,8 +218,6 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
 
   Future<void> _processQrCode(String qrData) async {
     try {
-      log('Processing QR data: $qrData');
-      log('Scanner mode: $mode');
 
       // Parse QR code data (expecting format like "REFERRAL:JU5NB36B:214f1153-6e37-416b-86a2-72e392b84881")
       Map<String, String> parsedData = _parseQrData(qrData);
@@ -235,14 +232,12 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
       } else {
         // Default mode - navigate to user profile
         if (parsedData['userId'] != null) {
-          log("Scanned user UUID: ${parsedData['userId']}");
           await _navigateToUserProfile(parsedData['userId']!);
         } else {
           _showErrorAndGoBack('This QR code does not contain valid user information.');
         }
       }
     } catch (e) {
-      log("Error processing QR code: $e");
       _showErrorAndGoBack('Failed to process QR code. Please try again.');
     }
   }
@@ -250,12 +245,10 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
   /// Handle referral code (same logic as verify button in referral dialog)
   Future<void> _handleReferralCode(String referralCode) async {
     try {
-      log("Processing referral code: $referralCode");
 
       final user = await authController.fetchUserByReferralCode(referralCode);
 
       if (user != null) {
-        log("User is: ${user.toString()}");
         authController.referredUid.value = user.userId;
         authController.referredUser.value = user.username;
 
@@ -274,7 +267,6 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
         _showErrorAndGoBack('Not a valid referral code');
       }
     } catch (e) {
-      log("Error processing referral code: $e");
       _showErrorAndGoBack('Not a valid referral code');
     }
   }
@@ -312,7 +304,6 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
         Get.back(); // Close scanner
         Get.to(() => ProfileScreen(user: user));
 
-        log('✅ Successfully navigated to user profile: ${user.username}');
 
         // Show success message
         Get.snackbar(
@@ -327,7 +318,6 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
         _showErrorAndGoBack('User not found');
       }
     } catch (e) {
-      log('Error fetching user profile: $e');
       _showErrorAndGoBack('Failed to load user profile');
     }
   }
@@ -352,7 +342,6 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
         }
       }
     } catch (e) {
-      log("Error parsing QR data: $e");
     }
     
     return result;

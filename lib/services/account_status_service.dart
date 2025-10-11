@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/auth_models.dart';
 
@@ -80,9 +79,7 @@ class AccountStatusService {
         value: DateTime.now().toIso8601String(),
       );
       
-      log('Account status cached locally', name: 'ACCOUNT_STATUS');
     } catch (e) {
-      log('Error storing account status: $e', name: 'ACCOUNT_STATUS');
     }
   }
 
@@ -106,11 +103,9 @@ class AccountStatusService {
       }
       
       final statusData = jsonDecode(statusString) as Map<String, dynamic>;
-      log('Retrieved cached account status: ${statusData['status']}', name: 'ACCOUNT_STATUS');
       
       return statusData;
     } catch (e) {
-      log('Error retrieving stored account status: $e', name: 'ACCOUNT_STATUS');
       return null;
     }
   }
@@ -120,9 +115,7 @@ class AccountStatusService {
     try {
       await _secureStorage.delete(key: _accountStatusKey);
       await _secureStorage.delete(key: _lastStatusCheckKey);
-      log('Account status cache cleared', name: 'ACCOUNT_STATUS');
     } catch (e) {
-      log('Error clearing account status: $e', name: 'ACCOUNT_STATUS');
     }
   }
 
@@ -178,7 +171,6 @@ class AccountStatusService {
       // Show warning if deletion is within 48 hours
       return timeUntilDeletion.inHours <= 48 && timeUntilDeletion.inHours > 0;
     } catch (e) {
-      log('Error parsing deletion date: $e', name: 'ACCOUNT_STATUS');
       return false;
     }
   }
@@ -200,7 +192,6 @@ class AccountStatusService {
         return 'Less than a minute';
       }
     } catch (e) {
-      log('Error calculating time until deletion: $e', name: 'ACCOUNT_STATUS');
       return 'Soon';
     }
   }

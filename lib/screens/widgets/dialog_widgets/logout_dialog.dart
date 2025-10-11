@@ -1,4 +1,3 @@
-import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -72,7 +71,6 @@ class LogoutDialog extends StatelessWidget {
                 child: CustomCancel(
                   buttonText: 'Cancel',
                   onButtonPressed: () {
-                    log("No");
                     Get.back();
                   },
                 ),

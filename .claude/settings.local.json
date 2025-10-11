@@ -44,7 +44,17 @@
       "Bash(open:*)",
       "Bash(echo $PATH)",
       "Bash(fvm flutter:*)",
-      "Bash(sips:*)"
+      "Bash(sips:*)",
+      "Bash(while read file)",
+      "Bash(do python3 /tmp/remove_logs.py \"$file\" done)",
+      "Bash(tee:*)",
+      "Bash(do python3 /tmp/remove_logs.py \"$file\")",
+      "Bash(done)",
+      "Bash(do echo \"Processing $file...\")",
+      "Bash($HOME/flutter/bin/flutter analyze:*)",
+      "Bash(~/flutter/bin/flutter analyze --no-fatal-infos)",
+      "Bash(~/flutter/bin/flutter analyze)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",

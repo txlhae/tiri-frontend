@@ -1,4 +1,3 @@
-import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -35,7 +34,6 @@ class _EditDialogState extends State<EditDialog> {
   @override
   Widget build(BuildContext context) {
     String image = widget.user.imageUrl ?? '';
-    log(authController.isloading.value.toString());
     
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;

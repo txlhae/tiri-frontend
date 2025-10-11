@@ -1,4 +1,3 @@
-import 'dart:developer';
 import 'package:get/get.dart';
 import 'package:tiri/controllers/request_controller.dart';
 import 'package:tiri/models/request_model.dart';
@@ -29,18 +28,14 @@ class RequestDetailsController extends GetxController {
       // Get current request ID from RequestController
       final currentRequest = _requestController.currentRequestDetails.value;
       if (currentRequest != null) {
-        log('🔄 RequestDetailsController: Refreshing data for request ${currentRequest.requestId}');
         
         // Use RequestController's loadRequestDetails for consistency
         await _requestController.loadRequestDetails(currentRequest.requestId);
         
-        log('✅ RequestDetailsController: Successfully refreshed request details');
       } else {
-        log('⚠️  RequestDetailsController: No current request to refresh');
         throw Exception('No current request available to refresh');
       }
     } catch (e) {
-      log('💥 RequestDetailsController: Error refreshing data - $e');
       hasError.value = true;
       errorMessage.value = e.toString();
     } finally {

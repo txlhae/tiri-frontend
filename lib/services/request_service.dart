@@ -2,7 +2,6 @@
 // 🚨 FIXED: Django field mapping adapter for correct JSON parsing
 // Prompt 33.1 - CRITICAL FIX: Changed PUT to PATCH for status updates
 
-import 'dart:developer';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:get/get.dart';
@@ -32,14 +31,12 @@ class RequestService extends GetxController {
     required List<Map<String, dynamic>> feedbackList,
   }) async {
     try {
-      log('✅ RequestService: Submitting bulk feedback for request $requestId');
       
       final requestData = {
         'request_id': requestId,
         'feedback_list': feedbackList,
       };
       
-      log('📤 Feedback payload: $requestData');
       
       final response = await _apiService.post(
         '/api/feedback/bulk_submit/',
@@ -47,14 +44,11 @@ class RequestService extends GetxController {
       );
       
       if (response.statusCode == 200 || response.statusCode == 201) {
-        log('✅ RequestService: Bulk feedback submitted successfully');
         return response.data;
       } else {
-        log('❌ RequestService: Failed to submit feedback - Status: ${response.statusCode}');
         throw Exception('Failed to submit feedback: ${response.statusMessage}');
       }
     } catch (e) {
-      log('💥 RequestService: Error submitting bulk feedback - $e');
       rethrow;
     }
   }
@@ -62,7 +56,6 @@ class RequestService extends GetxController {
   /// Complete a request (mark as completed)
   Future<Map<String, dynamic>?> completeRequest(String requestId, {String? notes}) async {
     try {
-      log('✅ RequestService: Completing request $requestId');
       
       // Try with empty JSON object (some APIs expect valid JSON)
       final response = await _apiService.post(
@@ -71,13 +64,8 @@ class RequestService extends GetxController {
       );
       
       if (response.statusCode == 200 || response.statusCode == 201) {
-        log('✅ RequestService: Request completed successfully');
         return response.data;
       } else {
-        log('❌ RequestService: Failed to complete request - Status: ${response.statusCode}');
-        log('❌ RequestService: Response headers: ${response.headers}');
-        log('❌ RequestService: Response data: ${response.data}');
-        log('❌ RequestService: Status message: ${response.statusMessage}');
         
         // Extract error message from response if available
         String errorMessage = 'Failed to complete request';
@@ -92,7 +80,6 @@ class RequestService extends GetxController {
         throw Exception('$errorMessage (Status: ${response.statusCode})');
       }
     } catch (e) {
-      log('💥 RequestService: Error completing request - $e');
       rethrow;
     }
   }
@@ -100,18 +87,14 @@ class RequestService extends GetxController {
   /// Fetch requests where the current user is a volunteer (My Helps)
   Future<List<RequestModel>> fetchMyVolunteeredRequests() async {
     try {
-      log('🔍 [MyHelps] fetchMyVolunteeredRequests called');
       
       // Check if API service is authenticated before making request
       if (!_apiService.isAuthenticated) {
-        log('❌ [MyHelps] No authentication tokens - returning empty list');
         return [];
       }
 
       final response = await _apiService.get('/api/requests/?view=my_volunteering');
-      log('🔍 [MyHelps] API called: /api/requests/?view=my_volunteering, status: ${response.statusCode}');
       if (response.statusCode == 401) {
-        log('❌ [MyHelps] Unauthorized! User is not authenticated.');
         return [];
       }
       if (response.statusCode == 200 && response.data != null) {
@@ -119,31 +102,24 @@ class RequestService extends GetxController {
         final List<dynamic> requestsJson = responseData is Map ?
           (responseData['results'] ?? responseData['data'] ?? []) :
           (responseData is List ? responseData : []);
-        log('📥 [MyHelps] Raw Django my volunteered requests count: ${requestsJson.length}');
         final List<RequestModel> requests = requestsJson
             .map((djangoJson) {
               try {
                 final flutterJson = _mapDjangoToFlutter(djangoJson as Map<String, dynamic>);
                 return RequestModelExtension.fromJsonWithRequester(flutterJson);
               } catch (e) {
-                log('❌ [MyHelps] Error mapping request: $e');
                 return null;
               }
             })
             .whereType<RequestModel>()
             .toList();
-        log('✅ [MyHelps] Mapped ${requests.length} my volunteered requests');
         if (requests.isEmpty) {
-          log('⚠️ [MyHelps] No volunteered requests found for user.');
         }
         return requests;
       } else {
-        log('❌ [MyHelps] Failed to fetch my volunteered requests - Status: ${response.statusCode}, Data: ${response.data}');
         return [];
       }
     } catch (e, stack) {
-      log('💥 [MyHelps] Error fetching my volunteered requests - $e');
-      log('💥 [MyHelps] Stack trace: $stack');
       return [];
     }
   }
@@ -163,31 +139,21 @@ class RequestService extends GetxController {
   Map<String, dynamic> _mapDjangoToFlutter(Map<String, dynamic> djangoJson) {
     try {
       // 🔍 Debug: Log original Django structure
-      log('🔄 MAPPING Django JSON: ${djangoJson.keys.toList()}');
 
       // 🔍 COMPREHENSIVE DEBUG: Log volunteers_assigned structure
-      log('🚨 FULL DEBUG: Raw Django JSON keys: ${djangoJson.keys.toList()}');
-      log('🚨 FULL DEBUG: Raw volunteers_assigned: ${djangoJson['volunteers_assigned']}');
 
       if (djangoJson['volunteers_assigned'] is List) {
         final volunteersAssigned = djangoJson['volunteers_assigned'] as List;
-        log('🔍 volunteers_assigned count: ${volunteersAssigned.length}');
         for (int i = 0; i < volunteersAssigned.length; i++) {
           final va = volunteersAssigned[i];
-          log('🚨 RAW Volunteer $i: $va');
           if (va is Map) {
-            log('🔍 Volunteer $i: status=${va['status']}, volunteer_data=${va['volunteer']}');
-            log('🔍 Volunteer $i full_name: ${va['volunteer']?['full_name']}');
-            log('🔍 Volunteer $i username: ${va['volunteer']?['username']}');
           }
         }
       } else {
-        log('🚨 volunteers_assigned is NOT a List! Type: ${djangoJson['volunteers_assigned'].runtimeType}');
       }
 
       // 📋 Django → Flutter Field Mapping
       final mappedAcceptedUsers = _mapAcceptedUsers(djangoJson);
-      log('🎯 Final accepted users count: ${mappedAcceptedUsers.length}');
 
       final flutterJson = <String, dynamic>{
         // Core ID mapping
@@ -226,26 +192,17 @@ class RequestService extends GetxController {
         'completion_confirmed_by_requester': djangoJson['completion_confirmed_by_requester'],
       };
 
-      log('✅ MAPPED to Flutter: ${flutterJson.keys.toList()}');
-      log('✅ acceptedUser final count: ${mappedAcceptedUsers.length}');
-      log('🚨 FINAL FLUTTER JSON acceptedUser field: ${flutterJson['acceptedUser']}');
-      log('🚨 FINAL FLUTTER JSON acceptedUser type: ${flutterJson['acceptedUser'].runtimeType}');
 
       // Debug: Show entire final JSON structure for debugging
-      log('🚨 COMPLETE FINAL JSON STRUCTURE:');
       flutterJson.forEach((key, value) {
         if (key == 'acceptedUser') {
-          log('🚨   $key: $value (${value.runtimeType})');
         } else {
-          log('   $key: ${value.toString().length > 100 ? value.toString().substring(0, 100) + "..." : value}');
         }
       });
 
       return flutterJson;
       
     } catch (e) {
-      log('❌ MAPPING ERROR: $e');
-      log('Django JSON structure: $djangoJson');
       // Return minimal valid structure to prevent crashes
       return _createFallbackRequest(djangoJson);
     }
@@ -308,7 +265,6 @@ class RequestService extends GetxController {
       }
       return DateTime.now().toIso8601String();
     } catch (e) {
-      log('⚠️ DateTime parse error: $e');
       return DateTime.now().toIso8601String();
     }
   }
@@ -340,7 +296,6 @@ class RequestService extends GetxController {
       case 'incomplete':
         return 'incomplete';
       default:
-        log('⚠️ Unknown status from Django: $status, defaulting to pending');
         return 'pending';
     }
   }
@@ -352,18 +307,14 @@ class RequestService extends GetxController {
       // Handle Django volunteers_assigned structure: [{"volunteer": {...}, "status": "approved"}]
       if (djangoJson['volunteers_assigned'] is List) {
         final volunteersAssigned = djangoJson['volunteers_assigned'] as List;
-        log('🚨🚨 _mapAcceptedUsers: Processing ${volunteersAssigned.length} volunteer assignments');
-        log('🚨🚨 Raw volunteers_assigned: $volunteersAssigned');
 
         // Process each volunteer assignment
         final approvedVolunteers = <Map<String, dynamic>>[];
 
         for (int i = 0; i < volunteersAssigned.length; i++) {
           final volunteerAssignment = volunteersAssigned[i];
-          log('🚨🚨 Processing assignment $i: $volunteerAssignment');
 
           if (volunteerAssignment is! Map) {
-            log('⚠️ Assignment $i is not a Map: ${volunteerAssignment.runtimeType}');
             continue;
           }
 
@@ -371,33 +322,24 @@ class RequestService extends GetxController {
           final status = assignment['status'];
           final volunteerData = assignment['volunteer'];
 
-          log('🔍 Assignment $i - status: $status, volunteer: ${volunteerData != null ? "present" : "null"}');
 
           // Check if approved
           if (status == 'approved') {
-            log('✅ Assignment $i is APPROVED, processing volunteer data...');
 
             if (volunteerData is Map<String, dynamic>) {
               // Map the volunteer data to Flutter format
               final mappedVolunteer = _mapDjangoUserToFlutter(volunteerData);
-              log('✅ Mapped volunteer: $mappedVolunteer');
 
               if (mappedVolunteer.isNotEmpty) {
                 approvedVolunteers.add(mappedVolunteer);
-                log('✅ Added approved volunteer: ${mappedVolunteer['username']}');
               } else {
-                log('⚠️ Mapped volunteer is empty');
               }
             } else {
-              log('⚠️ Volunteer data is not a Map: ${volunteerData.runtimeType}');
             }
           } else {
-            log('❌ Assignment $i status is "$status", not approved - skipping');
           }
         }
 
-        log('🎯🎯 FINAL RESULT: ${approvedVolunteers.length} approved volunteers mapped');
-        log('🎯🎯 FINAL DATA: $approvedVolunteers');
         return approvedVolunteers;
       }
 
@@ -412,11 +354,8 @@ class RequestService extends GetxController {
             .toList();
       }
 
-      log('🔍 No volunteers_assigned, volunteers, or accepted_users found in JSON');
       return [];
     } catch (e) {
-      log('💥 Error mapping accepted users: $e');
-      log('💥 Django JSON volunteers_assigned: ${djangoJson['volunteers_assigned']}');
       return [];
     }
   }
@@ -425,13 +364,10 @@ class RequestService extends GetxController {
   /// FIXED: Updated to match exact JSON response structure
   Map<String, dynamic> _mapDjangoUserToFlutter(dynamic djangoUser) {
     if (djangoUser is! Map) {
-      log('⚠️ _mapDjangoUserToFlutter: djangoUser is not a Map: $djangoUser');
       return {};
     }
 
     final userMap = djangoUser as Map<String, dynamic>;
-    log('🔍 Mapping Django user: ${userMap.keys.toList()}');
-    log('🔍 Raw user data: $userMap');
 
     // Map according to actual JSON response structure
     final mappedUser = {
@@ -448,7 +384,6 @@ class RequestService extends GetxController {
       'isVerified': userMap['is_verified'] ?? false,
     };
 
-    log('✅ Mapped user successfully: ${mappedUser['username']} (ID: ${mappedUser['userId']})');
     return mappedUser;
   }
   
@@ -478,11 +413,9 @@ class RequestService extends GetxController {
   /// 🚨 ENHANCED: Now includes Django field mapping
   Future<List<RequestModel>> fetchRequests() async {
     try {
-      log('🔍 RequestService: Fetching community requests from Django API');
       
       // Check if API service is authenticated before making request
       if (!_apiService.isAuthenticated) {
-        log('❌ RequestService: No authentication tokens - returning empty list');
         return [];
       }
       
@@ -494,7 +427,6 @@ class RequestService extends GetxController {
           (responseData['results'] ?? responseData['data'] ?? []) : 
           (responseData is List ? responseData : []);
         
-        log('📥 Raw Django requests: ${requestsJson.length}');
         
         // 🎯 APPLY FIELD MAPPING
         final List<RequestModel> requests = requestsJson
@@ -504,16 +436,12 @@ class RequestService extends GetxController {
             })
             .toList();
         
-        log('✅ RequestService: Mapped ${requests.length} community requests');
-        log('📋 Sample mapped request: ${requests.isNotEmpty ? requests[0].title : 'None'}');
         
         return requests;
       } else {
-        log('❌ RequestService: Failed to fetch requests - Status: ${response.statusCode}');
         return [];
       }
     } catch (e) {
-      log('💥 RequestService: Error fetching requests - $e');
       return [];
     }
   }
@@ -522,11 +450,9 @@ class RequestService extends GetxController {
   /// 🚨 ENHANCED: Now includes Django field mapping  
   Future<List<RequestModel>> fetchMyRequests() async {
     try {
-      log('🔍 RequestService: Fetching user requests from Django API');
       
       // Check if API service is authenticated before making request
       if (!_apiService.isAuthenticated) {
-        log('❌ RequestService: No authentication tokens - returning empty list');
         return [];
       }
       
@@ -538,7 +464,6 @@ class RequestService extends GetxController {
           (responseData['results'] ?? responseData['data'] ?? []) : 
           (responseData is List ? responseData : []);
         
-        log('📥 Raw Django user requests: ${requestsJson.length}');
         
         // 🎯 APPLY FIELD MAPPING
         final List<RequestModel> requests = requestsJson
@@ -548,14 +473,11 @@ class RequestService extends GetxController {
             })
             .toList();
         
-        log('✅ RequestService: Mapped ${requests.length} user requests');
         return requests;
       } else {
-        log('❌ RequestService: Failed to fetch user requests - Status: ${response.statusCode}');
         return [];
       }
     } catch (e) {
-      log('💥 RequestService: Error fetching user requests - $e');
       return [];
     }
   }
@@ -564,71 +486,43 @@ class RequestService extends GetxController {
   /// 🚨 ENHANCED: Now includes Django field mapping
   Future<RequestModel?> getRequest(String requestId) async {
     try {
-      log('🚨🚨🚨 RequestService.getRequest: CALLED with requestId=$requestId');
-      log('🔍 RequestService: Fetching request $requestId from Django API');
       
       final response = await _apiService.get('/api/requests/$requestId/');
       
       // Enhanced debug logging for API response
-      log('🌐 API URL: ${response.requestOptions.uri}');
-      log('🌐 Status Code: ${response.statusCode}');
-      log('🌐 Response Headers: ${response.headers}');
-      log('🌐 Raw Response Data Type: ${response.data.runtimeType}');
-      log('🌐 Raw Response: ${response.data}');
       
       if (response.statusCode == 200 && response.data != null) {
         try {
           // 🔍 DEBUG: Log raw Django response
-          log('🔍 DEBUG: Raw Django response for request $requestId:');
-          log('${response.data}');
           
           // Check if user_request_status exists in response
           final rawData = response.data as Map<String, dynamic>;
-          log('🔍 DEBUG: user_request_status in response: ${rawData.containsKey('user_request_status')}');
           if (rawData.containsKey('user_request_status')) {
             final userRequestStatus = rawData['user_request_status'] as Map<String, dynamic>?;
-            log('🔍 DEBUG: user_request_status value: ${rawData['user_request_status']}');
-            log('🔍 DEBUG: ALL user_request_status KEYS: ${userRequestStatus?.keys.toList()}');
-            log('🔍 DEBUG: message_content in user_request_status: ${userRequestStatus?.containsKey('message_content')}');
             if (userRequestStatus?.containsKey('message_content') == true) {
-              log('🔍 DEBUG: message_content value: "${userRequestStatus!['message_content']}"');
             }
             // Check other possible message field names
             final possibleMessageFields = ['message_to_requester', 'volunteer_message', 'message', 'user_message'];
             for (final field in possibleMessageFields) {
               if (userRequestStatus?.containsKey(field) == true) {
-                log('🔍 DEBUG: $field value: "${userRequestStatus![field]}"');
               }
             }
           }
           
           // 🎯 APPLY FIELD MAPPING
-          log('🔄 Applying Django to Flutter field mapping...');
           final flutterJson = _mapDjangoToFlutter(response.data as Map<String, dynamic>);
-          log('✅ Field mapping completed successfully');
-          log('🔍 Mapped JSON: $flutterJson');
           
-          log('🏗️ Creating RequestModel from mapped JSON...');
           final RequestModel request = RequestModelExtension.fromJsonWithRequester(flutterJson);
-          log('✅ RequestModel created successfully');
           
-          log('✅ RequestService: Mapped request $requestId successfully');
           return request;
           
         } catch (parseError) {
-          log('❌ JSON Parse Error: $parseError');
-          log('❌ Parse Error Stack Trace: ${parseError.toString()}');
-          log('❌ Failed to parse response data: ${response.data}');
           return null;
         }
       } else {
-        log('❌ RequestService: Failed to fetch request $requestId - Status: ${response.statusCode}');
-        log('❌ Response body: ${response.data}');
         return null;
       }
     } catch (e) {
-      log('💥 RequestService: Error fetching request $requestId - $e');
-      log('💥 Full error stack trace: $e');
       return null;
     }
   }
@@ -637,36 +531,23 @@ class RequestService extends GetxController {
   /// 🚨 FIXED: Using correct endpoint /api/requests/
   Future<bool> createRequest(Map<String, dynamic> requestData) async {
     try {
-      log('📝 RequestService: Creating new request via Django API');
-      log('Request data: $requestData');
       
       final response = await _apiService.post('/api/requests/', data: requestData);
       
       if (response.statusCode == 201 || response.statusCode == 200) {
-        log('✅ RequestService: Created request successfully');
         return true;
       } else {
-        log('❌ RequestService: Failed to create request - Status: ${response.statusCode}');
         return false;
       }
     } catch (e) {
-      log('💥 RequestService: Error creating request - $e');
-      log('🚨 [SERVICE DEBUG] Error creating request - $e');
       
       // 🚨 CRITICAL: Extract DioException details to see actual Django errors
       if (e is DioException) {
-        log('🚨 [SERVICE DEBUG] DioException detected!');
-        log('🚨 [SERVICE DEBUG] HTTP Status: ${e.response?.statusCode}');
-        log('🚨 [SERVICE DEBUG] Django Response: ${e.response?.data}');
-        log('🚨 [SERVICE DEBUG] Request URL: ${e.requestOptions.path}');
-        log('🚨 [SERVICE DEBUG] Request Data: ${e.requestOptions.data}');
         
         // Extract field-specific errors from Django
         if (e.response?.data is Map) {
           final errors = e.response!.data as Map;
-          log('🚨 [SERVICE DEBUG] === DJANGO FIELD ERRORS ===');
           errors.forEach((field, error) {
-            log('🚨 [SERVICE DEBUG] Field "$field": $error');
           });
         }
       }
@@ -679,21 +560,16 @@ class RequestService extends GetxController {
   /// 🚨 CRITICAL FIX: Changed PUT to PATCH for partial updates
   Future<bool> updateRequest(String requestId, Map<String, dynamic> requestData) async {
     try {
-      log('🔄 RequestService: Updating request $requestId via Django API (PATCH)');
-      log('Update data: $requestData');
       
       // 🚨 KEY FIX: Use PATCH instead of PUT for partial updates
       final response = await _apiService.patch('/api/requests/$requestId/', data: requestData);
       
       if (response.statusCode == 200) {
-        log('✅ RequestService: Updated request $requestId successfully via PATCH');
         return true;
       } else {
-        log('❌ RequestService: Failed to update request $requestId - Status: ${response.statusCode}');
         return false;
       }
     } catch (e) {
-      log('💥 RequestService: Error updating request $requestId - $e');
       return false;
     }
   }
@@ -702,19 +578,15 @@ class RequestService extends GetxController {
   /// 🚨 FIXED: Using correct endpoint /api/requests/{id}/
   Future<bool> deleteRequest(String requestId) async {
     try {
-      log('🗑️ RequestService: Deleting request $requestId via Django API');
       
       final response = await _apiService.delete('/api/requests/$requestId/');
       
       if (response.statusCode == 204 || response.statusCode == 200) {
-        log('✅ RequestService: Deleted request $requestId successfully');
         return true;
       } else {
-        log('❌ RequestService: Failed to delete request $requestId - Status: ${response.statusCode}');
         return false;
       }
     } catch (e) {
-      log('💥 RequestService: Error deleting request $requestId - $e');
       return false;
     }
   }
@@ -723,12 +595,8 @@ class RequestService extends GetxController {
   /// Sends a volunteer request to the Django backend
   Future<bool> requestToVolunteer(String requestId, String message) async {
     try {
-      log('🙋 RequestService: Requesting to volunteer for request $requestId via Django API');
-      log('Message to requester: "$message"');
-      log('Message length: ${message.length} characters');
       
       final requestData = {'message_to_requester': message};
-      log('🔍 SENDING DATA: $requestData');
       
       // Also try alternative field names that the backend might expect
       final alternativeData = {
@@ -737,25 +605,19 @@ class RequestService extends GetxController {
         'volunteer_message': message,
         'message': message,
       };
-      log('🔍 TRYING ALTERNATIVE DATA FORMAT: $alternativeData');
       
       final response = await _apiService.post(
         '/api/requests/$requestId/accept/', 
         data: alternativeData
       );
       
-      log('🌐 RESPONSE STATUS: ${response.statusCode}');
-      log('🌐 RESPONSE DATA: ${response.data}');
       
       if (response.statusCode == 200 || response.statusCode == 201) {
-        log('✅ RequestService: Successfully requested to volunteer for request $requestId');
         return true;
       } else {
-        log('❌ RequestService: Failed to request volunteer for request $requestId - Status: ${response.statusCode}');
         return false;
       }
     } catch (e) {
-      log('💥 RequestService: Error requesting to volunteer for request $requestId - $e');
       return false;
     }
   }
@@ -764,10 +626,7 @@ class RequestService extends GetxController {
   /// Cancels an existing volunteer request via Django backend
   Future<bool> cancelVolunteerRequest(String requestId, {String? reason}) async {
     try {
-      log('❌ RequestService: Canceling volunteer request for request $requestId via Django API');
-      log('🔍 RequestService: Full URL will be: /api/requests/$requestId/cancel_acceptance/');
       if (reason != null) {
-        log('📝 Cancellation reason: "$reason"');
       }
       
       // Prepare request data with optional reason
@@ -776,43 +635,25 @@ class RequestService extends GetxController {
         requestData['reason'] = reason;
       }
       
-      log('📤 RequestService: Sending data: $requestData');
-      log('🌐 RequestService: About to make POST request...');
       
       final response = await _apiService.post(
         '/api/requests/$requestId/cancel_acceptance/',
         data: requestData.isNotEmpty ? requestData : null,
       );
       
-      log('📥 RequestService: Received response - Status: ${response.statusCode}');
-      log('📥 RequestService: Response data: ${response.data}');
-      log('📥 RequestService: Response headers: ${response.headers}');
       
       if (response.statusCode == 200) {
-        log('✅ RequestService: Successfully canceled volunteer request for request $requestId');
         return true;
       } else {
-        log('❌ RequestService: Failed to cancel volunteer request for request $requestId - Status: ${response.statusCode}');
-        log('❌ RequestService: Response body: ${response.data}');
         return false;
       }
     } catch (e) {
-      log('💥 RequestService: Error canceling volunteer request for request $requestId - $e');
-      log('💥 RequestService: Error type: ${e.runtimeType}');
       
       // Enhanced error logging for Dio errors
       if (e.toString().contains('DioError') || e.runtimeType.toString().contains('Dio')) {
-        log('🚨 RequestService: Dio error details:');
         try {
           final dioError = e as dynamic;
-          log('🚨 RequestService: - Status Code: ${dioError.response?.statusCode}');
-          log('🚨 RequestService: - Response Data: ${dioError.response?.data}');
-          log('🚨 RequestService: - Request URL: ${dioError.requestOptions?.path}');
-          log('🚨 RequestService: - Request Method: ${dioError.requestOptions?.method}');
-          log('🚨 RequestService: - Request Data: ${dioError.requestOptions?.data}');
-          log('🚨 RequestService: - Error Message: ${dioError.message}');
         } catch (castError) {
-          log('🚨 RequestService: Could not cast to Dio error, raw error: $e');
         }
       }
       
@@ -828,7 +669,6 @@ class RequestService extends GetxController {
   /// 🚨 FIXED: Using correct endpoint /api/profile/users/{id}/
   Future<UserModel?> getUser(String userId) async {
     try {
-      log('👤 RequestService: Fetching user $userId from Django API');
 
       final response = await _apiService.get('/api/profile/users/$userId/');
       
@@ -838,14 +678,11 @@ class RequestService extends GetxController {
         final flutterUserData = _mapDjangoUserToFlutter(userData);
         final UserModel user = UserModel.fromJson(flutterUserData);
         
-        log('✅ RequestService: Fetched user $userId successfully');
         return user;
       } else {
-        log('❌ RequestService: Failed to fetch user $userId - Status: ${response.statusCode}');
         return null;
       }
     } catch (e) {
-      log('💥 RequestService: Error fetching user $userId - $e');
       return null;
     }
   }
@@ -858,7 +695,6 @@ class RequestService extends GetxController {
   /// 🚨 ENHANCED: Now includes Django field mapping
   Future<List<RequestModel>> searchRequests(String query, {String? location}) async {
     try {
-      log('🔍 RequestService: Searching requests for: "$query"');
       
       String endpoint = '/api/requests/?search=$query';
       if (location != null && location.isNotEmpty) {
@@ -881,14 +717,11 @@ class RequestService extends GetxController {
             })
             .toList();
         
-        log('✅ RequestService: Found ${requests.length} requests for "$query"');
         return requests;
       } else {
-        log('❌ RequestService: Failed to search requests - Status: ${response.statusCode}');
         return [];
       }
     } catch (e) {
-      log('💥 RequestService: Error searching requests - $e');
       return [];
     }
   }
@@ -901,19 +734,15 @@ class RequestService extends GetxController {
   /// 🚨 FIXED: Using correct endpoint /api/dashboard/
   Future<Map<String, dynamic>?> getDashboardStats() async {
     try {
-      log('📊 RequestService: Fetching dashboard stats from Django API');
       
       final response = await _apiService.get('/api/dashboard/');
       
       if (response.statusCode == 200 && response.data != null) {
-        log('✅ RequestService: Fetched dashboard stats successfully');
         return response.data as Map<String, dynamic>;
       } else {
-        log('❌ RequestService: Failed to fetch dashboard stats - Status: ${response.statusCode}');
         return null;
       }
     } catch (e) {
-      log('💥 RequestService: Error fetching dashboard stats - $e');
       return null;
     }
   }
@@ -922,7 +751,6 @@ class RequestService extends GetxController {
   /// ✅ NEW: Allows request owners to approve pending volunteer requests
   Future<bool> approveVolunteerRequest(String requestId, String volunteerUserId) async {
     try {
-      log('✅ RequestService: Approving volunteer $volunteerUserId for request $requestId via Django API');
       
       final response = await _apiService.post(
         '/api/requests/$requestId/approve-volunteer/', 
@@ -930,14 +758,11 @@ class RequestService extends GetxController {
       );
       
       if (response.statusCode == 200) {
-        log('✅ RequestService: Successfully approved volunteer $volunteerUserId for request $requestId');
         return true;
       } else {
-        log('❌ RequestService: Failed to approve volunteer $volunteerUserId for request $requestId - Status: ${response.statusCode}');
         return false;
       }
     } catch (e) {
-      log('💥 RequestService: Error approving volunteer $volunteerUserId for request $requestId - $e');
       return false;
     }
   }
@@ -946,7 +771,6 @@ class RequestService extends GetxController {
   /// ✅ NEW: Enterprise-grade reject volunteer functionality
   Future<bool> rejectVolunteerRequest(String requestId, String volunteerUserId) async {
     try {
-      log('❌ RequestService: Rejecting volunteer $volunteerUserId for request $requestId via Django API');
       
       final response = await _apiService.post(
         '/api/requests/$requestId/reject-volunteer/', 
@@ -954,14 +778,11 @@ class RequestService extends GetxController {
       );
       
       if (response.statusCode == 200) {
-        log('✅ RequestService: Successfully rejected volunteer $volunteerUserId for request $requestId');
         return true;
       } else {
-        log('❌ RequestService: Failed to reject volunteer $volunteerUserId for request $requestId - Status: ${response.statusCode}');
         return false;
       }
     } catch (e) {
-      log('💥 RequestService: Error rejecting volunteer $volunteerUserId for request $requestId - $e');
       return false;
     }
   }
@@ -970,8 +791,6 @@ class RequestService extends GetxController {
   /// ✅ NEW: Retrieves pending volunteer requests for approval workflow
   Future<List<Map<String, dynamic>>> getVolunteerRequests(String requestId) async {
     try {
-      log('📋 RequestService: Fetching volunteer requests for request $requestId via Django API');
-      log('📋 RequestService: Fetching volunteer requests for request $requestId via Django API'); // Force print
       
       final response = await _apiService.get('/api/requests/$requestId/volunteer-requests/');
       
@@ -979,10 +798,6 @@ class RequestService extends GetxController {
         final data = response.data as Map<String, dynamic>;
         final requests = data['volunteer_requests'] as List<dynamic>? ?? [];
         
-        log('✅ RequestService: Found ${requests.length} volunteer requests for request $requestId');
-        log('✅ RequestService: Found ${requests.length} volunteer requests for request $requestId'); // Force print
-        log('📊 Raw response data: $data');
-        log('📊 Raw response data: $data'); // Force print
         
         // Convert to list of maps with proper field mapping for actual backend structure
         final mappedRequests = requests.map((request) {
@@ -995,20 +810,15 @@ class RequestService extends GetxController {
             'applied_at': requestData['applied_at'], // Backend uses 'applied_at' not 'requested_at'
             'estimated_arrival': requestData['estimated_arrival'],
           };
-          log('📝 Mapped volunteer request: $mapped');
           return mapped;
         }).toList();
         
         return mappedRequests;
         
       } else {
-        log('❌ RequestService: Failed to fetch volunteer requests for request $requestId - Status: ${response.statusCode}');
-        log('❌ RequestService: Failed to fetch volunteer requests for request $requestId - Status: ${response.statusCode}'); // Force print
         return [];
       }
     } catch (e) {
-      log('💥 RequestService: Error fetching volunteer requests for request $requestId - $e');
-      log('💥 RequestService: Error fetching volunteer requests for request $requestId - $e'); // Force print
       return [];
     }
   }
@@ -1021,7 +831,6 @@ class RequestService extends GetxController {
   /// Returns list of categories for request categorization
   Future<List<CategoryModel>> fetchCategories() async {
     try {
-      log('📂 RequestService: Fetching categories from Django API');
       
       final response = await _apiService.get('/api/categories/');
       
@@ -1031,28 +840,20 @@ class RequestService extends GetxController {
           (responseData['results'] ?? responseData['data'] ?? []) : 
           (responseData is List ? responseData : []);
         
-        log('📥 Raw Django categories: ${categoriesJson.length}');
         
         final List<CategoryModel> categories = categoriesJson
             .map((categoryJson) => CategoryModel.fromJson(categoryJson as Map<String, dynamic>))
             .toList();
         
-        log('✅ RequestService: Fetched ${categories.length} categories');
-        log('📋 Categories: ${categories.map((c) => c.name).toList()}');
         
         return categories;
       } else {
-        log('❌ RequestService: Failed to fetch categories - Status: ${response.statusCode}');
         return [];
       }
     } catch (e) {
-      log('💥 RequestService: Error fetching categories - $e');
       
       // 🚨 Enhanced error logging for category fetching
       if (e is DioException) {
-        log('🚨 [SERVICE DEBUG] Category fetch error:');
-        log('🚨 [SERVICE DEBUG] - Status Code: ${e.response?.statusCode}');
-        log('🚨 [SERVICE DEBUG] - Response Data: ${e.response?.data}');
       }
       
       return [];
@@ -1063,21 +864,16 @@ class RequestService extends GetxController {
   /// POST /api/requests/{request_id}/start-request/
   Future<Map<String, dynamic>?> startRequest(String requestId) async {
     try {
-      log('🚀 RequestService: Starting request $requestId manually');
 
       final response = await _apiService.post(
         '/api/requests/$requestId/start-request/',
         data: {},  // Empty data as per API spec
       );
 
-      log('🌐 Start request response status: ${response.statusCode}');
-      log('🌐 Start request response data: ${response.data}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        log('✅ RequestService: Successfully started request $requestId');
         return response.data as Map<String, dynamic>?;
       } else {
-        log('❌ RequestService: Failed to start request $requestId - Status: ${response.statusCode}');
 
         // Extract error message from response
         String errorMessage = 'Failed to start request';
@@ -1090,13 +886,9 @@ class RequestService extends GetxController {
         throw Exception(errorMessage);
       }
     } catch (e) {
-      log('💥 RequestService: Error starting request $requestId - $e');
 
       // Enhanced error logging
       if (e is DioException) {
-        log('🚨 [SERVICE DEBUG] Start request error:');
-        log('🚨 [SERVICE DEBUG] - Status Code: ${e.response?.statusCode}');
-        log('🚨 [SERVICE DEBUG] - Response Data: ${e.response?.data}');
 
         // Extract meaningful error message
         if (e.response?.data is Map) {
@@ -1114,21 +906,16 @@ class RequestService extends GetxController {
   /// POST /api/requests/{request_id}/start-anyway/
   Future<Map<String, dynamic>?> startRequestAnyway(String requestId) async {
     try {
-      log('⚡ RequestService: Starting delayed request $requestId (grace period)');
 
       final response = await _apiService.post(
         '/api/requests/$requestId/start-anyway/',
         data: {},  // Empty data as per API spec
       );
 
-      log('🌐 Start anyway response status: ${response.statusCode}');
-      log('🌐 Start anyway response data: ${response.data}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        log('✅ RequestService: Successfully started delayed request $requestId');
         return response.data as Map<String, dynamic>?;
       } else {
-        log('❌ RequestService: Failed to start delayed request $requestId - Status: ${response.statusCode}');
 
         // Extract error message from response
         String errorMessage = 'Failed to start request during grace period';
@@ -1141,13 +928,9 @@ class RequestService extends GetxController {
         throw Exception(errorMessage);
       }
     } catch (e) {
-      log('💥 RequestService: Error starting delayed request $requestId - $e');
 
       // Enhanced error logging
       if (e is DioException) {
-        log('🚨 [SERVICE DEBUG] Start anyway error:');
-        log('🚨 [SERVICE DEBUG] - Status Code: ${e.response?.statusCode}');
-        log('🚨 [SERVICE DEBUG] - Response Data: ${e.response?.data}');
 
         // Extract meaningful error message
         if (e.response?.data is Map) {
@@ -1169,39 +952,28 @@ class RequestService extends GetxController {
     {String? completionNotes}
   ) async {
     try {
-      log('✅ RequestService: Completing request $requestId with feedback');
       
       final requestData = {
         'feedback_list': feedbackList,
         if (completionNotes?.isNotEmpty == true) 'completion_notes': completionNotes,
       };
       
-      log('📝 Request completion data: $requestData');
       
       final response = await _apiService.post(
         '/api/requests/$requestId/complete/', 
         data: requestData
       );
       
-      log('🌐 Complete request response status: ${response.statusCode}');
-      log('🌐 Complete request response data: ${response.data}');
       
       if (response.statusCode == 200) {
-        log('✅ RequestService: Successfully completed request $requestId');
         return response.data as Map<String, dynamic>?;
       } else {
-        log('❌ RequestService: Failed to complete request $requestId - Status: ${response.statusCode}');
         return null;
       }
     } catch (e) {
-      log('💥 RequestService: Error completing request $requestId - $e');
       
       // Enhanced error logging for debugging
       if (e is DioException) {
-        log('🚨 [SERVICE DEBUG] Complete request error:');
-        log('🚨 [SERVICE DEBUG] - Status Code: ${e.response?.statusCode}');
-        log('🚨 [SERVICE DEBUG] - Response Data: ${e.response?.data}');
-        log('🚨 [SERVICE DEBUG] - Error Message: ${e.message}');
       }
       
       return null;
@@ -1214,18 +986,15 @@ class RequestService extends GetxController {
   
   /// File upload placeholder - will be implemented later
   Future<String> uploadFile(File file, String path) async {
-    log('📁 RequestService: uploadFile - placeholder method');
     return 'placeholder-url';
   }
   
   /// File deletion placeholder
   Future<void> deleteFile(String path) async {
-    log('🗑️ RequestService: deleteFile - placeholder method');
   }
   
   /// Get file URL placeholder  
   Future<String> getFileUrl(String path) async {
-    log('🔗 RequestService: getFileUrl - placeholder method');
     return 'placeholder-url';
   }
 }

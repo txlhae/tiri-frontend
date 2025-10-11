@@ -1,4 +1,3 @@
-import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -21,11 +20,9 @@ class VerifyDialog extends StatefulWidget {
 class _VerifyDialogState extends State<VerifyDialog> {
   final authController = Get.find<AuthController>();
   Future<void> verifyUserData() async {
-    log('AcceptedUser type: ${widget.acceptedUser.runtimeType}');
     try {
       await authController.verifyUser(widget.acceptedUser);
     } catch (error) {
-      log('Error in interested dialog: $error');
     }
   }
 
@@ -57,7 +54,6 @@ class _VerifyDialogState extends State<VerifyDialog> {
                 child: CustomCancel(
                   buttonText: 'No',
                   onButtonPressed: () {
-                    log("No");
                     Get.back();
                   },
                 ),

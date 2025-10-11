@@ -1,4 +1,3 @@
-import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -62,11 +61,9 @@ class CustomTile extends StatelessWidget {
                       ),
                       onPressed: () async {
                         if (notify.isUserWaiting) {
-                          log('In the verify');
                           // TODO: Implement Django API call to get user
                           final value = null; // Placeholder user data
                           if (value != null) {
-                              log('The user is here: ${value!.toJson().toString()}');
                               Get.dialog(VerifyDialog(
                                 acceptedUser: value,
                               ));

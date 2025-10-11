@@ -1,4 +1,3 @@
-import 'dart:developer';
 import 'package:get/get.dart';
 import 'package:tiri/controllers/auth_controller.dart';
 import 'package:tiri/models/notification_model.dart';
@@ -50,9 +49,7 @@ class NotificationController extends GetxController {
   void _initializeApiFoundation() {
     try {
       ApiFoundationInitializer.initialize();
-      log('NotificationController: API Foundation initialized');
     } catch (e) {
-      log('NotificationController: Failed to initialize API Foundation: $e');
     }
   }
 
@@ -60,16 +57,13 @@ class NotificationController extends GetxController {
   void _initializeWebSocket() {
     try {
       _webSocketService = WebSocketService.instance;
-      log('NotificationController: WebSocket service initialized');
     } catch (e) {
-      log('NotificationController: Failed to initialize WebSocket: $e');
     }
   }
 
   /// Connect to WebSocket for real-time notifications
   Future<void> connectWebSocket() async {
     if (_webSocketService == null) {
-      log('NotificationController: WebSocket service not initialized');
       return;
     }
 
@@ -85,8 +79,6 @@ class NotificationController extends GetxController {
       final token = apiService.accessToken;
 
       if (token == null || userId == null) {
-        log('NotificationController: Cannot connect WebSocket - missing auth');
-        log('Token available: ${token != null}, User ID: $userId');
         return;
       }
 
@@ -103,15 +95,12 @@ class NotificationController extends GetxController {
       // Connect to WebSocket
       await _webSocketService!.connect();
       
-      log('NotificationController: WebSocket connection initiated');
     } catch (e) {
-      log('NotificationController: Failed to connect WebSocket: $e');
     }
   }
 
   /// Handle real-time notification from WebSocket
   void _handleRealtimeNotification(NotificationResponse notification) {
-    log('NotificationController: Received real-time notification: ${notification.title}');
     
     // Add to API notifications list at the beginning
     _apiNotifications.insert(0, notification);
@@ -136,39 +125,31 @@ class NotificationController extends GetxController {
 
   /// Handle real-time unread count update
   void _handleRealtimeUnreadCount(int newUnreadCount) {
-    log('NotificationController: Real-time unread count update: $newUnreadCount');
     unreadCount.value = newUnreadCount;
   }
 
   /// Handle WebSocket connection state changes
   void _handleWebSocketStateChange(WebSocketState state) {
-    log('NotificationController: WebSocket state changed to $state');
     webSocketState.value = state;
     isWebSocketConnected.value = state == WebSocketState.connected;
     
     // Handle connection events
     switch (state) {
       case WebSocketState.connected:
-        log('NotificationController: WebSocket connected - real-time notifications enabled');
         break;
       case WebSocketState.disconnected:
-        log('NotificationController: WebSocket disconnected - using HTTP polling fallback');
         break;
       case WebSocketState.error:
-        log('NotificationController: WebSocket error - using HTTP fallback');
         break;
       case WebSocketState.reconnecting:
-        log('NotificationController: WebSocket reconnecting...');
         break;
       case WebSocketState.connecting:
-        log('NotificationController: WebSocket connecting...');
         break;
     }
   }
 
   /// Handle WebSocket errors
   void _handleWebSocketError(String error) {
-    log('NotificationController: WebSocket error: $error');
     // Don't show user-facing errors for WebSocket issues - HTTP fallback handles it
   }
 
@@ -192,13 +173,11 @@ class NotificationController extends GetxController {
     _webSocketService?.disconnect();
     isWebSocketConnected.value = false;
     webSocketState.value = WebSocketState.disconnected;
-    log('NotificationController: WebSocket disconnected');
   }
 
   /// Update WebSocket authentication token
   void updateWebSocketAuth(String newToken) {
     _webSocketService?.updateAuthToken(newToken);
-    log('NotificationController: WebSocket auth token updated');
   }
 
   Future<void> _getNotifications() async {
@@ -231,12 +210,10 @@ class NotificationController extends GetxController {
         _notifications.assignAll(legacyNotifications);
         
         await _calculateUnreadCountFromApi();
-        log('NotificationController: Loaded ${legacyNotifications.length} notifications from Django API');
       } else {
         throw Exception(response.error?.message ?? 'Failed to fetch notifications');
       }
     } catch (e) {
-      log('Error fetching notifications: $e');
       hasError.value = true;
       errorMessage.value = e.toString();
       
@@ -291,14 +268,11 @@ class NotificationController extends GetxController {
       
       if (response.success && response.data != null) {
         unreadCount.value = response.data!.unreadCount;
-        log('NotificationController: Unread count from API: ${unreadCount.value}');
       } else {
-        log('NotificationController: Failed to get unread count from API');
         // Fallback to local calculation
         await _calculateUnreadCount(_notifications);
       }
     } catch (e) {
-      log('NotificationController: Error getting unread count from API: $e');
       // Fallback to local calculation
       await _calculateUnreadCount(_notifications);
     }
@@ -314,19 +288,15 @@ class NotificationController extends GetxController {
         // In a real implementation, you would parse the cached JSON
         // For now, just initialize empty list
         _notifications.assignAll(<NotificationModel>[]);
-        log('NotificationController: Loaded cached notifications');
       }
     } catch (e) {
-      log('NotificationController: Error loading cached notifications: $e');
     }
   }
 
   Future<void> updateNotify(NotificationModel notify) async {
     try {
       // await _store.updateNotification(notify);
-      log("Notification updated successfully");
     } catch (e) {
-      log("Error updating notification: $e");
     }
   }
 
@@ -335,14 +305,12 @@ class NotificationController extends GetxController {
       // Check if user is authenticated before making API calls
       final apiService = Get.find<ApiService>();
       if (!apiService.isAuthenticated) {
-        log('NotificationController: User not authenticated, skipping notification load');
         hasError.value = true;
         errorMessage.value = 'Please login to view notifications';
         return;
       }
 
       // Phase 3: Use Django API
-      log('NotificationController: Refreshing notifications from Django API');
       await _getNotifications();
 
       // Auto-connect WebSocket disabled to prevent connection attempts when clicking notification button
@@ -351,7 +319,6 @@ class NotificationController extends GetxController {
       //   await connectWebSocket();
       // }
     } catch (e) {
-      log("Error loading notifications: $e");
       hasError.value = true;
       errorMessage.value = e.toString();
     }
@@ -390,10 +357,8 @@ class NotificationController extends GetxController {
             _convertApiNotificationsToLegacy(paginatedData.results);
         _notifications.addAll(newLegacyNotifications);
         
-        log('NotificationController: Loaded ${newLegacyNotifications.length} more notifications (page $nextPage)');
       }
     } catch (e) {
-      log('NotificationController: Error loading more notifications: $e');
       Get.snackbar(
         'Error', 
         'Failed to load more notifications',
@@ -410,8 +375,6 @@ class NotificationController extends GetxController {
       // Note: This would require a CREATE endpoint in Django
       // For now, we'll log and potentially add to local list
       
-      log("NotificationController: Sending reminder notification via Django API");
-      log("Notification: ${notification.body}");
       
       // TODO: Implement Django API call for creating notifications
       // Example:
@@ -427,9 +390,7 @@ class NotificationController extends GetxController {
       // Update unread count
       await _calculateUnreadCountFromApi();
       
-      log("Reminder notification processed successfully");
     } catch (e) {
-      log("Error while sending reminder notification: $e");
       Get.snackbar("Error", "Failed to send notification");
       rethrow;
     }
@@ -438,7 +399,6 @@ class NotificationController extends GetxController {
   /// Add notification to the list
   /// Temporary method for Phase 3 compatibility
   void addNotification(NotificationModel notification) {
-    log("NotificationController: addNotification called - ${notification.body}");
     // TODO: Implement proper notification handling in Phase 4
     // For now, just log the notification
   }
@@ -463,7 +423,6 @@ class NotificationController extends GetxController {
         unreadCount.value = 0;
       }
     } catch (e) {
-      log("Error calculating unread count: $e");
       unreadCount.value = 0;
     }
   }
@@ -505,12 +464,10 @@ class NotificationController extends GetxController {
         final allIds = _notifications.map((n) => n.notificationId).toList();
         await prefs.setStringList('read_notifications', allIds);
         
-        log("NotificationController: All notifications marked as read via Django API");
       } else {
         throw Exception(response.error?.message ?? 'Failed to mark all as read');
       }
     } catch (e) {
-      log("Error marking notifications as read: $e");
       
       // Fallback to local-only marking
       try {
@@ -518,9 +475,7 @@ class NotificationController extends GetxController {
         final allIds = _notifications.map((n) => n.notificationId).toList();
         await prefs.setStringList('read_notifications', allIds);
         unreadCount.value = 0;
-        log("NotificationController: Marked all as read locally (fallback)");
       } catch (localError) {
-        log("Error with local fallback: $localError");
         Get.snackbar("Error", "Failed to mark notifications as read");
       }
     }
@@ -559,10 +514,8 @@ class NotificationController extends GetxController {
         // Update unread count
         await _calculateUnreadCountFromApi();
         
-        log("NotificationController: Notification $notificationId marked as read");
       }
     } catch (e) {
-      log("NotificationController: Error marking notification as read: $e");
     }
   }
   
@@ -606,10 +559,8 @@ class NotificationController extends GetxController {
       );
       
       if (response.success) {
-        log("NotificationController: FCM token updated successfully");
       }
     } catch (e) {
-      log("NotificationController: Error updating FCM token: $e");
     }
   }
   
@@ -622,14 +573,12 @@ class NotificationController extends GetxController {
         return response.data;
       }
     } catch (e) {
-      log("NotificationController: Error getting statistics: $e");
     }
     return null;
   }
 
   @override
   void onClose() {
-    log('NotificationController: Closing and cleaning up WebSocket');
     disconnectWebSocket();
     super.onClose();
   }

@@ -1,4 +1,3 @@
-import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -57,7 +56,6 @@ void didChangeDependencies() {
 }
 
   void updateRequestClick() {
-    log("Update clicked");
     if (requestController.titleController.value.text.isEmpty ||
         requestController.descriptionController.value.text.isEmpty ||
         requestController.locationController.value.text.isEmpty ||
@@ -97,8 +95,6 @@ final hours = requestController.validateIntField(controller: requestController.h
       hoursNeeded: hours,
     );
 
-    log(request.toJson().toString());
-    log("Updating request with data: ${request.toJson()}");
 
     requestController
         .controllerUpdateRequest(widget.request.requestId, request)
@@ -114,7 +110,6 @@ final hours = requestController.validateIntField(controller: requestController.h
         colorText: Colors.white,
       );
     }).catchError((error) {
-      log("Error updating request: $error");
       Get.snackbar(
         'Error',
         'Failed to update request',

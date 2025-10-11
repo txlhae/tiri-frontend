@@ -4,7 +4,6 @@ library;
 
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer';
 import 'dart:io';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:web_socket_channel/io.dart';
@@ -125,7 +124,6 @@ class WebSocketService extends GetxService {
     ConnectionStateCallback? onConnectionStateChange,
     ErrorCallback? onError,
   }) {
-    log('WebSocketService: Initializing with token: ${authToken.substring(0, 10)}...');
     
     _authToken = authToken;
     _userId = userId;
@@ -136,7 +134,6 @@ class WebSocketService extends GetxService {
 
     // Listen to connection state changes
     _connectionState.listen((state) {
-      log('WebSocketService: Connection state changed to $state');
       _onConnectionStateChange?.call(state);
     });
   }
@@ -144,14 +141,12 @@ class WebSocketService extends GetxService {
   /// Connect to WebSocket server
   Future<void> connect() async {
     if (_authToken == null || _userId == null) {
-      log('WebSocketService: Cannot connect - missing auth token or user ID');
       _setConnectionState(WebSocketState.error);
       _onError?.call('Authentication required');
       return;
     }
 
     if (isConnecting || isConnected) {
-      log('WebSocketService: Already connecting or connected');
       return;
     }
 
@@ -160,7 +155,6 @@ class WebSocketService extends GetxService {
     try {
       await _createConnection();
     } catch (e) {
-      log('WebSocketService: Connection failed: $e');
       _setConnectionState(WebSocketState.error);
       _onError?.call(e.toString());
       _scheduleReconnect();
@@ -171,7 +165,6 @@ class WebSocketService extends GetxService {
   Future<void> _createConnection() async {
     // Construct WebSocket URL with authentication
     final wsUrl = _buildWebSocketUrl();
-    log('WebSocketService: Connecting to $wsUrl');
 
     try {
       _channel = IOWebSocketChannel.connect(
@@ -194,7 +187,6 @@ class WebSocketService extends GetxService {
       _setConnectionState(WebSocketState.connected);
       _reconnectAttempts = 0;
       
-      log('WebSocketService: Connected successfully');
       
       // Send connection acknowledgment
       _sendMessage({
@@ -203,7 +195,6 @@ class WebSocketService extends GetxService {
       });
 
     } catch (e) {
-      log('WebSocketService: Failed to create connection: $e');
       rethrow;
     }
   }
@@ -217,7 +208,6 @@ class WebSocketService extends GetxService {
   /// Handle incoming WebSocket messages
   void _handleMessage(dynamic rawMessage) {
     try {
-      log('WebSocketService: Received message: $rawMessage');
       
       final Map<String, dynamic> messageJson = jsonDecode(rawMessage);
       final message = WebSocketMessage.fromJson(messageJson);
@@ -232,7 +222,6 @@ class WebSocketService extends GetxService {
           break;
           
         case WebSocketMessageType.connectionAck:
-          log('WebSocketService: Connection acknowledged by server');
           break;
           
         case WebSocketMessageType.error:
@@ -240,12 +229,9 @@ class WebSocketService extends GetxService {
           break;
           
         case WebSocketMessageType.unknown:
-          log('WebSocketService: Unknown message type: ${messageJson['type']}');
           break;
       }
     } catch (e) {
-      log('WebSocketService: Error parsing message: $e');
-      log('WebSocketService: Raw message: $rawMessage');
     }
   }
 
@@ -253,10 +239,8 @@ class WebSocketService extends GetxService {
   void _handleNotificationMessage(Map<String, dynamic> data) {
     try {
       final notification = NotificationResponse.fromJson(data);
-      log('WebSocketService: Received notification: ${notification.title}');
       _onNotification?.call(notification);
     } catch (e) {
-      log('WebSocketService: Error parsing notification: $e');
     }
   }
 
@@ -264,22 +248,18 @@ class WebSocketService extends GetxService {
   void _handleUnreadCountMessage(Map<String, dynamic> data) {
     try {
       final unreadCount = data['unread_count'] as int? ?? 0;
-      log('WebSocketService: Received unread count: $unreadCount');
       _onUnreadCount?.call(unreadCount);
     } catch (e) {
-      log('WebSocketService: Error parsing unread count: $e');
     }
   }
 
   /// Handle server error message
   void _handleServerError(String error) {
-    log('WebSocketService: Server error: $error');
     _onError?.call('Server error: $error');
   }
 
   /// Handle WebSocket errors
   void _handleError(dynamic error) {
-    log('WebSocketService: WebSocket error: $error');
     _setConnectionState(WebSocketState.error);
     _onError?.call(error.toString());
     _scheduleReconnect();
@@ -287,7 +267,6 @@ class WebSocketService extends GetxService {
 
   /// Handle WebSocket disconnection
   void _handleDisconnection() {
-    log('WebSocketService: WebSocket disconnected');
     _setConnectionState(WebSocketState.disconnected);
     _cleanup();
     _scheduleReconnect();
@@ -296,16 +275,13 @@ class WebSocketService extends GetxService {
   /// Send message to WebSocket server
   void _sendMessage(Map<String, dynamic> message) {
     if (!isConnected || _channel == null) {
-      log('WebSocketService: Cannot send message - not connected');
       return;
     }
 
     try {
       final jsonMessage = jsonEncode(message);
       _channel!.sink.add(jsonMessage);
-      log('WebSocketService: Sent message: $jsonMessage');
     } catch (e) {
-      log('WebSocketService: Error sending message: $e');
     }
   }
 
@@ -329,7 +305,6 @@ class WebSocketService extends GetxService {
   /// Schedule reconnection with exponential backoff
   void _scheduleReconnect() {
     if (_reconnectAttempts >= maxReconnectAttempts) {
-      log('WebSocketService: Max reconnection attempts reached');
       _setConnectionState(WebSocketState.error);
       _onError?.call('Max reconnection attempts reached');
       return;
@@ -338,12 +313,10 @@ class WebSocketService extends GetxService {
     _reconnectAttempts++;
     final delay = _calculateReconnectDelay();
     
-    log('WebSocketService: Scheduling reconnect attempt $_reconnectAttempts in ${delay}ms');
     _setConnectionState(WebSocketState.reconnecting);
 
     _reconnectTimer?.cancel();
     _reconnectTimer = Timer(Duration(milliseconds: delay), () {
-      log('WebSocketService: Attempting reconnection...');
       connect();
     });
   }
@@ -357,7 +330,6 @@ class WebSocketService extends GetxService {
   /// Update authentication token
   void updateAuthToken(String newToken) {
     if (_authToken != newToken) {
-      log('WebSocketService: Updating auth token');
       _authToken = newToken;
 
       // Reconnect with new token
@@ -382,7 +354,6 @@ class WebSocketService extends GetxService {
         updateAuthToken(freshToken);
       }
     } catch (e) {
-      log('WebSocketService: Failed to refresh auth token: $e');
     }
   }
 
@@ -410,7 +381,6 @@ class WebSocketService extends GetxService {
 
   /// Disconnect from WebSocket
   void disconnect() {
-    log('WebSocketService: Disconnecting...');
     _cleanup();
     _setConnectionState(WebSocketState.disconnected);
     _reconnectAttempts = 0;
@@ -454,7 +424,6 @@ class WebSocketService extends GetxService {
 
   @override
   void onClose() {
-    log('WebSocketService: Service closing');
     disconnect();
     super.onClose();
   }

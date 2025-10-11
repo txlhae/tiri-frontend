@@ -1,4 +1,3 @@
-import 'dart:developer';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'user_model.dart';
 import 'feedback_model.dart';
@@ -10,7 +9,6 @@ enum RequestStatus { pending, accepted, complete, incomplete, cancelled ,inprogr
 
 // JSON converter function for acceptedUser field
 List<UserModel> _acceptedUserFromJson(dynamic json) {
-  log('✅ _acceptedUserFromJson called with: $json');
 
   if (json == null) return [];
   if (json is! List) return [];
@@ -25,7 +23,6 @@ List<UserModel> _acceptedUserFromJson(dynamic json) {
         .cast<UserModel>()
         .toList();
   } catch (e) {
-    log('⚠️ Error parsing acceptedUser from JSON: $e');
     return [];
   }
 }
@@ -58,17 +55,6 @@ class UserRequestStatus {
                           json['message'] ?? 
                           json['user_message'] ?? '';
     
-    log('🔍 UserRequestStatus.fromJson DEBUG:');
-    log('   - request_status: ${json['request_status']}');
-    log('   - ALL JSON KEYS: ${json.keys.toList()}');
-    log('   - message_content: "${json['message_content']}"');
-    log('   - message_to_requester: "${json['message_to_requester']}"');
-    log('   - volunteer_message: "${json['volunteer_message']}"');
-    log('   - message: "${json['message']}"');
-    log('   - user_message: "${json['user_message']}"');
-    log('   - FINAL messageContent: "$messageContent"');
-    log('   - messageContent type: ${messageContent.runtimeType}');
-    log('   - messageContent isEmpty: ${messageContent?.toString().isEmpty}');
     
     return UserRequestStatus(
       requestStatus: json['request_status'] ?? 'not_requested',
@@ -132,15 +118,11 @@ extension RequestModelExtension on RequestModel {
   
   // Factory method to create RequestModel with requester and enhanced user status parsed
   static RequestModel fromJsonWithRequester(Map<String, dynamic> json) {
-    log('🚨 fromJsonWithRequester called with JSON keys: ${json.keys.toList()}');
-    log('🚨 fromJsonWithRequester acceptedUser field: ${json['acceptedUser']}');
 
     // Parse user request status from Django response
     final userRequestStatusData = json['user_request_status'] as Map<String, dynamic>?;
 
-    log('🚨 About to call RequestModel.fromJson...');
     final requestModel = RequestModel.fromJson(json);
-    log('🚨 RequestModel.fromJson returned, acceptedUser.length: ${requestModel.acceptedUser.length}');
     
     // Store the requester data in cache for backward compatibility
     if (json['requester'] != null) {
@@ -165,7 +147,6 @@ extension RequestModelExtension on RequestModel {
         RequestModelExtension._completedAtCache[requestModel.requestId] = 
             DateTime.parse(json['completed_at']);
       } catch (e) {
-        log('⚠️ Error parsing completed_at: $e');
         RequestModelExtension._completedAtCache[requestModel.requestId] = null;
       }
     }
@@ -196,9 +177,7 @@ extension RequestModelExtension on RequestModel {
   static void clearUserStatusCache(String requestId) {
     if (_userRequestStatusCache.containsKey(requestId)) {
       _userRequestStatusCache.remove(requestId);
-      log('🗑️ RequestModelExtension: Cleared user status cache for request $requestId');
     } else {
-      log('🔍 RequestModelExtension: No cache entry found for request $requestId to clear');
     }
   }
   
@@ -206,7 +185,6 @@ extension RequestModelExtension on RequestModel {
   static void clearAllUserStatusCache() {
     final cacheSize = _userRequestStatusCache.length;
     _userRequestStatusCache.clear();
-    log('🗑️ RequestModelExtension: Cleared all user status cache ($cacheSize entries)');
   }
 
   /// Clear ALL caches - user status and requester cache
@@ -217,7 +195,6 @@ extension RequestModelExtension on RequestModel {
     _userRequestStatusCache.clear();
     _requesterCache.clear();
 
-    log('🗑️ RequestModelExtension: CLEARED ALL CACHES - UserStatus: $userStatusCacheSize, Requester: $requesterCacheSize');
   }
   
   // Get requester for this request

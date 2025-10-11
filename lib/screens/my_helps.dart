@@ -1,4 +1,3 @@
-import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -221,7 +220,6 @@ class _MyHelpsState extends State<MyHelps> with SingleTickerProviderStateMixin {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
                       ),
                       onPressed: () {
-                        log("Cancel it");
                         if (request.status != RequestStatus.complete &&
                             request.status != RequestStatus.delayed &&
                             (request.requestedTime ?? request.timestamp).isAfter(DateTime.now())) {

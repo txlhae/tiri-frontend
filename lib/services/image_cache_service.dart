@@ -2,7 +2,6 @@
 /// Manages cached network images with strict size limits
 library;
 
-import 'dart:developer';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -40,11 +39,9 @@ class ImageCacheService {
       PaintingBinding.instance.imageCache.maximumSizeBytes = 50 * 1024 * 1024; // 50MB memory limit
 
       if (kDebugMode) {
-        log('🖼️ [$_tag] Image cache initialized with size limits');
       }
     } catch (e) {
       if (kDebugMode) {
-        log('❌ [$_tag] Failed to initialize: $e');
       }
     }
   }
@@ -100,11 +97,9 @@ class ImageCacheService {
       await CustomCacheManager.instance.emptyCache();
 
       if (kDebugMode) {
-        log('🗑️ [$_tag] Image cache cleared');
       }
     } catch (e) {
       if (kDebugMode) {
-        log('❌ [$_tag] Failed to clear cache: $e');
       }
     }
   }
@@ -127,7 +122,6 @@ class ImageCacheService {
       return totalSize / (1024 * 1024);
     } catch (e) {
       if (kDebugMode) {
-        log('❌ [$_tag] Failed to get cache size: $e');
       }
       return 0.0;
     }
@@ -144,7 +138,6 @@ class ImageCacheService {
     if (await isCleanupNeeded()) {
       await clearImageCache();
       if (kDebugMode) {
-        log('🧹 [$_tag] Cache cleanup performed');
       }
     }
   }
@@ -227,11 +220,9 @@ class CustomCacheManager extends CacheManager {
       }
 
       if (kDebugMode && filesToRemove.isNotEmpty) {
-        log('🗑️ [$CustomCacheManager.key] Removed ${filesToRemove.length} old cached images');
       }
     } catch (e) {
       if (kDebugMode) {
-        log('❌ [$CustomCacheManager.key] Cache size enforcement failed: $e');
       }
     }
   }

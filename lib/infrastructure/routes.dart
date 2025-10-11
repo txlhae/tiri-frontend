@@ -1,4 +1,3 @@
-import 'dart:developer';
 
 class Routes {
   static const splashPage = "/splash";
@@ -28,13 +27,11 @@ class Routes {
 
   static const forgotPasswordPage = "/forgotPassword";
   static Future<String> get forgotPasswordPageRoute async {
-    log("Fogot password pressed");
     return forgotPasswordPage;
   }
 
   static const emailSentSplashPage = "/emailSentSplash";
   static Future<String> get emailSentSplashPageRoute async {
-    log("Email Sent Splash");
     return emailSentSplashPage;
   }
 

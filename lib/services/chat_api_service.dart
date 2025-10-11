@@ -1,6 +1,5 @@
 // lib/services/chat_api_service.dart
 
-import 'dart:developer';
 import 'package:dio/dio.dart';
 import '../services/api_service.dart';
 import '../models/chatroom_model.dart';
@@ -28,7 +27,6 @@ class ChatApiService {
   /// last messages, and unread counts
   static Future<List<ChatRoomModel>> getChatRooms() async {
     try {
-      log('🔄 Fetching chat rooms...', name: 'ChatAPI');
       
       final response = await _apiService.get('/api/chat/rooms/');
       
@@ -40,10 +38,8 @@ class ChatApiService {
             .map((json) => _mapChatRoomFromBackend(json as Map<String, dynamic>))
             .toList();
         
-        log('✅ Fetched ${chatRooms.length} chat rooms', name: 'ChatAPI');
         return chatRooms;
       } else {
-        log('❌ Failed to fetch chat rooms - Status: ${response.statusCode}', name: 'ChatAPI');
         throw DioException(
           requestOptions: response.requestOptions,
           response: response,
@@ -51,7 +47,6 @@ class ChatApiService {
         );
       }
     } catch (e) {
-      log('❌ Error fetching chat rooms: $e', name: 'ChatAPI');
       rethrow;
     }
   }
@@ -66,70 +61,38 @@ class ChatApiService {
     String userId2,
   ) async {
     try {
-      log('🔄 Getting or creating chat room for request: $requestId', name: 'ChatAPI');
-      log('👥 Participants: $userId1, $userId2', name: 'ChatAPI');
       
       // Enhanced logging for debugging
-      log('🔍 [CHAT API] === API Call Debug ===');
-      log('🔍 [CHAT API] Endpoint: POST /api/chat/rooms/get_or_create/');
-      log('🔍 [CHAT API] Request ID: $requestId');
-      log('🔍 [CHAT API] User ID 1: $userId1');
-      log('🔍 [CHAT API] User ID 2: $userId2');
       
       final requestData = {
         'service_request_id': requestId,
         'participants': [userId1, userId2],
       };
       
-      log('📤 Sending request data: $requestData', name: 'ChatAPI');
       
       // Enhanced logging for exact payload
-      log('🔍 [CHAT API] === Request Payload ===');
-      log('🔍 [CHAT API] service_request_id: $requestId');
-      log('🔍 [CHAT API] participants: [$userId1, $userId2]');
-      log('🔍 [CHAT API] Full payload: $requestData');
-      log('🔍 [CHAT API] JSON payload: ${requestData.toString()}');
       
-      log('🔍 [CHAT API] Making API call...');
       
       final response = await _apiService.post(
         '/api/chat/rooms/get_or_create/',
         data: requestData,
       );
       
-      log('📡 Response status: ${response.statusCode}', name: 'ChatAPI');
-      log('📡 Response data: ${response.data}', name: 'ChatAPI');
       
       // Enhanced response logging
-      log('🔍 [CHAT API] === API Response ===');
-      log('🔍 [CHAT API] Status Code: ${response.statusCode}');
-      log('🔍 [CHAT API] Response Headers: ${response.headers}');
-      log('🔍 [CHAT API] Response Data: ${response.data}');
-      log('🔍 [CHAT API] Response Type: ${response.data.runtimeType}');
       
       if (response.statusCode == 200 || response.statusCode == 201) {
         // Handle the nested chat_room structure from get_or_create endpoint
         final responseData = response.data as Map<String, dynamic>;
-        log('🔍 [CHAT API] Processing successful response...');
-        log('🔍 [CHAT API] Response data keys: ${responseData.keys.toList()}');
         
         final chatRoomData = responseData['chat_room'] as Map<String, dynamic>;
-        log('🔍 [CHAT API] Chat room data: $chatRoomData');
         
         final chatRoom = _mapChatRoomFromBackend(chatRoomData);
-        log('✅ Chat room ready: ${chatRoom.chatRoomId}', name: 'ChatAPI');
         
-        log('✅ [CHAT API] Chat room created successfully');
-        log('✅ [CHAT API] Room ID: ${chatRoom.chatRoomId}');
         
         return chatRoom;
       } else {
-        log('❌ Failed to get/create chat room - Status: ${response.statusCode}', name: 'ChatAPI');
-        log('❌ Response body: ${response.data}', name: 'ChatAPI');
         
-        log('❌ [CHAT API] API call failed');
-        log('❌ [CHAT API] Status Code: ${response.statusCode}');
-        log('❌ [CHAT API] Error Response: ${response.data}');
         
         throw DioException(
           requestOptions: response.requestOptions,
@@ -138,10 +101,7 @@ class ChatApiService {
         );
       }
     } catch (e) {
-      log('❌ Error getting/creating chat room: $e', name: 'ChatAPI');
       
-      log('❌ [CHAT API] Exception in getOrCreateChatRoom: $e');
-      log('❌ [CHAT API] Exception type: ${e.runtimeType}');
       
       rethrow;
     }
@@ -150,16 +110,13 @@ class ChatApiService {
   /// Get chat room details by ID
   static Future<ChatRoomModel> getChatRoom(String roomId) async {
     try {
-      log('🔄 Fetching chat room: $roomId', name: 'ChatAPI');
       
       final response = await _apiService.get('/api/chat/rooms/$roomId/');
       
       if (response.statusCode == 200) {
         final chatRoom = _mapChatRoomFromBackend(response.data as Map<String, dynamic>);
-        log('✅ Chat room fetched: ${chatRoom.chatRoomId}', name: 'ChatAPI');
         return chatRoom;
       } else {
-        log('❌ Failed to fetch chat room - Status: ${response.statusCode}', name: 'ChatAPI');
         throw DioException(
           requestOptions: response.requestOptions,
           response: response,
@@ -167,7 +124,6 @@ class ChatApiService {
         );
       }
     } catch (e) {
-      log('❌ Error fetching chat room: $e', name: 'ChatAPI');
       rethrow;
     }
   }
@@ -189,7 +145,6 @@ class ChatApiService {
     int pageSize = 50,
   }) async {
     try {
-      log('🔄 Fetching messages for room: $roomId (page: $page)', name: 'ChatAPI');
       
       final response = await _apiService.get(
         '/api/chat/rooms/$roomId/messages/',
@@ -207,16 +162,13 @@ class ChatApiService {
             .map((json) => _mapMessageFromBackend(json as Map<String, dynamic>))
             .toList();
         
-        log('✅ Fetched ${messages.length} messages for room: $roomId', name: 'ChatAPI');
         
         // Log first message for debugging
         if (messages.isNotEmpty) {
-          log('📄 First message: "${messages.first.message}" from ${messages.first.senderId}', name: 'ChatAPI');
         }
         
         return messages;
       } else {
-        log('❌ Failed to fetch messages - Status: ${response.statusCode}', name: 'ChatAPI');
         throw DioException(
           requestOptions: response.requestOptions,
           response: response,
@@ -224,7 +176,6 @@ class ChatApiService {
         );
       }
     } catch (e) {
-      log('❌ Error fetching messages: $e', name: 'ChatAPI');
       rethrow;
     }
   }
@@ -240,7 +191,6 @@ class ChatApiService {
     String content,
   ) async {
     try {
-      log('🔄 Sending message to room: $roomId', name: 'ChatAPI');
       
       // Validate room ID is not empty
       if (roomId.isEmpty) {
@@ -258,8 +208,6 @@ class ChatApiService {
         'message_type': 'text',
       };
       
-      log('📤 Sending message data: $messageData', name: 'ChatAPI');
-      log('📍 Endpoint: /api/chat/rooms/$roomId/send_message/', name: 'ChatAPI');
       
       final response = await _apiService.post(
         '/api/chat/rooms/$roomId/send_message/',
@@ -268,10 +216,8 @@ class ChatApiService {
       
       if (response.statusCode == 201 || response.statusCode == 200) {
         final message = _mapMessageFromBackend(response.data as Map<String, dynamic>);
-        log('✅ Message sent successfully: ${message.messageId}', name: 'ChatAPI');
         return message;
       } else {
-        log('❌ Failed to send message - Status: ${response.statusCode}', name: 'ChatAPI');
         throw DioException(
           requestOptions: response.requestOptions,
           response: response,
@@ -279,7 +225,6 @@ class ChatApiService {
         );
       }
     } catch (e) {
-      log('❌ Error sending message: $e', name: 'ChatAPI');
       rethrow;
     }
   }
@@ -292,7 +237,6 @@ class ChatApiService {
   /// in the specified chat room for the current user
   static Future<void> markMessagesAsRead(String roomId) async {
     try {
-      log('🔄 Marking messages as read for room: $roomId', name: 'ChatAPI');
       
       final response = await _apiService.post(
         '/api/chat/rooms/$roomId/mark_read/',
@@ -300,9 +244,7 @@ class ChatApiService {
       );
       
       if (response.statusCode == 200 || response.statusCode == 204) {
-        log('✅ Messages marked as read for room: $roomId', name: 'ChatAPI');
       } else {
-        log('❌ Failed to mark messages as read - Status: ${response.statusCode}', name: 'ChatAPI');
         throw DioException(
           requestOptions: response.requestOptions,
           response: response,
@@ -310,7 +252,6 @@ class ChatApiService {
         );
       }
     } catch (e) {
-      log('❌ Error marking messages as read: $e', name: 'ChatAPI');
       rethrow;
     }
   }
@@ -332,11 +273,6 @@ class ChatApiService {
     String? serviceRequestId,
   }) async {
     try {
-      log('🔄 Creating chat room between users: $userId1, $userId2', name: 'ChatAPI');
-      log('🔍 [DIRECT CHAT API] === API Call Debug ===');
-      log('🔍 [DIRECT CHAT API] User ID 1: $userId1');
-      log('🔍 [DIRECT CHAT API] User ID 2: $userId2');
-      log('🔍 [DIRECT CHAT API] Service Request ID: $serviceRequestId');
 
       // Match the working format: service_request_id first, then participants
       final roomData = <String, dynamic>{
@@ -344,11 +280,6 @@ class ChatApiService {
         'participants': [userId1, userId2],
       };
 
-      log('🔍 [DIRECT CHAT API] === Request Payload ===');
-      log('🔍 [DIRECT CHAT API] participants: [$userId1, $userId2]');
-      log('🔍 [DIRECT CHAT API] service_request_id: $serviceRequestId');
-      log('🔍 [DIRECT CHAT API] Full payload: $roomData');
-      log('🔍 [DIRECT CHAT API] Endpoint: POST /api/chat/rooms/get_or_create/');
 
       // Use the get_or_create endpoint for all chat room creation for consistency
       final response = await _apiService.post(
@@ -356,19 +287,14 @@ class ChatApiService {
         data: roomData,
       );
 
-      log('🔍 [DIRECT CHAT API] === API Response ===');
-      log('🔍 [DIRECT CHAT API] Status Code: ${response.statusCode}');
-      log('🔍 [DIRECT CHAT API] Response Data: ${response.data}');
       
       if (response.statusCode == 200 || response.statusCode == 201) {
         // Handle the nested chat_room structure from get_or_create endpoint
         final responseData = response.data as Map<String, dynamic>;
         final chatRoomData = responseData['chat_room'] as Map<String, dynamic>;
         final chatRoom = _mapChatRoomFromBackend(chatRoomData);
-        log('✅ Chat room created: ${chatRoom.chatRoomId}', name: 'ChatAPI');
         return chatRoom;
       } else {
-        log('❌ Failed to create chat room - Status: ${response.statusCode}', name: 'ChatAPI');
         throw DioException(
           requestOptions: response.requestOptions,
           response: response,
@@ -376,7 +302,6 @@ class ChatApiService {
         );
       }
     } catch (e) {
-      log('❌ Error creating chat room: $e', name: 'ChatAPI');
       rethrow;
     }
   }
@@ -434,7 +359,6 @@ class ChatApiService {
 
   /// Map backend message JSON to ChatMessageModel
   static ChatMessageModel _mapMessageFromBackend(Map<String, dynamic> json) {
-    log('🔍 Mapping message JSON: $json', name: 'ChatAPI');
     
     final messageContent = json['content'] ?? json['message'] ?? '';
     
@@ -454,7 +378,6 @@ class ChatApiService {
       receiverId = json['receiver']?.toString() ?? '';
     }
     
-    log('📝 Message details: content="$messageContent", senderId="$senderId", receiverId="$receiverId"', name: 'ChatAPI');
     
     return ChatMessageModel(
       messageId: json['id']?.toString() ?? '',

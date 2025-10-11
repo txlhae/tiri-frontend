@@ -1,4 +1,3 @@
-import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -110,7 +109,6 @@ class _IntrestedDialogState extends State<IntrestedDialog> {
     });
 
     try {
-      log('🙋 Sending enhanced volunteer request for: ${widget.request.requestId}');
       
       final message = _messageController.text.trim();
       final timeInfo = _selectedTime != null 
@@ -124,7 +122,6 @@ class _IntrestedDialogState extends State<IntrestedDialog> {
         fullMessage,
       );
       
-      log('✅ Enhanced volunteer request sent successfully');
       
       // Close dialog and show success
       Get.back();
@@ -141,7 +138,6 @@ class _IntrestedDialogState extends State<IntrestedDialog> {
       );
       
     } catch (error) {
-      log('💥 Error in enhanced volunteer request: $error');
       setState(() {
         _isLoading = false;
       });

@@ -1,7 +1,6 @@
 // lib/services/firebase_notification_service.dart
 
 import 'dart:convert';
-import 'dart:developer';
 import 'dart:io';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -113,20 +112,16 @@ class FirebaseNotificationService extends GetxService {
   Future<void> initialize() async {
     try {
       if (_isInitialized) {
-        log('⚠️ INIT CHECK: FirebaseNotificationService already initialized, returning early', name: 'FIREBASE_NOTIFICATIONS');
         return;
       }
 
-      log('🚀 INIT START: Initializing FirebaseNotificationService', name: 'FIREBASE_NOTIFICATIONS');
 
       // Ensure Firebase is initialized
       if (Firebase.apps.isEmpty) {
-        log('❌ INIT FAILED: Firebase not initialized - skipping FCM setup', name: 'FIREBASE_NOTIFICATIONS');
         _isInitialized = false;
         return;
       }
       
-      log('✅ INIT CHECK: Firebase apps available: ${Firebase.apps.length}', name: 'FIREBASE_NOTIFICATIONS');
 
       // Initialize dependencies
       _firebaseMessaging = FirebaseMessaging.instance;
@@ -152,10 +147,8 @@ class FirebaseNotificationService extends GetxService {
       await _loadSavedData();
 
       _isInitialized = true;
-      log('🎉 FirebaseNotificationService initialized successfully', name: 'FIREBASE_NOTIFICATIONS');
 
     } catch (e) {
-      log('Error initializing FirebaseNotificationService: $e', name: 'FIREBASE_NOTIFICATIONS');
       rethrow;
     }
   }
@@ -191,7 +184,6 @@ class FirebaseNotificationService extends GetxService {
       await androidPlugin?.createNotificationChannel(_defaultChannel);
     }
 
-    log('Local notifications initialized', name: 'FIREBASE_NOTIFICATIONS');
   }
 
   /// Set up Firebase messaging handlers
@@ -211,7 +203,6 @@ class FirebaseNotificationService extends GetxService {
     // Handle token refresh
     _firebaseMessaging.onTokenRefresh.listen(_onTokenRefresh);
 
-    log('Firebase messaging handlers set up', name: 'FIREBASE_NOTIFICATIONS');
   }
 
   /// Load saved data from storage
@@ -228,10 +219,8 @@ class FirebaseNotificationService extends GetxService {
       _lastRegisteredToken = await _secureStorage.read(key: _lastRegisteredTokenKey);
 
       if (ApiConfig.enableLogging) {
-        log('Saved data loaded - FCM token: ${_fcmToken != null ? "available" : "missing"}, Permission: $_hasNotificationPermission, Last registered: ${_lastRegisteredToken != null ? "available" : "missing"}', name: 'FIREBASE_NOTIFICATIONS');
       }
     } catch (e) {
-      log('Error loading saved data: $e', name: 'FIREBASE_NOTIFICATIONS');
     }
   }
 
@@ -242,26 +231,19 @@ class FirebaseNotificationService extends GetxService {
   /// Request notification permissions from the user
   Future<bool> requestNotificationPermissions() async {
     try {
-      log('📱 DETAILED PERMISSIONS: Starting permission request', name: 'FIREBASE_NOTIFICATIONS');
-      log('📱 DETAILED PERMISSIONS: Platform: ${Platform.operatingSystem}', name: 'FIREBASE_NOTIFICATIONS');
 
       // For Android 13+ (API 33+), use permission_handler
       if (Platform.isAndroid) {
-        log('📱 DETAILED PERMISSIONS: Android platform detected, requesting notification permission', name: 'FIREBASE_NOTIFICATIONS');
         
         // Check current status first
         final currentStatus = await Permission.notification.status;
-        log('📱 DETAILED PERMISSIONS: Current Android permission status: $currentStatus', name: 'FIREBASE_NOTIFICATIONS');
         
         final status = await Permission.notification.request();
-        log('📱 DETAILED PERMISSIONS: Android permission request result: $status', name: 'FIREBASE_NOTIFICATIONS');
         
         _hasNotificationPermission = status == PermissionStatus.granted;
-        log('📱 DETAILED PERMISSIONS: Android _hasNotificationPermission set to: $_hasNotificationPermission', name: 'FIREBASE_NOTIFICATIONS');
       } 
       // For iOS, use Firebase messaging
       else if (Platform.isIOS) {
-        log('📱 DETAILED PERMISSIONS: iOS platform detected, requesting Firebase permissions', name: 'FIREBASE_NOTIFICATIONS');
         
         final settings = await _firebaseMessaging.requestPermission(
           alert: true,
@@ -273,27 +255,20 @@ class FirebaseNotificationService extends GetxService {
           announcement: false,
         );
         
-        log('📱 DETAILED PERMISSIONS: iOS permission request result: ${settings.authorizationStatus}', name: 'FIREBASE_NOTIFICATIONS');
         
         _hasNotificationPermission = settings.authorizationStatus == AuthorizationStatus.authorized ||
                                    settings.authorizationStatus == AuthorizationStatus.provisional;
-        log('📱 DETAILED PERMISSIONS: iOS _hasNotificationPermission set to: $_hasNotificationPermission', name: 'FIREBASE_NOTIFICATIONS');
       }
 
       // Save permission status
-      log('📱 DETAILED PERMISSIONS: Saving permission status to secure storage', name: 'FIREBASE_NOTIFICATIONS');
       await _secureStorage.write(
         key: _notificationPermissionKey, 
         value: _hasNotificationPermission.toString(),
       );
-      log('📱 DETAILED PERMISSIONS: Permission status saved', name: 'FIREBASE_NOTIFICATIONS');
 
-      log('📱 DETAILED PERMISSIONS: Final result - Notification permissions ${_hasNotificationPermission ? "granted" : "denied"}', name: 'FIREBASE_NOTIFICATIONS');
       return _hasNotificationPermission;
 
     } catch (e) {
-      log('💥 DETAILED PERMISSIONS: Error requesting notification permissions: $e', name: 'FIREBASE_NOTIFICATIONS');
-      log('💥 DETAILED PERMISSIONS: Stack trace: ${StackTrace.current}', name: 'FIREBASE_NOTIFICATIONS');
       return false;
     }
   }
@@ -312,7 +287,6 @@ class FirebaseNotificationService extends GetxService {
 
       return _hasNotificationPermission;
     } catch (e) {
-      log('Error checking notification permissions: $e', name: 'FIREBASE_NOTIFICATIONS');
       return false;
     }
   }
@@ -332,7 +306,6 @@ class FirebaseNotificationService extends GetxService {
       _appVersion = '${packageInfo.version}+${packageInfo.buildNumber}';
       return _appVersion!;
     } catch (e) {
-      log('Error getting app version: $e', name: 'FIREBASE_NOTIFICATIONS');
       _appVersion = '1.0.0+1'; // Fallback version
       return _appVersion!;
     }
@@ -360,31 +333,21 @@ class FirebaseNotificationService extends GetxService {
   /// Get FCM registration token
   Future<String?> getFCMToken() async {
     try {
-      print('🔑 DEBUG getFCMToken: Starting FCM token retrieval');
-      print('🔑 DEBUG getFCMToken: _hasNotificationPermission = $_hasNotificationPermission');
       
       if (!_hasNotificationPermission) {
-        print('❌ DEBUG getFCMToken: No notification permission - cannot get FCM token');
         return null;
       }
 
-      print('🔑 DEBUG getFCMToken: Calling _firebaseMessaging.getToken()...');
       final token = await _firebaseMessaging.getToken();
-      print('🔑 DEBUG getFCMToken: _firebaseMessaging.getToken() returned: ${token != null ? "${token.substring(0, 20)}..." : "NULL"}');
       
       if (token != null) {
-        print('🔑 DEBUG getFCMToken: Token is not null, saving to storage and cache');
         _fcmToken = token;
         await _secureStorage.write(key: _fcmTokenKey, value: token);
-        print('🔑 DEBUG getFCMToken: Token saved successfully');
       } else {
-        print('❌ DEBUG getFCMToken: Token is NULL - this is the problem!');
       }
       
       return token;
     } catch (e) {
-      print('💥 DEBUG getFCMToken: Exception caught: $e');
-      print('💥 DEBUG getFCMToken: Stack trace: ${StackTrace.current}');
       return null;
     }
   }
@@ -392,61 +355,45 @@ class FirebaseNotificationService extends GetxService {
   /// Register FCM token with backend API
   Future<bool> registerTokenWithBackend() async {
     try {
-      log('🚀 STARTING FCM TOKEN REGISTRATION WITH BACKEND...', name: 'FIREBASE_NOTIFICATIONS');
       
       // Get FCM token first to check for duplicates
       final token = await getFCMToken();
       if (token == null) {
-        log('❌ No FCM token available for registration', name: 'FIREBASE_NOTIFICATIONS');
         return false;
       }
       
       // Check if token is the same as last registered token
       if (_lastRegisteredToken == token) {
-        log('🔄 DEDUPLICATION: Same token already registered, checking cooldown period', name: 'FIREBASE_NOTIFICATIONS');
         
         // Check cooldown period
         if (_lastRegistrationTime != null) {
           final timeSinceLastRegistration = DateTime.now().difference(_lastRegistrationTime!).inMilliseconds;
           if (timeSinceLastRegistration < _registrationCooldownMs) {
             final remainingCooldown = (_registrationCooldownMs - timeSinceLastRegistration) / 1000;
-            log('⏰ DEDUPLICATION: Skipping registration - cooldown active (${remainingCooldown.toStringAsFixed(1)}s remaining)', name: 'FIREBASE_NOTIFICATIONS');
             return true; // Return true because token is already registered
           }
         }
       }
       
-      log('✅ DEDUPLICATION: Token check passed - proceeding with registration', name: 'FIREBASE_NOTIFICATIONS');
       
       // Check if user is authenticated using lazy loading
       try {
         final AuthService authService = Get.find<AuthService>();
-        log('✅ Found AuthService, checking token validity...', name: 'FIREBASE_NOTIFICATIONS');
-        log('🔍 DEBUG: authService.hasValidTokens = ${authService.hasValidTokens}', name: 'FIREBASE_NOTIFICATIONS');
-        log('🔍 DEBUG: authService.runtimeType = ${authService.runtimeType}', name: 'FIREBASE_NOTIFICATIONS');
         
         if (!authService.hasValidTokens) {
-          log('❌ User not authenticated - hasValidTokens = false, cannot register FCM token', name: 'FIREBASE_NOTIFICATIONS');
-          log('🔍 DEBUG: Will retry after short delay to allow tokens to be set...', name: 'FIREBASE_NOTIFICATIONS');
           
           // Wait a short time for tokens to be set after login
           await Future.delayed(const Duration(milliseconds: 500));
           
-          log('🔄 RETRY: Checking authentication again after delay...', name: 'FIREBASE_NOTIFICATIONS');
           if (!authService.hasValidTokens) {
-            log('❌ Still not authenticated after retry - aborting FCM token registration', name: 'FIREBASE_NOTIFICATIONS');
             return false;
           }
-          log('✅ Authentication valid after retry!', name: 'FIREBASE_NOTIFICATIONS');
         }
         
-        log('✅ User has valid tokens, proceeding with FCM registration...', name: 'FIREBASE_NOTIFICATIONS');
       } catch (e) {
-        log('❌ AuthService not available - cannot register FCM token: $e', name: 'FIREBASE_NOTIFICATIONS');
         return false;
       }
 
-      log('✅ FCM token obtained: ${token.substring(0, 20)}...', name: 'FIREBASE_NOTIFICATIONS');
 
       // Determine device type
       String deviceType;
@@ -462,14 +409,8 @@ class FirebaseNotificationService extends GetxService {
       final deviceName = await _getDeviceName();
       final appVersion = await _getAppVersion();
       
-      log('📋 Registration data prepared:', name: 'FIREBASE_NOTIFICATIONS');
-      log('   - Device Type: $deviceType', name: 'FIREBASE_NOTIFICATIONS');
-      log('   - Device Name: $deviceName', name: 'FIREBASE_NOTIFICATIONS');
-      log('   - App Version: $appVersion', name: 'FIREBASE_NOTIFICATIONS');
 
       // Register with backend
-      print('🌐 BACKEND DEBUG: Calling POST /api/notifications/device-tokens/register/');
-      print('🌐 BACKEND DEBUG: Request data: {token: ${token.substring(0, 20)}..., device_type: $deviceType, device_name: $deviceName, app_version: $appVersion}');
       
       final response = await _apiService.post(
         '/api/notifications/device-tokens/register/',
@@ -481,29 +422,21 @@ class FirebaseNotificationService extends GetxService {
         },
       );
 
-      print('📡 BACKEND DEBUG: API response status: ${response.statusCode}');
-      print('📡 BACKEND DEBUG: API response data: ${response.data}');
 
       if (response.statusCode == 200) {
         final data = response.data;
-        log('🎉 FCM token registered successfully: ${data['message'] ?? "Success"}', name: 'FIREBASE_NOTIFICATIONS');
         
         // Track successful registration to prevent duplicates
         _lastRegisteredToken = token;
         _lastRegistrationTime = DateTime.now();
         await _secureStorage.write(key: _lastRegisteredTokenKey, value: token);
         
-        log('📝 DEDUPLICATION: Registration tracking updated', name: 'FIREBASE_NOTIFICATIONS');
         return true;
       }
 
-      log('❌ Failed to register FCM token - HTTP ${response.statusCode}', name: 'FIREBASE_NOTIFICATIONS');
-      log('❌ Response data: ${response.data}', name: 'FIREBASE_NOTIFICATIONS');
       return false;
 
     } catch (e) {
-      log('💥 Error registering FCM token with backend: $e', name: 'FIREBASE_NOTIFICATIONS');
-      log('💥 Stack trace: ${StackTrace.current}', name: 'FIREBASE_NOTIFICATIONS');
       return false;
     }
   }
@@ -514,11 +447,9 @@ class FirebaseNotificationService extends GetxService {
       try {
         final AuthService authService = Get.find<AuthService>();
         if (!authService.hasValidTokens) {
-          log('User not authenticated - skipping token removal', name: 'FIREBASE_NOTIFICATIONS');
           return true; // Not an error if user is already logged out
         }
       } catch (e) {
-        log('AuthService not available - skipping token removal: $e', name: 'FIREBASE_NOTIFICATIONS');
         return true; // Not an error if AuthService is not available
       }
 
@@ -531,15 +462,12 @@ class FirebaseNotificationService extends GetxService {
 
       if (response.statusCode == 200) {
         final data = response.data;
-        log('FCM tokens removed successfully: ${data['message'] ?? "Success"}', name: 'FIREBASE_NOTIFICATIONS');
         return true;
       }
 
-      log('Failed to remove FCM tokens - HTTP ${response.statusCode}', name: 'FIREBASE_NOTIFICATIONS');
       return false;
 
     } catch (e) {
-      log('Error removing FCM tokens from backend: $e', name: 'FIREBASE_NOTIFICATIONS');
       return false;
     }
   }
@@ -547,7 +475,6 @@ class FirebaseNotificationService extends GetxService {
   /// Handle FCM token refresh
   void _onTokenRefresh(String token) async {
     try {
-      log('FCM token refreshed: ${token.substring(0, 20)}...', name: 'FIREBASE_NOTIFICATIONS');
       
       _fcmToken = token;
       await _secureStorage.write(key: _fcmTokenKey, value: token);
@@ -559,10 +486,8 @@ class FirebaseNotificationService extends GetxService {
           await registerTokenWithBackend();
         }
       } catch (e) {
-        log('AuthService not available during token refresh: $e', name: 'FIREBASE_NOTIFICATIONS');
       }
     } catch (e) {
-      log('Error handling token refresh: $e', name: 'FIREBASE_NOTIFICATIONS');
     }
   }
 
@@ -573,7 +498,6 @@ class FirebaseNotificationService extends GetxService {
   /// Handle foreground messages (when app is open)
   void _handleForegroundMessage(RemoteMessage message) async {
     try {
-      log('Received foreground message: ${message.notification?.title}', name: 'FIREBASE_NOTIFICATIONS');
       
       // Show local notification for foreground messages
       await _showLocalNotification(message);
@@ -582,26 +506,22 @@ class FirebaseNotificationService extends GetxService {
       _processNotificationData(message);
       
     } catch (e) {
-      log('Error handling foreground message: $e', name: 'FIREBASE_NOTIFICATIONS');
     }
   }
 
   /// Handle notification tapped (from Firebase message)
   void _handleNotificationTapped(RemoteMessage message) {
     try {
-      log('Notification tapped: ${message.notification?.title}', name: 'FIREBASE_NOTIFICATIONS');
       
       _processNotificationClick(message.data);
       
     } catch (e) {
-      log('Error handling notification tap: $e', name: 'FIREBASE_NOTIFICATIONS');
     }
   }
 
   /// Handle local notification tapped
   void _onNotificationTapped(NotificationResponse notificationResponse) {
     try {
-      log('Local notification tapped: ${notificationResponse.payload}', name: 'FIREBASE_NOTIFICATIONS');
       
       if (notificationResponse.payload != null) {
         final data = jsonDecode(notificationResponse.payload!);
@@ -609,7 +529,6 @@ class FirebaseNotificationService extends GetxService {
       }
       
     } catch (e) {
-      log('Error handling local notification tap: $e', name: 'FIREBASE_NOTIFICATIONS');
     }
   }
 
@@ -656,10 +575,8 @@ class FirebaseNotificationService extends GetxService {
         payload: jsonEncode(message.data),
       );
 
-      log('Local notification shown: ${notification.title}', name: 'FIREBASE_NOTIFICATIONS');
 
     } catch (e) {
-      log('Error showing local notification: $e', name: 'FIREBASE_NOTIFICATIONS');
     }
   }
 
@@ -673,25 +590,20 @@ class FirebaseNotificationService extends GetxService {
       switch (notificationType) {
         case 'new_message':
           // Handle new chat message
-          log('Processing new message notification', name: 'FIREBASE_NOTIFICATIONS');
           break;
           
         case 'request_update':
           // Handle service request update
-          log('Processing request update notification', name: 'FIREBASE_NOTIFICATIONS');
           break;
           
         case 'approval_needed':
           // Handle approval needed notification
-          log('Processing approval needed notification', name: 'FIREBASE_NOTIFICATIONS');
           break;
           
         default:
-          log('Processing generic notification', name: 'FIREBASE_NOTIFICATIONS');
       }
       
     } catch (e) {
-      log('Error processing notification data: $e', name: 'FIREBASE_NOTIFICATIONS');
     }
   }
 
@@ -701,37 +613,30 @@ class FirebaseNotificationService extends GetxService {
       final clickAction = data['click_action'] as String?;
       
       if (clickAction == null) {
-        log('No click action specified in notification', name: 'FIREBASE_NOTIFICATIONS');
         return;
       }
 
-      log('Processing click action: $clickAction', name: 'FIREBASE_NOTIFICATIONS');
 
       // Handle different click actions
       if (clickAction.startsWith('open_chat:')) {
         final chatId = clickAction.split(':')[1];
         // Navigate to chat screen
         // Get.toNamed('/chat', arguments: {'chatId': chatId});
-        log('Navigate to chat: $chatId', name: 'FIREBASE_NOTIFICATIONS');
         
       } else if (clickAction.startsWith('open_request:')) {
         final requestId = clickAction.split(':')[1];
         // Navigate to request details screen
         // Get.toNamed('/request-details', arguments: {'requestId': requestId});
-        log('Navigate to request: $requestId', name: 'FIREBASE_NOTIFICATIONS');
         
       } else if (clickAction.startsWith('open_approval:')) {
         final approvalId = clickAction.split(':')[1];
         // Navigate to approval screen
         // Get.toNamed('/approvals', arguments: {'approvalId': approvalId});
-        log('Navigate to approval: $approvalId', name: 'FIREBASE_NOTIFICATIONS');
         
       } else {
-        log('Unknown click action: $clickAction', name: 'FIREBASE_NOTIFICATIONS');
       }
       
     } catch (e) {
-      log('Error processing notification click: $e', name: 'FIREBASE_NOTIFICATIONS');
     }
   }
 
@@ -741,62 +646,37 @@ class FirebaseNotificationService extends GetxService {
   
   /// Complete setup flow for push notifications
   Future<bool> setupPushNotifications() async {
-    print('🔥🔥🔥 setupPushNotifications() CALLED - THIS SHOULD ALWAYS PRINT!');
     try {
-      print('🔥🔥🔥 INSIDE TRY BLOCK');
-      print('🚀 DETAILED FCM SETUP: Starting complete push notification setup flow');
 
       // 1. Ensure service is initialized
-      print('🔧 DETAILED FCM SETUP: Step 1 - Checking service initialization');
-      print('🔧 DETAILED FCM SETUP: _isInitialized = $_isInitialized');
       if (!_isInitialized) {
-        print('⚠️ DETAILED FCM SETUP: Service not initialized, initializing now...');
         await initialize();
-        print('⚠️ DETAILED FCM SETUP: After initialize(), _isInitialized = $_isInitialized');
         if (!_isInitialized) {
-          print('❌ DETAILED FCM SETUP: Failed to initialize service');
           return false;
         }
       }
-      print('✅ DETAILED FCM SETUP: Service initialization check passed');
 
       // 2. Check permissions (don't request again - should be handled by NotificationPermissionService)
-      print('📱 DETAILED FCM SETUP: Step 2 - Checking notification permissions');
       final hasPermission = await checkNotificationPermissions();
-      print('🔍 DETAILED FCM SETUP: Permission check result: $hasPermission');
       if (!hasPermission) {
-        print('❌ DETAILED FCM SETUP: Push notification setup failed - no permission granted');
-        print('💡 DETAILED FCM SETUP: Permissions should be handled by NotificationPermissionService during splash');
         return false;
       }
-      print('✅ DETAILED FCM SETUP: Notification permissions already granted');
 
       // 3. Get FCM token
-      print('🔑 DETAILED FCM SETUP: Step 3 - Getting FCM token');
       final token = await getFCMToken();
       if (token == null) {
-        print('❌ DETAILED FCM SETUP: Push notification setup failed - no FCM token obtained');
         return false;
       }
-      print('✅ DETAILED FCM SETUP: FCM token obtained: ${token.substring(0, 20)}...');
 
       // 4. Register with backend
-      print('🌐 DETAILED FCM SETUP: Step 4 - Registering token with backend');
       final registered = await registerTokenWithBackend();
-      print('🔍 DETAILED FCM SETUP: Backend registration result: $registered');
       if (!registered) {
-        print('❌ DETAILED FCM SETUP: Push notification setup failed - backend registration failed');
         return false;
       }
-      print('✅ DETAILED FCM SETUP: Backend registration successful');
 
-      print('🎉 DETAILED FCM SETUP: Push notifications setup completed successfully');
       return true;
 
     } catch (e) {
-      print('🔥🔥🔥 CAUGHT EXCEPTION IN setupPushNotifications: $e');
-      log('💥 DETAILED FCM SETUP: Error setting up push notifications: $e', name: 'FIREBASE_NOTIFICATIONS');
-      log('💥 DETAILED FCM SETUP: Stack trace: ${StackTrace.current}', name: 'FIREBASE_NOTIFICATIONS');
       return false;
     }
   }
@@ -807,11 +687,9 @@ class FirebaseNotificationService extends GetxService {
       try {
         final AuthService authService = Get.find<AuthService>();
         if (!authService.hasValidTokens) {
-          log('User not authenticated - cannot send test notification', name: 'FIREBASE_NOTIFICATIONS');
           return false;
         }
       } catch (e) {
-        log('AuthService not available - cannot send test notification: $e', name: 'FIREBASE_NOTIFICATIONS');
         return false;
       }
 
@@ -825,15 +703,12 @@ class FirebaseNotificationService extends GetxService {
 
       if (response.statusCode == 200) {
         final data = response.data;
-        log('Test notification sent: ${data['message'] ?? "Success"}', name: 'FIREBASE_NOTIFICATIONS');
         return true;
       }
 
-      log('Failed to send test notification - HTTP ${response.statusCode}', name: 'FIREBASE_NOTIFICATIONS');
       return false;
 
     } catch (e) {
-      log('Error sending test notification: $e', name: 'FIREBASE_NOTIFICATIONS');
       return false;
     }
   }
@@ -841,7 +716,6 @@ class FirebaseNotificationService extends GetxService {
   /// Clean up on logout
   Future<void> cleanup() async {
     try {
-      log('Cleaning up Firebase notifications', name: 'FIREBASE_NOTIFICATIONS');
 
       // Remove token from backend
       await removeTokenFromBackend();
@@ -857,10 +731,8 @@ class FirebaseNotificationService extends GetxService {
       _lastRegisteredToken = null;
       _lastRegistrationTime = null;
 
-      log('Firebase notifications cleanup completed', name: 'FIREBASE_NOTIFICATIONS');
 
     } catch (e) {
-      log('Error during Firebase notifications cleanup: $e', name: 'FIREBASE_NOTIFICATIONS');
     }
   }
 
