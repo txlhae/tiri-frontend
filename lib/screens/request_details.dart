@@ -1492,36 +1492,9 @@ class _RequestDetailsState extends State<RequestDetails> {
     
     // Get volunteer user data for profile navigation
     final volunteerRating = volunteerData['rating']?.toDouble() ?? 0.0;
-    final volunteerHours = volunteerData['hours'] ?? 0;
     final volunteerImageUrl = volunteerData['imageUrl'] ?? volunteerData['image_url'];
-    
-    // Get status display info
-    Color statusColor;
-    Color statusBgColor;
-    String statusText;
-    IconData statusIcon;
-    
-    switch (status) {
-      case 'approved':
-        statusColor = Colors.green.shade700;
-        statusBgColor = Colors.green.shade100;
-        statusText = 'APPROVED';
-        statusIcon = Icons.check_circle;
-        break;
-      case 'rejected':
-        statusColor = Colors.red.shade700;
-        statusBgColor = Colors.red.shade100;
-        statusText = 'REJECTED';
-        statusIcon = Icons.cancel;
-        break;
-      case 'pending':
-      default:
-        statusColor = Colors.orange.shade700;
-        statusBgColor = Colors.orange.shade100;
-        statusText = 'PENDING';
-        statusIcon = Icons.schedule;
-        break;
-    }
+
+    // Note: Status display variables removed as they were unused
     
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
