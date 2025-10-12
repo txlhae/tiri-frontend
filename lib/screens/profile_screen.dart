@@ -338,7 +338,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                               }
                                             },
                                             child: Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                                              padding: const EdgeInsets.all(8),
                                               decoration: BoxDecoration(
                                                 color: Theme.of(context).colorScheme.primary,
                                                 borderRadius: BorderRadius.circular(6),
@@ -350,14 +350,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                                   ),
                                                 ],
                                               ),
-                                              child: const Text(
-                                                'Copy',
-                                                style: TextStyle(
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.w600,
-                                                  fontSize: 15,
-                                                  letterSpacing: 1.2,
-                                                ),
+                                              child: Icon(
+                                                Icons.content_copy,
+                                                color: Colors.white,
+                                                size: 20,
                                               ),
                                             ),
                                           ),

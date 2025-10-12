@@ -193,9 +193,7 @@ class _FeedbackState extends State<Feedback> {
           return const SizedBox.shrink();
         }),
         Expanded(
-            child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Obx(() {
+            child: Obx(() {
                   if (requestController.isFeedbackLoading.value) {
                     return const Center(child: CircularProgressIndicator());
                   }
@@ -214,6 +212,7 @@ class _FeedbackState extends State<Feedback> {
                   }
 
                   return ListView.builder(
+                    padding: const EdgeInsets.only(top: 12),
                     itemCount: feedbackList.length,
                     itemBuilder: (context, index) {
                       final item = feedbackList[index];
@@ -225,7 +224,7 @@ class _FeedbackState extends State<Feedback> {
 
                       // Enhanced TIRI Brief compliant feedback card
                       return Container(
-                        margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+                        margin: const EdgeInsets.only(left: 12, right: 12, bottom: 12),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(8),
@@ -359,7 +358,7 @@ class _FeedbackState extends State<Feedback> {
                       );
                     },
                   );
-                })))
+                }))
             ]),
           ),
         ));

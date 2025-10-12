@@ -57,10 +57,10 @@ class ContactUs extends StatelessWidget {
             ),
             const Padding(
               padding:
-                  EdgeInsets.only(top: 150, left: 20, right: 20, bottom: 20),
+                  EdgeInsets.only(top: 150, left: 20, right: 20),
               child: DetailsCard(
                 child: Padding(
-                  padding: EdgeInsets.all(15.0),
+                  padding: EdgeInsets.only(left: 15.0, right: 15.0, top: 15.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [

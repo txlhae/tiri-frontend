@@ -132,6 +132,7 @@ class _MyHelpsState extends State<MyHelps> with SingleTickerProviderStateMixin {
     }
 
     return ListView.builder(
+      padding: const EdgeInsets.only(top: 12),
       itemCount: myHelpRequests.length,
       itemBuilder: (context, index) {
         final request = myHelpRequests[index];
@@ -139,7 +140,7 @@ class _MyHelpsState extends State<MyHelps> with SingleTickerProviderStateMixin {
         return GestureDetector(
           onTap: () => Get.toNamed(Routes.requestDetailsPage, arguments: {'requestId': request.requestId}),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+            padding: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 12.0),
             child: Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(20),

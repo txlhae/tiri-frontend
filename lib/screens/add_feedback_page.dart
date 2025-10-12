@@ -113,7 +113,7 @@ class _AddFeedbackPageState extends State<AddFeedbackPage> {
             ),
             const SizedBox(height: 12),
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.only(left: 16, right: 16, top: 16),
             child:  ListView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),

@@ -177,7 +177,7 @@ class _RequestDetailsState extends State<RequestDetails> {
             ),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.all(24.0),
+                padding: const EdgeInsets.only(left: 24.0, right: 24.0, top: 24.0),
                 child: SingleChildScrollView(
                   child: Obx(() {
                     if (requestController.isLoadingRequestDetails.value) {
