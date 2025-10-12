@@ -66,6 +66,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
       //   await accountStatusService.storeAccountStatus(status);
       // }
     } catch (e) {
+      // Error handled silently
       // Ignore status check errors
     }
   }
@@ -180,6 +181,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
       // }
       
     } catch (e) {
+      // Error handled silently
       
       Get.snackbar(
         'Verification Error',
@@ -252,6 +254,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
       }
 
     } catch (e) {
+      // Error handled silently
 
       Get.snackbar(
         'Resend Failed',

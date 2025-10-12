@@ -64,7 +64,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
             ),
             child: SafeArea(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 10, 20, 25),
+                padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
                 child: Column(
                   children: [
                     Row(
@@ -79,15 +79,18 @@ class _NotificationsPageState extends State<NotificationsPage> {
                             onPressed: () => Get.back(),
                           ),
                         ),
-                        const Expanded(
-                          child: Text(
-                            'Notifications',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
+                        Expanded(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              'Notifications',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: MediaQuery.of(context).size.width < 350 ? 20 : 24,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
                             ),
-                            textAlign: TextAlign.center,
                           ),
                         ),
                         Obx(() => notifyController.unreadCount.value > 0
@@ -302,6 +305,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
           onRefresh: () => notifyController.refreshNotifications(),
           color: const Color.fromRGBO(0, 140, 170, 1),
           child: ListView.builder(
+            padding: const EdgeInsets.only(top: 10),
             controller: _scrollController,
             itemCount: notifications.length + (notifyController.isLoadingMore.value ? 1 : 0),
             itemBuilder: (context, index) {
@@ -766,6 +770,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
         throw Exception(response.error?.message ?? 'Failed to delete notification');
       }
     } catch (e) {
+      // Error handled silently
       Get.snackbar(
         'Error',
         'Failed to delete notification: $e',

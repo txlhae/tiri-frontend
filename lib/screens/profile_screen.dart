@@ -73,6 +73,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       // Fetch feedback
       await requestController.fetchProfileFeedback(targetUserId);
     } catch (e) {
+      // Error handled silently
       // Failed to fetch profile data
     }
   }
@@ -319,7 +320,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                           GestureDetector(
                                             onTap: () async {
                                               await Clipboard.setData(ClipboardData(text: user.referralCode?.toString() ?? 'null'));
-                                              ScaffoldMessenger.of(context).showSnackBar(
+                                              if (context.mounted) {
+                                                ScaffoldMessenger.of(context).showSnackBar(
                                                 SnackBar(
                                                   content: const Text(
                                                     'Referral code copied to clipboard!',
@@ -333,6 +335,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                                   ),
                                                 ),
                                               );
+                                              }
                                             },
                                             child: Container(
                                               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
@@ -1222,6 +1225,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
 
     } catch (e) {
+      // Error handled silently
 
       // Close loading dialog if still open
       if (Get.isDialogOpen ?? false) {

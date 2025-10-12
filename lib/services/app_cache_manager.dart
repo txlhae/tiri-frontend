@@ -11,7 +11,6 @@ import 'auth_storage.dart';
 
 /// Centralized cache management service
 class AppCacheManager extends GetxService {
-  static const String _tag = 'AppCacheManager';
 
   /// Target storage limits
   static const CacheTargets targets = CacheTargets(
@@ -53,6 +52,7 @@ class AppCacheManager extends GetxService {
         await logCacheStatus();
       }
     } catch (e) {
+      // Error handled silently
       if (kDebugMode) {
       }
     }
@@ -75,6 +75,7 @@ class AppCacheManager extends GetxService {
         }
       }
     } catch (e) {
+      // Error handled silently
       if (kDebugMode) {
       }
     }
@@ -100,6 +101,7 @@ class AppCacheManager extends GetxService {
         },
       };
     } catch (e) {
+      // Error handled silently
       return {
         'error': e.toString(),
         'cleanup_needed': true,
@@ -110,13 +112,12 @@ class AppCacheManager extends GetxService {
   /// Log current cache status
   static Future<void> logCacheStatus() async {
     try {
-      final status = await getCacheStatus();
+      await getCacheStatus();
 
       if (kDebugMode) {
-
-        final withinLimits = status['within_limits'] as Map<String, dynamic>? ?? {};
       }
     } catch (e) {
+      // Error handled silently
       if (kDebugMode) {
       }
     }
@@ -139,6 +140,7 @@ class AppCacheManager extends GetxService {
         await logCacheStatus();
       }
     } catch (e) {
+      // Error handled silently
       if (kDebugMode) {
       }
     }
@@ -152,6 +154,7 @@ class AppCacheManager extends GetxService {
 
       return !withinLimits.values.every((v) => v == true);
     } catch (e) {
+      // Error handled silently
       return true; // Assume limits exceeded if we can't check
     }
   }
@@ -166,6 +169,7 @@ class AppCacheManager extends GetxService {
         'image_cache_limit_bytes': PaintingBinding.instance.imageCache.maximumSizeBytes,
       };
     } catch (e) {
+      // Error handled silently
       return {'error': e.toString()};
     }
   }
@@ -184,6 +188,7 @@ class AppCacheManager extends GetxService {
         PaintingBinding.instance.imageCache.clear();
         PaintingBinding.instance.imageCache.clearLiveImages();
       } catch (e) {
+      // Error handled silently
         if (kDebugMode) {
         }
       }
@@ -192,6 +197,7 @@ class AppCacheManager extends GetxService {
         await logCacheStatus();
       }
     } catch (e) {
+      // Error handled silently
       if (kDebugMode) {
       }
     }

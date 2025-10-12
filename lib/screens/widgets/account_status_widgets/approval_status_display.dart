@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:tiri/models/auth_models.dart';
-import 'package:tiri/services/account_status_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Approval Status Display Component
@@ -29,8 +28,6 @@ class ApprovalStatusDisplay extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    final accountStatusService = AccountStatusService.instance;
-    
     return Container(
       padding: padding ?? const EdgeInsets.all(16),
       child: Column(
@@ -337,10 +334,15 @@ class ApprovalStatusDisplay extends StatelessWidget {
       if (await canLaunchUrl(emailUri)) {
         await launchUrl(emailUri);
       } else {
-        _showEmailNotAvailableDialog(context, referrerEmail);
+        if (context.mounted) {
+          _showEmailNotAvailableDialog(context, referrerEmail);
+        }
       }
     } catch (e) {
-      _showEmailNotAvailableDialog(context, referrerEmail);
+      // Error handled silently
+      if (context.mounted) {
+        _showEmailNotAvailableDialog(context, referrerEmail);
+      }
     }
   }
 

@@ -107,6 +107,7 @@ class AuthGuard {
             }
           }
         } catch (e) {
+      // Error handled silently
           
           // Continue with local state if backend check fails
         }
@@ -116,6 +117,7 @@ class AuthGuard {
       return true;
 
     } catch (e) {
+      // Error handled silently
       
       if (!duringInitialization) {
         _redirectToLogin();
@@ -150,12 +152,13 @@ class AuthGuard {
         );
         Get.offAllNamed(Routes.loginPage);
       } catch (e) {
+      // Error handled silently
         
         // Fallback: Just navigate without snackbar
         try {
           Get.offAllNamed(Routes.loginPage);
         } catch (e2) {
-          
+          // Error handled silently
         }
       }
     });
@@ -175,11 +178,12 @@ class AuthGuard {
         );
         Get.offAllNamed(Routes.emailVerificationPage);
       } catch (e) {
-        
+      // Error handled silently
+
         try {
           Get.offAllNamed(Routes.emailVerificationPage);
         } catch (e2) {
-          
+          // Error handled silently
         }
       }
     });
@@ -199,11 +203,12 @@ class AuthGuard {
         );
         Get.offAllNamed(Routes.pendingApprovalPage);
       } catch (e) {
-        
+      // Error handled silently
+
         try {
           Get.offAllNamed(Routes.pendingApprovalPage);
         } catch (e2) {
-          
+          // Error handled silently
         }
       }
     });
@@ -219,6 +224,7 @@ class AuthGuard {
 
       
     } catch (e) {
+      // Error handled silently
       
     }
   }

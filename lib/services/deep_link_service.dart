@@ -46,6 +46,7 @@ class DeepLinkService extends GetxService {
       
       
     } catch (e) {
+      // Error handled silently
     }
   }
 
@@ -67,6 +68,7 @@ class DeepLinkService extends GetxService {
       }
       
     } catch (e) {
+      // Error handled silently
       Get.snackbar(
         'Link Error',
         'Unable to process the link. Please try again.',
@@ -142,6 +144,7 @@ class DeepLinkService extends GetxService {
       }
       
     } catch (e) {
+      // Error handled silently
       _closeProcessingDialog();
       _showErrorSnackbar(
         'Verification Failed', 
@@ -177,6 +180,7 @@ class DeepLinkService extends GetxService {
       });
       
     } catch (e) {
+      // Error handled silently
     }
   }
 

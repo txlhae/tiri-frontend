@@ -137,6 +137,7 @@ class ApiClient {
     } on DioException catch (e) {
       return _handleError<T>(e);
     } catch (e) {
+      // Error handled silently
       return _handleUnexpectedError<T>(e);
     }
   }
@@ -165,6 +166,7 @@ class ApiClient {
     } on DioException catch (e) {
       return _handleError<T>(e);
     } catch (e) {
+      // Error handled silently
       return _handleUnexpectedError<T>(e);
     }
   }
@@ -193,6 +195,7 @@ class ApiClient {
     } on DioException catch (e) {
       return _handleError<T>(e);
     } catch (e) {
+      // Error handled silently
       return _handleUnexpectedError<T>(e);
     }
   }
@@ -221,6 +224,7 @@ class ApiClient {
     } on DioException catch (e) {
       return _handleError<T>(e);
     } catch (e) {
+      // Error handled silently
       return _handleUnexpectedError<T>(e);
     }
   }
@@ -249,6 +253,7 @@ class ApiClient {
     } on DioException catch (e) {
       return _handleError<T>(e);
     } catch (e) {
+      // Error handled silently
       return _handleUnexpectedError<T>(e);
     }
   }
@@ -292,6 +297,7 @@ class ApiClient {
     } on DioException catch (e) {
       return _handleError<T>(e);
     } catch (e) {
+      // Error handled silently
       return _handleUnexpectedError<T>(e);
     }
   }
@@ -322,6 +328,7 @@ class ApiClient {
     } on DioException catch (e) {
       return _handleError<String>(e);
     } catch (e) {
+      // Error handled silently
       return _handleUnexpectedError<String>(e);
     }
   }
@@ -354,6 +361,7 @@ class ApiClient {
             metadata: _extractMetadata(response),
           );
         } catch (e) {
+      // Error handled silently
           return ApiResponse.error(
             error: ApiError(
               type: 'parse_error',
@@ -464,6 +472,7 @@ class ApiClient {
       if (kDebugMode) {
       }
     } catch (e) {
+      // Error handled silently
       if (kDebugMode) {
       }
     }
@@ -493,6 +502,7 @@ class ApiClient {
       if (kDebugMode) {
       }
     } catch (e) {
+      // Error handled silently
       if (kDebugMode) {
       }
     }
@@ -513,6 +523,7 @@ class ApiClient {
 
       return totalSize / (1024 * 1024); // Convert to MB
     } catch (e) {
+      // Error handled silently
       if (kDebugMode) {
       }
       return 0.0;
@@ -624,6 +635,7 @@ class CacheInterceptor extends Interceptor {
             handler.resolve(response);
             return;
           } catch (e) {
+      // Error handled silently
             // Cache read failed, continue with request
           }
         }
@@ -655,6 +667,7 @@ class CacheInterceptor extends Interceptor {
 
       cacheFile.writeAsStringSync(response.data.toString());
     } catch (e) {
+      // Error handled silently
       // Cache write failed, ignore
     }
   }
@@ -667,8 +680,7 @@ class CacheInterceptor extends Interceptor {
   void _enforceMaxCacheSize() {
     try {
       final files = cacheDirectory.listSync()
-          .where((entity) => entity is File)
-          .cast<File>()
+          .whereType<File>()
           .toList();
 
       // Sort by last modified (oldest first)
@@ -688,6 +700,7 @@ class CacheInterceptor extends Interceptor {
         oldestFile.deleteSync();
       }
     } catch (e) {
+      // Error handled silently
       // Cache cleanup failed, ignore
     }
   }

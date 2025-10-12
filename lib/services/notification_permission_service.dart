@@ -23,6 +23,7 @@ class NotificationPermissionService {
       } else {
       }
     } catch (e) {
+      // Error handled silently
     }
   }
 
@@ -134,6 +135,7 @@ class NotificationPermissionService {
         default:
       }
     } catch (e) {
+      // Error handled silently
     }
   }
 
@@ -159,6 +161,7 @@ class NotificationPermissionService {
       );
       
     } catch (e) {
+      // Error handled silently
     }
   }
 
@@ -204,6 +207,7 @@ class NotificationPermissionService {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_permissionRequestedKey);
     } catch (e) {
+      // Error handled silently
     }
   }
 }

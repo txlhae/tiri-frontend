@@ -52,6 +52,7 @@ class AuthStorage {
 
       
     } catch (e) {
+      // Error handled silently
       
       rethrow;
     }
@@ -63,6 +64,7 @@ class AuthStorage {
       final prefs = await SharedPreferences.getInstance();
       return prefs.getString(_accessTokenKey);
     } catch (e) {
+      // Error handled silently
       
       return null;
     }
@@ -74,6 +76,7 @@ class AuthStorage {
       final prefs = await SharedPreferences.getInstance();
       return prefs.getString(_refreshTokenKey);
     } catch (e) {
+      // Error handled silently
       
       return null;
     }
@@ -85,6 +88,7 @@ class AuthStorage {
       final prefs = await SharedPreferences.getInstance();
       return prefs.getString(_nextStepKey);
     } catch (e) {
+      // Error handled silently
       
       return null;
     }
@@ -97,6 +101,7 @@ class AuthStorage {
       final userData = prefs.getString(_userDataKey);
       return userData != null ? jsonDecode(userData) : null;
     } catch (e) {
+      // Error handled silently
       
       return null;
     }
@@ -108,6 +113,7 @@ class AuthStorage {
       final prefs = await SharedPreferences.getInstance();
       return prefs.getString(_accountStatusKey);
     } catch (e) {
+      // Error handled silently
       
       return null;
     }
@@ -120,6 +126,7 @@ class AuthStorage {
       final registrationStage = prefs.getString(_registrationStageKey);
       return registrationStage != null ? jsonDecode(registrationStage) : null;
     } catch (e) {
+      // Error handled silently
       
       return null;
     }
@@ -132,6 +139,7 @@ class AuthStorage {
       await prefs.setString(_nextStepKey, nextStep);
       
     } catch (e) {
+      // Error handled silently
       
     }
   }
@@ -143,6 +151,7 @@ class AuthStorage {
       await prefs.setString(_accountStatusKey, accountStatus);
       
     } catch (e) {
+      // Error handled silently
       
     }
   }
@@ -155,6 +164,7 @@ class AuthStorage {
       await prefs.setString(_refreshTokenKey, refreshToken);
       
     } catch (e) {
+      // Error handled silently
       
     }
   }
@@ -167,6 +177,7 @@ class AuthStorage {
       return accessToken != null && accessToken.isNotEmpty &&
              refreshToken != null && refreshToken.isNotEmpty;
     } catch (e) {
+      // Error handled silently
       
       return false;
     }
@@ -184,6 +195,7 @@ class AuthStorage {
       await prefs.remove(_registrationStageKey);
       
     } catch (e) {
+      // Error handled silently
       
     }
   }
@@ -196,6 +208,7 @@ class AuthStorage {
       await prefs.remove(_refreshTokenKey);
       
     } catch (e) {
+      // Error handled silently
       
     }
   }
@@ -214,6 +227,7 @@ class AuthStorage {
         'storage_size_kb': await getStorageSizeKB(),
       };
     } catch (e) {
+      // Error handled silently
 
       return {};
     }
@@ -239,6 +253,7 @@ class AuthStorage {
 
       return totalSize / 1024.0; // Convert to KB
     } catch (e) {
+      // Error handled silently
       if (kDebugMode) {
       }
       return 0.0;
@@ -267,19 +282,15 @@ class AuthStorage {
         _registrationStageKey,
       };
 
-      final sizeBefore = await getStorageSizeKB();
-
       // Remove non-essential keys
-      int removedCount = 0;
       for (final key in keys) {
         if (!essentialKeys.contains(key)) {
           await prefs.remove(key);
-          removedCount++;
         }
       }
 
-      final sizeAfter = await getStorageSizeKB();
     } catch (e) {
+      // Error handled silently
     }
   }
 

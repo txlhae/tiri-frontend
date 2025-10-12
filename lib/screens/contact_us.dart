@@ -20,12 +20,17 @@ class ContactUs extends StatelessWidget {
             children: [
               // Background Container
               Container(
-                padding: const EdgeInsets.only(left: 10, right: 10, top: 50, bottom: 10),
+                padding: EdgeInsets.only(
+                  left: 10,
+                  right: 10,
+                  top: MediaQuery.of(context).size.height < 700 ? 30 : 50,
+                  bottom: 10,
+                ),
                 decoration: const BoxDecoration(
                   color: Color.fromRGBO(0, 140, 170, 1),
                 ),
-                height: 170,
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.start,
@@ -33,20 +38,20 @@ class ContactUs extends StatelessWidget {
                       CustomBackButton(controller: requestController),
                     ],
                   ),
-                  const SizedBox(height: 20),
                   const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
                         'Contact Us',
                         style: TextStyle(
-                          fontSize: 20,
+                          fontSize: 22,
                           fontWeight: FontWeight.w600,
                           color: Colors.white,
                         ),
                       ),
                     ],
                   ),
+                  const SizedBox(height: 10),
                 ],
               ),
             ),

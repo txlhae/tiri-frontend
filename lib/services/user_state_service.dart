@@ -157,6 +157,7 @@ class UserStateService {
     try {
       await _loadStateFromStorage();
     } catch (e) {
+      // Error handled silently
     }
   }
   
@@ -195,6 +196,7 @@ class UserStateService {
       await _saveStateToStorage();
       
     } catch (e) {
+      // Error handled silently
     }
   }
   
@@ -219,6 +221,7 @@ class UserStateService {
       
       
     } catch (e) {
+      // Error handled silently
     }
   }
   
@@ -319,6 +322,7 @@ class UserStateService {
       );
       
     } catch (e) {
+      // Error handled silently
     }
   }
   
@@ -349,6 +353,7 @@ class UserStateService {
       }
       
     } catch (e) {
+      // Error handled silently
       // Clear corrupted data
       try {
         final prefs = await SharedPreferences.getInstance();
@@ -369,6 +374,7 @@ class UserStateService {
       
       
     } catch (e) {
+      // Error handled silently
     }
   }
 }

@@ -29,6 +29,7 @@ class ApiFoundationInitializer {
       }
       
     } catch (e) {
+      // Error handled silently
       if (kDebugMode) {
       }
       rethrow;

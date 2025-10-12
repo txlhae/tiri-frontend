@@ -206,6 +206,7 @@ class ApiService {
               handler.resolve(response);
               return;
             } catch (e) {
+      // Error handled silently
               // If retry fails, continue with original error
             }
           }
@@ -245,6 +246,7 @@ class ApiService {
         try {
           _tokenLastRefreshed = DateTime.parse(refreshTimeStr);
         } catch (e) {
+      // Error handled silently
         }
       }
       
@@ -256,6 +258,7 @@ class ApiService {
         await refreshTokenIfNeeded();
       }
     } catch (e) {
+      // Error handled silently
     }
   }
 
@@ -273,6 +276,7 @@ class ApiService {
       if (ApiConfig.enableLogging) {
       }
     } catch (e) {
+      // Error handled silently
     }
   }
 
@@ -291,6 +295,7 @@ class ApiService {
       if (ApiConfig.enableLogging) {
       }
     } catch (e) {
+      // Error handled silently
     }
   }
 
@@ -307,6 +312,7 @@ class ApiService {
       _accessToken = await _secureStorage.read(key: _accessTokenKey);
       return _accessToken;
     } catch (e) {
+      // Error handled silently
       return null;
     }
   }
@@ -380,6 +386,7 @@ class ApiService {
       }
       
     } catch (e) {
+      // Error handled silently
       
       // Handle invalid refresh token
       if (e is DioException) {
@@ -439,6 +446,7 @@ class ApiService {
       final connectivityResult = await _connectivity.checkConnectivity();
       return connectivityResult.first != ConnectivityResult.none;
     } catch (e) {
+      // Error handled silently
       return false;
     }
   }
@@ -484,6 +492,7 @@ class ApiService {
         cancelToken: cancelToken,
       );
     } catch (e) {
+      // Error handled silently
       throw _handleError(e);
     }
   }
@@ -510,6 +519,7 @@ class ApiService {
         cancelToken: cancelToken,
       );
     } catch (e) {
+      // Error handled silently
       throw _handleError(e);
     }
   }
@@ -533,6 +543,7 @@ class ApiService {
         cancelToken: cancelToken,
       );
     } catch (e) {
+      // Error handled silently
       throw _handleError(e);
     }
   }
@@ -556,6 +567,7 @@ class ApiService {
         cancelToken: cancelToken,
       );
     } catch (e) {
+      // Error handled silently
       throw _handleError(e);
     }
   }
@@ -579,6 +591,7 @@ class ApiService {
         cancelToken: cancelToken,
       );
     } catch (e) {
+      // Error handled silently
       throw _handleError(e);
     }
   }

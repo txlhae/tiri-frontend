@@ -75,6 +75,7 @@ class _PendingApprovalScreenState extends State<PendingApprovalScreen>
         }
       }
     } catch (e) {
+      // Error handled silently
       
       // Show user-friendly error
       Get.snackbar(

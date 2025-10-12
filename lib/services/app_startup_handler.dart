@@ -63,6 +63,7 @@ class AppStartupHandler {
       }
 
     } catch (e) {
+      // Error handled silently
       // Clear potentially corrupted data and route to login
       // 🚨 NEW: Use centralized cleanup service
       await StorageCleanupService.flushStorageQuick();
@@ -76,6 +77,7 @@ class AppStartupHandler {
       final apiService = Get.find<ApiService>();
       await apiService.loadTokensFromStorage();
     } catch (e) {
+      // Error handled silently
     }
   }
 
@@ -101,6 +103,7 @@ class AppStartupHandler {
       return isValid;
 
     } catch (e) {
+      // Error handled silently
       return false;
     }
   }
@@ -142,6 +145,7 @@ class AppStartupHandler {
       return false;
 
     } catch (e) {
+      // Error handled silently
       return false;
     }
   }
@@ -229,6 +233,7 @@ class AppStartupHandler {
       return Routes.emailVerificationPage;
 
     } catch (e) {
+      // Error handled silently
       return Routes.emailVerificationPage;
     }
   }
@@ -239,6 +244,7 @@ class AppStartupHandler {
       // For basic implementation, just check if tokens exist and are valid
       return !(await _validateStoredTokens());
     } catch (e) {
+      // Error handled silently
       return true;
     }
   }
@@ -250,6 +256,7 @@ class AppStartupHandler {
       await StorageCleanupService.flushStorageQuick();
       Get.offAllNamed(Routes.loginPage);
     } catch (e) {
+      // Error handled silently
     }
   }
 

@@ -54,14 +54,6 @@ class NotificationController extends GetxController {
     }
   }
 
-  /// Initialize WebSocket service for real-time notifications
-  void _initializeWebSocket() {
-    try {
-      _webSocketService = WebSocketService.instance;
-    } catch (e) {
-      // WebSocket service initialization failed
-    }
-  }
 
   /// Connect to WebSocket for real-time notifications
   Future<void> connectWebSocket() async {

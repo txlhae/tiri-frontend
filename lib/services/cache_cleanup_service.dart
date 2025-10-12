@@ -10,7 +10,6 @@ import 'api/api_client.dart';
 
 /// Service for managing app cache sizes and cleanup
 class CacheCleanupService {
-  static const String _tag = 'CacheCleanupService';
 
   /// Target maximum cache sizes
   static const double maxApiCacheMB = 5.0;
@@ -25,8 +24,6 @@ class CacheCleanupService {
       if (kDebugMode) {
       }
 
-      final sizeBefore = await getTotalCacheSizeMB();
-
       // Clean API cache
       await _cleanApiCache();
 
@@ -36,12 +33,10 @@ class CacheCleanupService {
       // Clean SharedPreferences if too large
       await _cleanSharedPreferences();
 
-      final sizeAfter = await getTotalCacheSizeMB();
-      final cleaned = sizeBefore - sizeAfter;
-
       if (kDebugMode) {
       }
     } catch (e) {
+      // Error handled silently
       if (kDebugMode) {
       }
     }
@@ -58,6 +53,7 @@ class CacheCleanupService {
         }
       }
     } catch (e) {
+      // Error handled silently
       if (kDebugMode) {
       }
     }
@@ -83,6 +79,7 @@ class CacheCleanupService {
               print('Deleted legacy image cache: ${dir.path}');
             }
           } catch (e) {
+      // Error handled silently
             // Directory might be in use, skip
           }
         }
@@ -96,6 +93,7 @@ class CacheCleanupService {
             try {
               await entity.delete();
             } catch (e) {
+      // Error handled silently
               // File might be in use, skip
             }
           }
@@ -105,6 +103,7 @@ class CacheCleanupService {
       if (kDebugMode) {
       }
     } catch (e) {
+      // Error handled silently
       if (kDebugMode) {
       }
     }
@@ -148,6 +147,7 @@ class CacheCleanupService {
         }
       }
     } catch (e) {
+      // Error handled silently
       if (kDebugMode) {
       }
     }
@@ -167,6 +167,7 @@ class CacheCleanupService {
 
       return totalSize;
     } catch (e) {
+      // Error handled silently
       if (kDebugMode) {
       }
       return 0.0;
@@ -187,6 +188,7 @@ class CacheCleanupService {
 
       return totalSize / (1024 * 1024);
     } catch (e) {
+      // Error handled silently
       return 0.0;
     }
   }
@@ -214,6 +216,7 @@ class CacheCleanupService {
         },
       };
     } catch (e) {
+      // Error handled silently
       return {
         'error': e.toString(),
         'cleanup_needed': true,

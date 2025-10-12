@@ -183,6 +183,7 @@ class _CancelDialogState extends State<CancelDialog> {
 
                       Get.back();
                     } catch (e) {
+      // Error handled silently
                       Get.snackbar("Error",
                           "Failed to cancel request. Please try again.");
                     }

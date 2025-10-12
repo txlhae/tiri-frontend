@@ -20,11 +20,11 @@ class AuthRedirectHandler {
       await AuthStorage.storeAuthData(response);
 
       final nextStep = response['next_step'] ?? '';
-      final accountStatus = response['account_status'] ?? '';
 
       await _handleRedirect(nextStep, response);
 
     } catch (e) {
+      // Error handled silently
       // Fallback to login page on error
       Get.offAllNamed(Routes.loginPage);
     }
@@ -37,13 +37,12 @@ class AuthRedirectHandler {
       await AuthStorage.storeAuthData(response);
 
       final nextStep = response['next_step'] ?? 'verify_email';
-      final accountStatus = response['account_status'] ?? 'email_pending';
 
-      
       await _handleRedirect(nextStep, response);
 
     } catch (e) {
-      
+      // Error handled silently
+
       // For registration errors, go to email verification as fallback
       Get.offAllNamed(Routes.emailVerificationPage);
     }
@@ -234,6 +233,7 @@ class AuthRedirectHandler {
 
       return currentRoute != expectedRoute;
     } catch (e) {
+      // Error handled silently
       
       return false;
     }
@@ -250,6 +250,7 @@ class AuthRedirectHandler {
         Get.offAllNamed(correctRoute);
       }
     } catch (e) {
+      // Error handled silently
       
     }
   }
@@ -257,12 +258,10 @@ class AuthRedirectHandler {
   /// Handle email verification completion
   static Future<void> handleEmailVerificationComplete() async {
     try {
-      
+
       // Check current auth state
       final authState = await AuthStorage.getAuthState();
-      final nextStep = authState['next_step'];
       final accountStatus = authState['account_status'];
-
 
       // Update next step based on current state
       if (accountStatus == 'email_pending') {
@@ -282,6 +281,7 @@ class AuthRedirectHandler {
       }
 
     } catch (e) {
+      // Error handled silently
       
       Get.offAllNamed(Routes.pendingApprovalPage);
     }
@@ -333,11 +333,12 @@ class AuthRedirectHandler {
           break;
 
         default:
-          
+
       }
 
     } catch (e) {
-      
+      // Error handled silently
+
     }
   }
 
@@ -354,6 +355,7 @@ class AuthRedirectHandler {
         const Color.fromRGBO(176, 48, 48, 1),
       );
     } catch (e) {
+      // Error handled silently
 
     }
   }
@@ -361,17 +363,18 @@ class AuthRedirectHandler {
   /// Auto-send verification email for unverified users
   static Future<void> _autoSendVerificationEmail() async {
     try {
-      
+
       final authService = Get.find<AuthService>();
       final result = await authService.resendVerificationEmail();
 
       if (result.isSuccess) {
-        
+
       } else {
-        
+
       }
     } catch (e) {
-      
+      // Error handled silently
+
     }
   }
 }

@@ -238,6 +238,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
         }
       }
     } catch (e) {
+      // Error handled silently
       _showErrorAndGoBack('Failed to process QR code. Please try again.');
     }
   }
@@ -267,6 +268,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
         _showErrorAndGoBack('Not a valid referral code');
       }
     } catch (e) {
+      // Error handled silently
       _showErrorAndGoBack('Not a valid referral code');
     }
   }
@@ -318,6 +320,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
         _showErrorAndGoBack('User not found');
       }
     } catch (e) {
+      // Error handled silently
       _showErrorAndGoBack('Failed to load user profile');
     }
   }
@@ -342,8 +345,10 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
         }
       }
     } catch (e) {
+      // Error handled silently
+      // Failed to parse QR data
     }
-    
+
     return result;
   }
 

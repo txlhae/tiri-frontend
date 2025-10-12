@@ -74,6 +74,7 @@ class _RequestDetailsState extends State<RequestDetails> {
           // Load request details after build completes with error handling
           await requestController.loadRequestDetails(requestId);
         } catch (e) {
+      // Error handled silently
           // Handle loading errors gracefully
           if (mounted) {
             Get.snackbar(
@@ -131,7 +132,12 @@ class _RequestDetailsState extends State<RequestDetails> {
           child: Column(
             children: [
               Container(
-                padding: const EdgeInsets.only(left: 10, right: 10, top: 50, bottom: 10),
+                padding: EdgeInsets.only(
+                  left: 10,
+                  right: 10,
+                  top: MediaQuery.of(context).size.height < 700 ? 30 : 50,
+                  bottom: 20,
+                ),
                 decoration: const BoxDecoration(
                   color: Color.fromRGBO(0, 140, 170, 1),
                   borderRadius: BorderRadius.only(
@@ -139,28 +145,33 @@ class _RequestDetailsState extends State<RequestDetails> {
                     bottomRight: Radius.circular(20),
                   ),
                 ),
-                height: 170,
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
+                  const SizedBox(height: 20),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
                     children: [
                       CustomBackButton(
                         controller: requestController,
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Request Details',
-                        style: TextStyle(
-                            fontSize: 22, fontWeight: FontWeight.w600),
+                      const Expanded(
+                        child: Center(
+                          child: Padding(
+                            padding: EdgeInsets.only(right: 48),
+                            child: Text(
+                              'Request Details',
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
                     ],
                   ),
+                  const SizedBox(height: 5),
                 ],
               ),
             ),
@@ -500,6 +511,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                       duration: const Duration(seconds: 3),
                     );
                   } catch (e) {
+      // Error handled silently
                     Get.snackbar(
                       'Error',
                       e.toString().replaceAll('Exception: ', ''),
@@ -629,6 +641,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                             duration: const Duration(seconds: 3),
                           );
                         } catch (e) {
+      // Error handled silently
                           Get.snackbar(
                             'Error',
                             e.toString().replaceAll('Exception: ', ''),
@@ -808,6 +821,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                     duration: const Duration(seconds: 3),
                   );
                 } catch (e) {
+      // Error handled silently
                   Get.snackbar(
                     'Error',
                     'Failed to cancel request. Please try again.',
@@ -880,6 +894,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                   },
                 );
               } catch (e) {
+      // Error handled silently
                 Get.snackbar(
                   'Error',
                   'Failed to create chat room. Please try again.',
@@ -926,6 +941,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                   // Reload request details to get updated status
                   await requestController.loadRequestDetails(request.requestId);
                 } catch (e) {
+      // Error handled silently
                   Get.snackbar(
                     'Error',
                     'Failed to cancel volunteer request: $e',
@@ -966,7 +982,7 @@ class _RequestDetailsState extends State<RequestDetails> {
     // Check if request time has passed
     final bool timeHasPassed = (request.requestedTime ?? request.timestamp).isBefore(DateTime.now());
     // Check if request is in progress
-    final bool isInProgress = request.status == 'IN PROGRESS';
+    final bool isInProgress = request.status == RequestStatus.inprogress;
 
     return Column(
       children: [
@@ -1053,6 +1069,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                   // Navigate back to the requests list
                   Get.back();
                 } catch (e) {
+      // Error handled silently
                   Get.snackbar(
                     'Error',
                     'Failed to delete request: $e',
@@ -1195,6 +1212,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                     duration: const Duration(seconds: 3),
                   );
                 } catch (e) {
+      // Error handled silently
                   Get.snackbar(
                     'Error',
                     'Failed to cancel request. Please try again.',
@@ -1733,6 +1751,7 @@ class _RequestDetailsState extends State<RequestDetails> {
         return "Just now";
       }
     } catch (e) {
+      // Error handled silently
       return "Recently";
     }
   }
@@ -1873,6 +1892,7 @@ class _RequestDetailsState extends State<RequestDetails> {
       await requestController.loadPendingVolunteers(requestId);
       
     } catch (e) {
+      // Error handled silently
       Get.back(); // Close loading dialog
       Get.snackbar(
         'Error',
@@ -1913,6 +1933,7 @@ class _RequestDetailsState extends State<RequestDetails> {
       await requestController.loadPendingVolunteers(requestId);
       
     } catch (e) {
+      // Error handled silently
       Get.back(); // Close loading dialog
       Get.snackbar(
         'Error',
@@ -1977,6 +1998,7 @@ class _RequestDetailsState extends State<RequestDetails> {
 
 
     } catch (e) {
+      // Error handled silently
       
       // Close loading dialog if still open
       if (Get.isDialogOpen ?? false) {
@@ -2044,6 +2066,7 @@ class _RequestDetailsState extends State<RequestDetails> {
           refreshAttempted.value = true;
         }
       } catch (e) {
+      // Error handled silently
         isRefreshing.value = false;
         refreshAttempted.value = true;
       }
@@ -2503,7 +2526,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                             onPressed: () {
                               // Check if requester is current user - if so, don't pass stale data
                               final currentUserId = authController.currentUserStore.value?.userId;
-                              if (requester?.userId == currentUserId) {
+                              if (requester.userId == currentUserId) {
                                 // For current user, navigate without passing user data to force fresh fetch
                                 Get.to(() => ProfileScreen());
                               } else {
@@ -2543,6 +2566,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                                     },
                                   );
                                 } catch (e) {
+      // Error handled silently
                                   Get.snackbar(
                                     'Error',
                                     'Failed to create chat room. Please try again.',

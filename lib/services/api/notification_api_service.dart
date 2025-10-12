@@ -85,9 +85,7 @@ class NotificationApiService {
       // Build query string
       String queryString = '';
       if (queryParams.isNotEmpty) {
-        queryString = '?' + queryParams.entries
-            .map((e) => '${e.key}=${e.value}')
-            .join('&');
+        queryString = '?${queryParams.entries.map((e) => '${e.key}=${e.value}').join('&')}';
       }
 
       // Make API request using authenticated ApiService
@@ -119,6 +117,7 @@ class NotificationApiService {
         ),
       );
     } catch (e) {
+      // Error handled silently
       return ApiResponse.error(
         error: ApiError(
           type: 'unexpected_error',
@@ -172,6 +171,7 @@ class NotificationApiService {
         ),
       );
     } catch (e) {
+      // Error handled silently
       return ApiResponse.error(
         error: ApiError(
           type: 'unexpected_error',
@@ -221,6 +221,7 @@ class NotificationApiService {
         ),
       );
     } catch (e) {
+      // Error handled silently
       return ApiResponse.error(
         error: ApiError(
           type: 'unexpected_error',
@@ -251,9 +252,7 @@ class NotificationApiService {
       // Build query string
       String queryString = '';
       if (queryParams.isNotEmpty) {
-        queryString = '?' + queryParams.entries
-            .map((e) => '${e.key}=${e.value}')
-            .join('&');
+        queryString = '?${queryParams.entries.map((e) => '${e.key}=${e.value}').join('&')}';
       }
 
       final response = await _apiService.get('$_basePath/unread_count/$queryString');
@@ -283,6 +282,7 @@ class NotificationApiService {
         ),
       );
     } catch (e) {
+      // Error handled silently
       return ApiResponse.error(
         error: ApiError(
           type: 'unexpected_error',
@@ -346,6 +346,7 @@ class NotificationApiService {
         ),
       );
     } catch (e) {
+      // Error handled silently
       return ApiResponse.error(
         error: ApiError(
           type: 'unexpected_error',
@@ -393,6 +394,7 @@ class NotificationApiService {
         ),
       );
     } catch (e) {
+      // Error handled silently
       return ApiResponse.error(
         error: ApiError(
           type: 'unexpected_error',
@@ -445,6 +447,7 @@ class NotificationApiService {
         ),
       );
     } catch (e) {
+      // Error handled silently
       return ApiResponse.error(
         error: ApiError(
           type: 'unexpected_error',
@@ -498,6 +501,7 @@ class NotificationApiService {
         ),
       );
     } catch (e) {
+      // Error handled silently
       return ApiResponse.error(
         error: ApiError(
           type: 'unexpected_error',
@@ -547,6 +551,7 @@ class NotificationApiService {
         ),
       );
     } catch (e) {
+      // Error handled silently
       return ApiResponse.error(
         error: ApiError(
           type: 'unexpected_error',
@@ -597,6 +602,7 @@ class NotificationApiService {
         ),
       );
     } catch (e) {
+      // Error handled silently
       return ApiResponse.error(
         error: ApiError(
           type: 'unexpected_error',

@@ -4,7 +4,6 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:tiri/infrastructure/routes.dart';
-import 'package:tiri/services/auth_storage.dart';
 import 'package:tiri/services/storage_cleanup_service.dart';
 
 /// ApiErrorHandler provides comprehensive error handling for authentication scenarios
@@ -181,6 +180,7 @@ class ApiErrorHandler {
         duration: const Duration(seconds: 4),
       );
     } catch (e) {
+      // Error handled silently
     }
   }
 
@@ -217,6 +217,7 @@ class ApiErrorHandler {
         barrierDismissible: false,
       );
     } catch (e) {
+      // Error handled silently
     }
   }
 
@@ -248,6 +249,7 @@ class ApiErrorHandler {
           try {
             errorBody = {'message': response.data as String};
           } catch (e) {
+      // Error handled silently
             errorBody = {'message': 'Server returned an error'};
           }
         }
@@ -257,6 +259,7 @@ class ApiErrorHandler {
 
       return 'Network error. Please try again';
     } catch (e) {
+      // Error handled silently
       return 'An unexpected error occurred';
     }
   }
@@ -291,7 +294,7 @@ class ApiErrorHandler {
       } else if (detail.contains('rejected')) {
         return Routes.rejectionScreen;
       } else if (detail.contains('expired')) {
-        return Routes.expiredScreen ?? Routes.loginPage;
+        return Routes.expiredScreen;
       }
     }
     return null;

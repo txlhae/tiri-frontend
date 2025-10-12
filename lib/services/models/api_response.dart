@@ -422,6 +422,7 @@ class ResponseParser {
       final json = jsonDecode(jsonString) as Map<String, dynamic>;
       return ApiResponse.fromJson(json, fromJsonT);
     } catch (e) {
+      // Error handled silently
       return ApiResponse.error(
         error: ApiError(
           type: 'parse_error',

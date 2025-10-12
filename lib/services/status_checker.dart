@@ -107,47 +107,8 @@ class StatusChecker extends GetxService {
         }
       }
     } catch (e) {
+      // Error handled silently
       // Don't show errors for silent polling
-    }
-  }
-
-  /// Check verification status specifically
-  Future<void> _checkVerificationStatus() async {
-    try {
-
-      final response = await _apiService.get('/api/auth/verification-status/');
-
-      if (response.statusCode == 200 && response.data != null) {
-        final data = response.data as Map<String, dynamic>;
-
-        final verified = data['is_verified'] == true;
-        final autoLogin = data['auto_login'] == true;
-        final approvalStatus = data['approval_status'] ?? '';
-
-
-        if (verified && isVerified.value != verified) {
-
-          // Update status
-          isVerified.value = verified;
-
-          // Stop verification checks since email is now verified
-          stopVerificationChecks();
-
-          // Handle the verification completion
-          if (autoLogin && approvalStatus == 'approved') {
-            // User is fully approved, redirect to home
-            await _navigateToRoute(Routes.homePage, 'Email verified and approved! Welcome to TIRI!');
-          } else if (approvalStatus == 'pending') {
-            // User needs approval, redirect to pending page
-            await _navigateToRoute(Routes.pendingApprovalPage, 'Email verified! Waiting for approval from your referrer.');
-          } else {
-            // Update storage and continue with regular status checks
-            await AuthStorage.updateAccountStatus('email_verified');
-            await AuthStorage.updateNextStep('waiting_for_approval');
-          }
-        }
-      }
-    } catch (e) {
     }
   }
 
@@ -193,6 +154,7 @@ class StatusChecker extends GetxService {
         default:
       }
     } catch (e) {
+      // Error handled silently
     }
   }
 
@@ -217,6 +179,7 @@ class StatusChecker extends GetxService {
       Get.offAllNamed(route);
 
     } catch (e) {
+      // Error handled silently
     }
   }
 
@@ -256,6 +219,7 @@ class StatusChecker extends GetxService {
 
       return false;
     } catch (e) {
+      // Error handled silently
       return false;
     }
   }
@@ -299,6 +263,7 @@ class StatusChecker extends GetxService {
       // Default fallback
       return Routes.emailVerificationPage;
     } catch (e) {
+      // Error handled silently
       return Routes.loginPage;
     }
   }

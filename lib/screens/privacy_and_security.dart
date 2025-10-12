@@ -15,12 +15,17 @@ class PrivacyAndSecurity extends StatelessWidget {
         child: Column(
           children: [
             Container(
-              padding: const EdgeInsets.only(left: 10, right: 10, top: 50, bottom: 10),
+              padding: EdgeInsets.only(
+                left: 10,
+                right: 10,
+                top: MediaQuery.of(context).size.height < 700 ? 30 : 50,
+                bottom: 10,
+              ),
               decoration: const BoxDecoration(
                   color: Color.fromRGBO(0, 140, 170, 1),
                   borderRadius:
                       BorderRadius.vertical(bottom: Radius.circular(20))),
-              height: 170,
+              height: MediaQuery.of(context).size.height < 700 ? 120 : 170,
             child: Column(
               children: [
                 Row(

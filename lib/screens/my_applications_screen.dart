@@ -71,6 +71,7 @@ class _MyApplicationsScreenState extends State<MyApplicationsScreen> {
       myApplications.value = applications;
       
     } catch (e) {
+      // Error handled silently
       errorMessage.value = 'Failed to load applications: $e';
     } finally {
       isLoading.value = false;
@@ -116,6 +117,7 @@ class _MyApplicationsScreenState extends State<MyApplicationsScreen> {
       );
 
     } catch (e) {
+      // Error handled silently
       if (Get.isDialogOpen ?? false) Get.back();
       Get.snackbar(
         'Error',

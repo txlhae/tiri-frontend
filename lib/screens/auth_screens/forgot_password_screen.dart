@@ -58,6 +58,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       // No need to do anything else here
       
     } catch (e) {
+      // Error handled silently
       Get.back(); // Close loading dialog if still open
       
       Get.snackbar(

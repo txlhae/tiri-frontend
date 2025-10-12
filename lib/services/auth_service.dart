@@ -1,7 +1,6 @@
 ﻿// lib/services/auth_service.dart
 
 import 'dart:convert';
-import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
 import '../config/api_config.dart';
@@ -115,6 +114,7 @@ class AuthService {
       await _loadUserFromStorage();
       
     } catch (e) {
+      // Error handled silently
       // Silent initialization error handling
     }
   }
@@ -202,6 +202,7 @@ class AuthService {
             message: authResponse.message,
           );
         } catch (e) {
+      // Error handled silently
           // Fallback to legacy format if new format parsing fails
           
           final userData = data['user'] ?? data['data'];
@@ -234,6 +235,7 @@ class AuthService {
       );
 
     } catch (e) {
+      // Error handled silently
       final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Registration failed. Please try again.');
       return EnhancedAuthResult.failure(
         message: ErrorHandler.mapErrorToUserMessage(errorMessage),
@@ -341,7 +343,7 @@ class AuthService {
               }
 
               // Only attempt AuthResponse creation if we have essential data
-              if (parsedUser != null && parsedTokens != null) {
+              if (parsedUser != null) {
                 try {
                   final authResponse = AuthResponse(
                     user: parsedUser,
@@ -419,6 +421,7 @@ class AuthService {
             }
           }
         } catch (e) {
+      // Error handled silently
           return EnhancedAuthResult.failure(
             message: 'Login failed: Invalid response format',
           );
@@ -431,6 +434,7 @@ class AuthService {
       }
 
     } catch (e) {
+      // Error handled silently
       final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Login failed. Please try again.');
       return EnhancedAuthResult.failure(
         message: ErrorHandler.mapErrorToUserMessage(errorMessage),
@@ -452,6 +456,7 @@ class AuthService {
           },
         );
       } catch (e) {
+      // Error handled silently
         // Server logout failed, but continue with local cleanup
       }
 
@@ -460,6 +465,7 @@ class AuthService {
         final firebaseNotificationService = Get.find<FirebaseNotificationService>();
         await firebaseNotificationService.cleanup();
       } catch (e) {
+      // Error handled silently
         // Firebase notification cleanup failed (continuing)
       }
 
@@ -471,6 +477,7 @@ class AuthService {
       );
       
     } catch (e) {
+      // Error handled silently
       // Even if logout fails, clear local data
       await _clearAllUserData();
 
@@ -544,6 +551,7 @@ class AuthService {
       );
 
     } catch (e) {
+      // Error handled silently
       final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Email verification failed. Please try again.');
       return AuthResult.failure(
         message: ErrorHandler.mapErrorToUserMessage(errorMessage),
@@ -616,6 +624,7 @@ class AuthService {
       throw Exception('Failed to check verification status - HTTP ${response.statusCode}');
       
     } catch (e) {
+      // Error handled silently
       final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not check verification status');
       return {
         'is_verified': false,
@@ -664,6 +673,7 @@ class AuthService {
       );
 
     } catch (e) {
+      // Error handled silently
       final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Password reset request failed');
       return AuthResult.failure(
         message: ErrorHandler.mapErrorToUserMessage(errorMessage),
@@ -709,6 +719,7 @@ class AuthService {
       );
 
     } catch (e) {
+      // Error handled silently
       final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Password reset failed');
       return AuthResult.failure(
         message: ErrorHandler.mapErrorToUserMessage(errorMessage),
@@ -752,6 +763,7 @@ class AuthService {
       );
 
     } catch (e) {
+      // Error handled silently
       final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Failed to send verification email');
       return AuthResult.failure(
         message: ErrorHandler.mapErrorToUserMessage(errorMessage),
@@ -804,6 +816,7 @@ class AuthService {
       );
 
     } catch (e) {
+      // Error handled silently
       final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Email verification failed');
       return AuthResult.failure(
         message: ErrorHandler.mapErrorToUserMessage(errorMessage),
@@ -856,6 +869,7 @@ class AuthService {
       throw Exception('Failed to get verification status - HTTP ${response.statusCode}');
 
     } catch (e) {
+      // Error handled silently
       final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not get verification status');
       return {
         'is_verified': false,
@@ -900,6 +914,7 @@ class AuthService {
       throw Exception('Failed to get registration status - HTTP ${response.statusCode}');
 
     } catch (e) {
+      // Error handled silently
       final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not get registration status');
       return {
         'account_status': 'error',
@@ -950,6 +965,7 @@ class AuthService {
       );
 
     } catch (e) {
+      // Error handled silently
       final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Session refresh failed');
       return AuthResult.failure(
         message: ErrorHandler.mapErrorToUserMessage(errorMessage),
@@ -987,6 +1003,7 @@ class AuthService {
       return null;
       
     } catch (e) {
+      // Error handled silently
       return null;
     }
   }
@@ -1026,6 +1043,7 @@ class AuthService {
       return null;
       
     } catch (e) {
+      // Error handled silently
       return null;
     }
   }
@@ -1067,6 +1085,7 @@ class AuthService {
       };
 
     } catch (e) {
+      // Error handled silently
       final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Invalid referral code');
       return {
         'valid': false,
@@ -1103,6 +1122,7 @@ class AuthService {
       throw Exception(errorMessage);
 
     } catch (e) {
+      // Error handled silently
       final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not load pending approvals');
       throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
     }
@@ -1142,6 +1162,7 @@ class AuthService {
       );
 
     } catch (e) {
+      // Error handled silently
       final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not approve user');
       return AuthResult.failure(
         message: ErrorHandler.mapErrorToUserMessage(errorMessage),
@@ -1186,6 +1207,7 @@ class AuthService {
       );
 
     } catch (e) {
+      // Error handled silently
       final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not reject user');
       return AuthResult.failure(
         message: ErrorHandler.mapErrorToUserMessage(errorMessage),
@@ -1256,6 +1278,7 @@ class AuthService {
       throw Exception(errorMessage);
 
     } catch (e) {
+      // Error handled silently
       final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not load approval history');
       throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
     }
@@ -1301,6 +1324,7 @@ class AuthService {
       throw Exception('Failed to check approval status - HTTP ${response.statusCode}');
 
     } catch (e) {
+      // Error handled silently
       final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not check approval status');
       return {
         'status': 'error',
@@ -1329,10 +1353,11 @@ class AuthService {
         final userData = jsonDecode(userDataString);
         _currentUser = UserModel.fromJson(userData);
         
-        
+
       } else {
       }
     } catch (e) {
+      // Error handled silently
     }
   }
 
@@ -1347,8 +1372,9 @@ class AuthService {
         'hours': user.hours,
       });
       await _secureStorage.write(key: _userDataKey, value: userDataString);
-      
+
     } catch (e) {
+      // Error handled silently
     }
   }
 
@@ -1363,8 +1389,9 @@ class AuthService {
       // Clear user data
       await _secureStorage.delete(key: _userDataKey);
       await _secureStorage.delete(key: _userPreferencesKey);
-      
+
     } catch (e) {
+      // Error handled silently
     }
   }
 
@@ -1387,9 +1414,11 @@ class AuthService {
           final firebaseNotificationService = Get.find<FirebaseNotificationService>();
           await firebaseNotificationService.setupPushNotifications();
         } catch (e) {
+      // Error handled silently
         }
       });
     } catch (e) {
+      // Error handled silently
     }
   }
 
@@ -1409,12 +1438,14 @@ class AuthService {
           
           // 🔥 CRITICAL FIX: Use setupPushNotifications instead of registerTokenWithBackend
           // This ensures permissions are requested before token registration
-          final success = await firebaseNotificationService.setupPushNotifications();
-          
+          await firebaseNotificationService.setupPushNotifications();
+
         } catch (e) {
+      // Error handled silently
         }
       });
     } catch (e) {
+      // Error handled silently
     }
   }
 

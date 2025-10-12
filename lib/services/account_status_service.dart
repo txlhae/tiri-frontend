@@ -80,6 +80,7 @@ class AccountStatusService {
       );
       
     } catch (e) {
+      // Error handled silently
     }
   }
 
@@ -106,6 +107,7 @@ class AccountStatusService {
       
       return statusData;
     } catch (e) {
+      // Error handled silently
       return null;
     }
   }
@@ -116,6 +118,7 @@ class AccountStatusService {
       await _secureStorage.delete(key: _accountStatusKey);
       await _secureStorage.delete(key: _lastStatusCheckKey);
     } catch (e) {
+      // Error handled silently
     }
   }
 
@@ -171,6 +174,7 @@ class AccountStatusService {
       // Show warning if deletion is within 48 hours
       return timeUntilDeletion.inHours <= 48 && timeUntilDeletion.inHours > 0;
     } catch (e) {
+      // Error handled silently
       return false;
     }
   }
@@ -192,6 +196,7 @@ class AccountStatusService {
         return 'Less than a minute';
       }
     } catch (e) {
+      // Error handled silently
       return 'Soon';
     }
   }

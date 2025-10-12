@@ -149,6 +149,7 @@ class FirebaseNotificationService extends GetxService {
       _isInitialized = true;
 
     } catch (e) {
+      // Error handled silently
       rethrow;
     }
   }
@@ -221,7 +222,7 @@ class FirebaseNotificationService extends GetxService {
       if (ApiConfig.enableLogging) {
       }
     } catch (e) {
-      // Failed to register FCM token with backend
+      // Error handled silently
     }
   }
 
@@ -235,10 +236,7 @@ class FirebaseNotificationService extends GetxService {
 
       // For Android 13+ (API 33+), use permission_handler
       if (Platform.isAndroid) {
-        
-        // Check current status first
-        final currentStatus = await Permission.notification.status;
-        
+
         final status = await Permission.notification.request();
         
         _hasNotificationPermission = status == PermissionStatus.granted;
@@ -270,6 +268,7 @@ class FirebaseNotificationService extends GetxService {
       return _hasNotificationPermission;
 
     } catch (e) {
+      // Error handled silently
       return false;
     }
   }
@@ -288,6 +287,7 @@ class FirebaseNotificationService extends GetxService {
 
       return _hasNotificationPermission;
     } catch (e) {
+      // Error handled silently
       return false;
     }
   }
@@ -307,6 +307,7 @@ class FirebaseNotificationService extends GetxService {
       _appVersion = '${packageInfo.version}+${packageInfo.buildNumber}';
       return _appVersion!;
     } catch (e) {
+      // Error handled silently
       _appVersion = '1.0.0+1'; // Fallback version
       return _appVersion!;
     }
@@ -323,6 +324,7 @@ class FirebaseNotificationService extends GetxService {
         return 'Web Browser';
       }
     } catch (e) {
+      // Error handled silently
       return 'Unknown Device';
     }
   }
@@ -349,6 +351,7 @@ class FirebaseNotificationService extends GetxService {
       
       return token;
     } catch (e) {
+      // Error handled silently
       return null;
     }
   }
@@ -365,12 +368,11 @@ class FirebaseNotificationService extends GetxService {
       
       // Check if token is the same as last registered token
       if (_lastRegisteredToken == token) {
-        
+
         // Check cooldown period
         if (_lastRegistrationTime != null) {
           final timeSinceLastRegistration = DateTime.now().difference(_lastRegistrationTime!).inMilliseconds;
           if (timeSinceLastRegistration < _registrationCooldownMs) {
-            final remainingCooldown = (_registrationCooldownMs - timeSinceLastRegistration) / 1000;
             return true; // Return true because token is already registered
           }
         }
@@ -392,6 +394,7 @@ class FirebaseNotificationService extends GetxService {
         }
         
       } catch (e) {
+      // Error handled silently
         return false;
       }
 
@@ -425,19 +428,19 @@ class FirebaseNotificationService extends GetxService {
 
 
       if (response.statusCode == 200) {
-        final data = response.data;
-        
+
         // Track successful registration to prevent duplicates
         _lastRegisteredToken = token;
         _lastRegistrationTime = DateTime.now();
         await _secureStorage.write(key: _lastRegisteredTokenKey, value: token);
-        
+
         return true;
       }
 
       return false;
 
     } catch (e) {
+      // Error handled silently
       return false;
     }
   }
@@ -451,6 +454,7 @@ class FirebaseNotificationService extends GetxService {
           return true; // Not an error if user is already logged out
         }
       } catch (e) {
+      // Error handled silently
         return true; // Not an error if AuthService is not available
       }
 
@@ -462,13 +466,13 @@ class FirebaseNotificationService extends GetxService {
       );
 
       if (response.statusCode == 200) {
-        final data = response.data;
         return true;
       }
 
       return false;
 
     } catch (e) {
+      // Error handled silently
       return false;
     }
   }
@@ -487,8 +491,10 @@ class FirebaseNotificationService extends GetxService {
           await registerTokenWithBackend();
         }
       } catch (e) {
+      // Error handled silently
       }
     } catch (e) {
+      // Error handled silently
     }
   }
 
@@ -505,18 +511,21 @@ class FirebaseNotificationService extends GetxService {
       
       // Handle any custom data processing
       _processNotificationData(message);
-      
+
     } catch (e) {
+      // Error handled silently
     }
   }
 
   /// Handle notification tapped (from Firebase message)
   void _handleNotificationTapped(RemoteMessage message) {
     try {
-      
+
+
       _processNotificationClick(message.data);
-      
+
     } catch (e) {
+      // Error handled silently
     }
   }
 
@@ -528,8 +537,9 @@ class FirebaseNotificationService extends GetxService {
         final data = jsonDecode(notificationResponse.payload!);
         _processNotificationClick(data);
       }
-      
+
     } catch (e) {
+      // Error handled silently
     }
   }
 
@@ -578,6 +588,7 @@ class FirebaseNotificationService extends GetxService {
 
 
     } catch (e) {
+      // Error handled silently
     }
   }
 
@@ -603,8 +614,9 @@ class FirebaseNotificationService extends GetxService {
           
         default:
       }
-      
+
     } catch (e) {
+      // Error handled silently
     }
   }
 
@@ -636,8 +648,9 @@ class FirebaseNotificationService extends GetxService {
 
       } else {
       }
-      
+
     } catch (e) {
+      // Error handled silently
     }
   }
 
@@ -678,6 +691,7 @@ class FirebaseNotificationService extends GetxService {
       return true;
 
     } catch (e) {
+      // Error handled silently
       return false;
     }
   }
@@ -691,6 +705,7 @@ class FirebaseNotificationService extends GetxService {
           return false;
         }
       } catch (e) {
+      // Error handled silently
         return false;
       }
 
@@ -709,6 +724,7 @@ class FirebaseNotificationService extends GetxService {
       return false;
 
     } catch (e) {
+      // Error handled silently
       return false;
     }
   }
@@ -733,6 +749,7 @@ class FirebaseNotificationService extends GetxService {
 
 
     } catch (e) {
+      // Error handled silently
     }
   }
 

@@ -50,6 +50,7 @@ class RequestService extends GetxController {
         throw Exception('Failed to submit feedback. Please try again.');
       }
     } catch (e) {
+      // Error handled silently
       final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not submit feedback');
       throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
     }
@@ -72,6 +73,7 @@ class RequestService extends GetxController {
         throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
     } catch (e) {
+      // Error handled silently
       final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not complete request');
       throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
     }
@@ -103,6 +105,7 @@ class RequestService extends GetxController {
                 final flutterJson = _mapDjangoToFlutter(djangoJson as Map<String, dynamic>);
                 return RequestModelExtension.fromJsonWithRequester(flutterJson);
               } catch (e) {
+      // Error handled silently
                 return null;
               }
             })
@@ -114,6 +117,7 @@ class RequestService extends GetxController {
         throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
     } catch (e) {
+      // Error handled silently
       if (e is Exception && e.toString().contains('Authentication required')) {
         rethrow;  // Re-throw auth errors as-is
       }
@@ -201,6 +205,7 @@ class RequestService extends GetxController {
       return flutterJson;
       
     } catch (e) {
+      // Error handled silently
       // Return minimal valid structure to prevent crashes
       return _createFallbackRequest(djangoJson);
     }
@@ -263,6 +268,7 @@ class RequestService extends GetxController {
       }
       return DateTime.now().toIso8601String();
     } catch (e) {
+      // Error handled silently
       return DateTime.now().toIso8601String();
     }
   }
@@ -354,6 +360,7 @@ class RequestService extends GetxController {
 
       return [];
     } catch (e) {
+      // Error handled silently
       return [];
     }
   }
@@ -440,6 +447,7 @@ class RequestService extends GetxController {
         throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
     } catch (e) {
+      // Error handled silently
       if (e is Exception && e.toString().contains('Authentication required')) {
         rethrow;
       }
@@ -480,6 +488,7 @@ class RequestService extends GetxController {
         throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
     } catch (e) {
+      // Error handled silently
       if (e is Exception && e.toString().contains('Authentication required')) {
         rethrow;
       }
@@ -529,6 +538,7 @@ class RequestService extends GetxController {
         throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
     } catch (e) {
+      // Error handled silently
       if (e is Exception && (e.toString().contains('not found') ||
           e.toString().contains('permission') ||
           e.toString().contains('parse'))) {
@@ -552,6 +562,7 @@ class RequestService extends GetxController {
         throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
     } catch (e) {
+      // Error handled silently
       final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not create request');
       throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
     }
@@ -570,6 +581,7 @@ class RequestService extends GetxController {
         throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
     } catch (e) {
+      // Error handled silently
       final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not update request');
       throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
     }
@@ -588,6 +600,7 @@ class RequestService extends GetxController {
         throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
     } catch (e) {
+      // Error handled silently
       final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not delete request');
       throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
     }
@@ -617,6 +630,7 @@ class RequestService extends GetxController {
         throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
     } catch (e) {
+      // Error handled silently
       final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not submit volunteer request');
       throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
     }
@@ -644,6 +658,7 @@ class RequestService extends GetxController {
         throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
     } catch (e) {
+      // Error handled silently
       final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not cancel volunteer request');
       throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
     }
@@ -673,6 +688,7 @@ class RequestService extends GetxController {
         throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
     } catch (e) {
+      // Error handled silently
       if (e is Exception && e.toString().contains('not found')) {
         rethrow;
       }
@@ -716,6 +732,7 @@ class RequestService extends GetxController {
         throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
     } catch (e) {
+      // Error handled silently
       final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not search requests');
       throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
     }
@@ -738,6 +755,7 @@ class RequestService extends GetxController {
         throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
     } catch (e) {
+      // Error handled silently
       final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not load dashboard');
       throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
     }
@@ -759,6 +777,7 @@ class RequestService extends GetxController {
         throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
     } catch (e) {
+      // Error handled silently
       final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not approve volunteer');
       throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
     }
@@ -780,6 +799,7 @@ class RequestService extends GetxController {
         throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
     } catch (e) {
+      // Error handled silently
       final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not reject volunteer');
       throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
     }
@@ -817,6 +837,7 @@ class RequestService extends GetxController {
         throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
     } catch (e) {
+      // Error handled silently
       final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not load volunteer requests');
       throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
     }
@@ -850,6 +871,7 @@ class RequestService extends GetxController {
         throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
     } catch (e) {
+      // Error handled silently
       final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not load categories');
       throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
     }
@@ -881,6 +903,7 @@ class RequestService extends GetxController {
         throw Exception(errorMessage);
       }
     } catch (e) {
+      // Error handled silently
 
       // Enhanced error logging
       if (e is DioException) {
@@ -923,6 +946,7 @@ class RequestService extends GetxController {
         throw Exception(errorMessage);
       }
     } catch (e) {
+      // Error handled silently
 
       // Enhanced error logging
       if (e is DioException) {
@@ -964,6 +988,7 @@ class RequestService extends GetxController {
         throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
     } catch (e) {
+      // Error handled silently
       final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not complete request with feedback');
       throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
     }

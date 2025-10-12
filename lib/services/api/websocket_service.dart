@@ -155,6 +155,7 @@ class WebSocketService extends GetxService {
     try {
       await _createConnection();
     } catch (e) {
+      // Error handled silently
       _setConnectionState(WebSocketState.error);
       _onError?.call(e.toString());
       _scheduleReconnect();
@@ -195,6 +196,7 @@ class WebSocketService extends GetxService {
       });
 
     } catch (e) {
+      // Error handled silently
       rethrow;
     }
   }
@@ -232,6 +234,7 @@ class WebSocketService extends GetxService {
           break;
       }
     } catch (e) {
+      // Error handled silently
     }
   }
 
@@ -241,6 +244,7 @@ class WebSocketService extends GetxService {
       final notification = NotificationResponse.fromJson(data);
       _onNotification?.call(notification);
     } catch (e) {
+      // Error handled silently
     }
   }
 
@@ -250,6 +254,7 @@ class WebSocketService extends GetxService {
       final unreadCount = data['unread_count'] as int? ?? 0;
       _onUnreadCount?.call(unreadCount);
     } catch (e) {
+      // Error handled silently
     }
   }
 
@@ -282,6 +287,7 @@ class WebSocketService extends GetxService {
       final jsonMessage = jsonEncode(message);
       _channel!.sink.add(jsonMessage);
     } catch (e) {
+      // Error handled silently
     }
   }
 
@@ -354,6 +360,7 @@ class WebSocketService extends GetxService {
         updateAuthToken(freshToken);
       }
     } catch (e) {
+      // Error handled silently
     }
   }
 
@@ -407,6 +414,7 @@ class WebSocketService extends GetxService {
       final result = await InternetAddress.lookup('google.com');
       return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
     } catch (e) {
+      // Error handled silently
       return false;
     }
   }

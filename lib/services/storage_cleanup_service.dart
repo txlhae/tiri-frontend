@@ -19,7 +19,6 @@ import 'user_state_service.dart';
 ///
 /// This prevents issues where old tokens or data persist after logout.
 class StorageCleanupService {
-  static const String _tag = 'StorageCleanupService';
 
   /// Perform complete storage flush
   ///
@@ -44,6 +43,7 @@ class StorageCleanupService {
             await fcmService.cleanup();
           }
         } catch (e) {
+      // Error handled silently
           // FCM cleanup failed (non-critical)
         }
       }
@@ -55,6 +55,7 @@ class StorageCleanupService {
           await apiService.clearTokens();
         }
       } catch (e) {
+      // Error handled silently
         // API token clear failed
       }
 
@@ -62,6 +63,7 @@ class StorageCleanupService {
       try {
         await AuthStorage.clearAuthData();
       } catch (e) {
+      // Error handled silently
         // AuthStorage clear failed
       }
 
@@ -72,6 +74,7 @@ class StorageCleanupService {
           await userStateService.clearState();
         }
       } catch (e) {
+      // Error handled silently
         // UserStateService clear failed
       }
 
@@ -106,6 +109,7 @@ class StorageCleanupService {
         }
 
       } catch (e) {
+      // Error handled silently
         // Secure storage clear failed
       }
 
@@ -126,10 +130,12 @@ class StorageCleanupService {
         await prefs.remove('read_notifications');
 
       } catch (e) {
+      // Error handled silently
         // SharedPreferences clear failed
       }
 
     } catch (e) {
+      // Error handled silently
       // Don't rethrow - we want to continue even if some cleanup fails
     }
   }
@@ -152,6 +158,7 @@ class StorageCleanupService {
           );
         }
       } catch (e) {
+      // Error handled silently
         // Server logout failed (continuing with local cleanup)
       }
 
@@ -159,6 +166,7 @@ class StorageCleanupService {
       await flushAllStorage(removeFCMFromBackend: true);
 
     } catch (e) {
+      // Error handled silently
       // Still try to flush storage even if server logout fails
       await flushAllStorage(removeFCMFromBackend: false);
     }

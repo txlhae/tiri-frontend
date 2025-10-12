@@ -93,7 +93,6 @@ class QrCodeDialog extends StatelessWidget {
                             version: QrVersions.auto,
                             size: 160,
                             backgroundColor: Colors.white,
-                            foregroundColor: Colors.black,
                           ),
                           const SizedBox(height: 12),
                           Text(
@@ -136,18 +135,18 @@ class QrCodeDialog extends StatelessWidget {
                 onPressed: () => _shareQrCode(context),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color.fromRGBO(0, 140, 170, 1),
-                  foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                icon: const Icon(Icons.share, size: 18),
+                icon: const Icon(Icons.share, size: 18, color: Colors.white),
                 label: const Text(
                   'Share QR Code',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
+                    color: Colors.white,
                   ),
                 ),
               ),
@@ -243,11 +242,13 @@ Download TIRI now and let's help each other!
             imageFile.deleteSync();
           }
         } catch (e) {
+      // Error handled silently
           // Ignore cleanup errors
         }
       });
 
     } catch (e) {
+      // Error handled silently
       // Close loading dialog if still open
       if (Get.isDialogOpen ?? false) {
         Get.back();

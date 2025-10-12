@@ -53,7 +53,7 @@ class HomeScreen extends StatelessWidget {
           children: <Widget>[
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10),
-              height: 170,
+              height: MediaQuery.of(context).size.height < 700 ? 130 : 170,
               decoration: const BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
@@ -67,7 +67,7 @@ class HomeScreen extends StatelessWidget {
                       BorderRadius.vertical(bottom: Radius.circular(20))),
               child: Column(
                 children: [
-                  const SizedBox(height: 60),
+                  SizedBox(height: MediaQuery.of(context).size.height < 700 ? 35 : 60),
                   Row(
                     children: [
                       Padding(
@@ -158,6 +158,7 @@ class HomeScreen extends StatelessWidget {
                           try {
                             Get.toNamed(Routes.notificationsPage);
                           } catch (e) {
+      // Error handled silently
                             Get.snackbar(
                               "Error",
                               "Could not open notifications. Please try again.",

@@ -148,24 +148,42 @@ class _RejectionDialogState extends State<RejectionDialog> {
 
                 // Preset reasons
                 ..._presetReasons.map((reason) {
-                  return RadioListTile<String>(
-                    title: Text(
-                      reason,
-                      style: const TextStyle(fontSize: 14),
-                    ),
-                    value: reason,
-                    groupValue: _selectedPresetReason,
-                    onChanged: (value) {
+                  return InkWell(
+                    onTap: () {
                       setState(() {
-                        _selectedPresetReason = value;
-                        _isCustomReason = value == 'Custom reason (specify below)';
+                        _selectedPresetReason = reason;
+                        _isCustomReason = reason == 'Custom reason (specify below)';
                         if (!_isCustomReason) {
                           _reasonController.clear();
                         }
                       });
                     },
-                    dense: true,
-                    contentPadding: EdgeInsets.zero,
+                    child: Row(
+                      children: [
+                        // ignore: deprecated_member_use
+                        Radio<String>(
+                          value: reason,
+                          // ignore: deprecated_member_use
+                          groupValue: _selectedPresetReason,
+                          // ignore: deprecated_member_use
+                          onChanged: (value) {
+                            setState(() {
+                              _selectedPresetReason = value;
+                              _isCustomReason = value == 'Custom reason (specify below)';
+                              if (!_isCustomReason) {
+                                _reasonController.clear();
+                              }
+                            });
+                          },
+                        ),
+                        Expanded(
+                          child: Text(
+                            reason,
+                            style: const TextStyle(fontSize: 14),
+                          ),
+                        ),
+                      ],
+                    ),
                   );
                 }),
 

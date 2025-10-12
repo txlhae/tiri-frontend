@@ -39,7 +39,12 @@ class _FeedbackState extends State<Feedback> {
           child: DeferredPointerHandler(
             child: Column(children: [
               Container(
-                padding: const EdgeInsets.only(left: 10, right: 10, top: 50, bottom: 10),
+                padding: EdgeInsets.only(
+                  left: 10,
+                  right: 10,
+                  top: MediaQuery.of(context).size.height < 700 ? 30 : 50,
+                  bottom: 10,
+                ),
                 decoration: const BoxDecoration(
                   color: Color.fromRGBO(0, 140, 170, 1),
                   borderRadius: BorderRadius.only(
@@ -47,8 +52,8 @@ class _FeedbackState extends State<Feedback> {
                     bottomRight: Radius.circular(20),
                   ),
                 ),
-                height: 170,
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.start,
@@ -58,16 +63,16 @@ class _FeedbackState extends State<Feedback> {
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
               const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
                     'Feedbacks',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: Colors.white),
                   ),
                 ],
               ),
+              const SizedBox(height: 10),
             ],
           ),
         ),
@@ -91,74 +96,95 @@ class _FeedbackState extends State<Feedback> {
                 ],
               ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  Column(
-                    children: [
-                      Text(
-                        '${stats['total_feedback'] ?? 0}',
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Color.fromRGBO(0, 140, 170, 1),
-                        ),
-                      ),
-                      const Text(
-                        'Total Feedback',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Column(
-                    children: [
-                      Text(
-                        '${stats['total_hours'] ?? 0}',
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Color.fromRGBO(0, 140, 170, 1),
-                        ),
-                      ),
-                      const Text(
-                        'Total Hours',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Column(
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.star,
-                            color: Colors.amber,
-                            size: 20,
+                  Expanded(
+                    child: Column(
+                      children: [
+                        Text(
+                          '${stats['total_feedback'] ?? 0}',
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Color.fromRGBO(0, 140, 170, 1),
                           ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${(stats['average_rating'] ?? 0.0).toStringAsFixed(1)}',
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Color.fromRGBO(0, 140, 170, 1),
+                        ),
+                        const SizedBox(height: 4),
+                        const Text(
+                          'Total Feedback',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey,
+                          ),
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      children: [
+                        Text(
+                          '${stats['total_hours'] ?? 0}',
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Color.fromRGBO(0, 140, 170, 1),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        const Text(
+                          'Total Hours',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey,
+                          ),
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.star,
+                              color: Colors.amber,
+                              size: 20,
                             ),
-                          ),
-                        ],
-                      ),
-                      const Text(
-                        'Average Rating',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey,
+                            const SizedBox(width: 4),
+                            Text(
+                              '${(stats['average_rating'] ?? 0.0).toStringAsFixed(1)}',
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Color.fromRGBO(0, 140, 170, 1),
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 4),
+                        const Text(
+                          'Average Rating',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey,
+                          ),
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),

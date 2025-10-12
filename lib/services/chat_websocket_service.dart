@@ -122,6 +122,7 @@ class ChatWebSocketService {
       
       
     } catch (e) {
+      // Error handled silently
       _isConnected = false;
       _updateConnectionState(ConnectionState.error);
       _scheduleReconnect();
@@ -140,6 +141,7 @@ class ChatWebSocketService {
     try {
       await _channel?.sink.close(status.normalClosure);
     } catch (e) {
+      // Error handled silently
       // Channel already closed or error during close
     } finally {
       _channel = null;
@@ -182,6 +184,7 @@ class ChatWebSocketService {
       _channel!.sink.add(json.encode(message));
 
     } catch (e) {
+      // Error handled silently
       // Failed to send chat message
     }
   }
@@ -201,6 +204,7 @@ class ChatWebSocketService {
       _channel!.sink.add(json.encode(message));
 
     } catch (e) {
+      // Error handled silently
       // Failed to send typing indicator
     }
   }
@@ -220,6 +224,7 @@ class ChatWebSocketService {
       // Get the (potentially refreshed) token
       return await ApiService.instance.getStoredAccessToken();
     } catch (e) {
+      // Error handled silently
       return null;
     }
   }
@@ -249,6 +254,7 @@ class ChatWebSocketService {
           final Map<String, dynamic> messageData = json.decode(data);
           _handleIncomingMessage(messageData);
         } catch (e) {
+      // Error handled silently
           // Failed to parse incoming message
         }
       },
@@ -286,6 +292,7 @@ class ChatWebSocketService {
         default:
       }
     } catch (e) {
+      // Error handled silently
       // Failed to handle incoming message
     }
   }
@@ -379,6 +386,7 @@ class ChatWebSocketService {
 
 
     } catch (e) {
+      // Error handled silently
       // Failed to process chat message
     }
   }
@@ -429,6 +437,7 @@ class ChatWebSocketService {
           };
           _channel!.sink.add(json.encode(heartbeat));
         } catch (e) {
+      // Error handled silently
           // Failed to send heartbeat
         }
       }

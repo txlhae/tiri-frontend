@@ -45,6 +45,7 @@ class ChatApiService {
         throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
     } catch (e) {
+      // Error handled silently
       final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not load conversations');
       throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
     }
@@ -95,6 +96,7 @@ class ChatApiService {
         throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
     } catch (e) {
+      // Error handled silently
       final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not create conversation');
       throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
     }
@@ -114,6 +116,7 @@ class ChatApiService {
         throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
     } catch (e) {
+      // Error handled silently
       final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not load conversation details');
       throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
     }
@@ -165,6 +168,7 @@ class ChatApiService {
         throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
     } catch (e) {
+      // Error handled silently
       final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not load messages');
       throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
     }
@@ -212,6 +216,7 @@ class ChatApiService {
         throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
     } catch (e) {
+      // Error handled silently
       final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not send message');
       throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
     }
@@ -238,6 +243,7 @@ class ChatApiService {
         throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
     } catch (e) {
+      // Error handled silently
       final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not mark messages as read');
       throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
     }
@@ -286,6 +292,7 @@ class ChatApiService {
         throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
     } catch (e) {
+      // Error handled silently
       final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not create conversation');
       throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
     }

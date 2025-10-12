@@ -23,6 +23,7 @@ class _VerifyDialogState extends State<VerifyDialog> {
     try {
       await authController.verifyUser(widget.acceptedUser);
     } catch (error) {
+      // Error handled silently
     }
   }
 

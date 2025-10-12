@@ -164,6 +164,7 @@ class DeletionWarning extends StatelessWidget {
       // Consider urgent if less than 24 hours remaining
       return timeUntilDeletion.inHours <= 24;
     } catch (e) {
+      // Error handled silently
       return false;
     }
   }

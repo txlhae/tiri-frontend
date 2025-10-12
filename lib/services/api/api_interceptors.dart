@@ -8,7 +8,6 @@ import '../exceptions/api_exceptions.dart';
 
 /// Request interceptor for adding authentication headers and logging
 class RequestInterceptor extends Interceptor {
-  static const String _tag = 'RequestInterceptor';
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
@@ -32,6 +31,7 @@ class RequestInterceptor extends Interceptor {
       
       handler.next(options);
     } catch (e) {
+      // Error handled silently
       // If there's an error in the interceptor, log it and continue
       if (kDebugMode) {
       }
@@ -72,14 +72,6 @@ class RequestInterceptor extends Interceptor {
 
   /// Log request details
   void _logRequest(RequestOptions options) {
-    final requestId = options.extra['request_id'];
-    
-    if (options.queryParameters.isNotEmpty) {
-    }
-    
-    if (options.data != null) {
-    }
-    
     if (options.headers.isNotEmpty) {
       final sanitizedHeaders = Map<String, dynamic>.from(options.headers);
       // Remove sensitive headers from logs
@@ -100,26 +92,10 @@ class RequestInterceptor extends Interceptor {
     return null;
   }
 
-  /// Sanitize sensitive data for logging
-  dynamic _sanitizeLogData(dynamic data) {
-    if (data is Map) {
-      final sanitized = Map<String, dynamic>.from(data);
-      // Remove sensitive fields from logs
-      const sensitiveFields = ['password', 'token', 'secret', 'key'];
-      for (final field in sensitiveFields) {
-        if (sanitized.containsKey(field)) {
-          sanitized[field] = '***REDACTED***';
-        }
-      }
-      return sanitized;
-    }
-    return data;
-  }
 }
 
 /// Response interceptor for logging and success handling
 class ResponseInterceptor extends Interceptor {
-  static const String _tag = 'ResponseInterceptor';
 
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
@@ -144,6 +120,7 @@ class ResponseInterceptor extends Interceptor {
       
       handler.next(response);
     } catch (e) {
+      // Error handled silently
       // If there's an error in the interceptor, log it and continue
       if (kDebugMode) {
       }
@@ -162,12 +139,8 @@ class ResponseInterceptor extends Interceptor {
 
   /// Log response details
   void _logResponse(Response response, int? duration) {
-    final requestId = response.requestOptions.extra['request_id'];
-    final durationText = duration != null ? ' (${duration}ms)' : '';
-    
-    
     if (response.data != null) {
-      final dataPreview = _getDataPreview(response.data);
+      _getDataPreview(response.data);
     }
   }
 
@@ -200,7 +173,6 @@ class ResponseInterceptor extends Interceptor {
 
 /// Error interceptor for converting errors to custom exceptions
 class ErrorInterceptor extends Interceptor {
-  static const String _tag = 'ErrorInterceptor';
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
@@ -230,6 +202,7 @@ class ErrorInterceptor extends Interceptor {
 
       handler.next(newError);
     } catch (e) {
+      // Error handled silently
       // If there's an error in the interceptor, log it and continue with original error
       if (kDebugMode) {
       }
@@ -239,10 +212,6 @@ class ErrorInterceptor extends Interceptor {
 
   /// Log error details
   void _logError(DioException err, int? duration) {
-    final requestId = err.requestOptions.extra['request_id'];
-    final durationText = duration != null ? ' (${duration}ms)' : '';
-    
-    
     if (err.response?.data != null) {
     }
   }
@@ -336,7 +305,6 @@ class ErrorInterceptor extends Interceptor {
 
 /// Retry interceptor for handling automatic retries
 class RetryInterceptor extends Interceptor {
-  static const String _tag = 'RetryInterceptor';
   
   /// Maximum number of retry attempts
   final int maxRetries;
@@ -370,14 +338,10 @@ class RetryInterceptor extends Interceptor {
         
         // Calculate delay with exponential backoff
         final delay = Duration(
-          milliseconds: (retryDelay.inMilliseconds * 
+          milliseconds: (retryDelay.inMilliseconds *
               (retryCount == 0 ? 1 : backoffMultiplier * retryCount)).round(),
         );
-        
-        if (kDebugMode) {
-          final requestId = err.requestOptions.extra['request_id'];
-        }
-        
+
         // Wait before retrying
         await Future.delayed(delay);
         
@@ -387,6 +351,7 @@ class RetryInterceptor extends Interceptor {
         handler.resolve(response);
         return;
       } catch (e) {
+      // Error handled silently
         // If retry fails, continue with original error
         if (kDebugMode) {
         }
@@ -487,6 +452,7 @@ class ProductionRequestInterceptor extends Interceptor {
 
       handler.next(options);
     } catch (e) {
+      // Error handled silently
       handler.next(options);
     }
   }
@@ -515,6 +481,7 @@ class ProductionErrorInterceptor extends Interceptor {
 
       handler.next(newError);
     } catch (e) {
+      // Error handled silently
       handler.next(err);
     }
   }

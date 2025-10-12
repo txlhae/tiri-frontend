@@ -677,7 +677,9 @@ class RequestController extends GetxController {
 
                     try {
                       await createNewCategory(name, descriptionController.text.trim());
-                      Navigator.of(context).pop();
+                      if (context.mounted) {
+                        Navigator.of(context).pop();
+                      }
                       
                       // Show success message
                       Get.snackbar(

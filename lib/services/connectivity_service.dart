@@ -57,7 +57,6 @@ class ConnectivityService extends GetxService {
   // =============================================================================
 
   static const Duration _serverCheckTimeout = Duration(seconds: 3);
-  static const Duration _serverCheckInterval = Duration(minutes: 2);
   static const int _maxRetries = 1;
 
   // =============================================================================
@@ -94,10 +93,8 @@ class ConnectivityService extends GetxService {
       // Start listening to connectivity changes
       _startConnectivityListener();
 
-      // Periodic server checks disabled - only check on startup and network changes
-      // _startPeriodicServerChecks();
-
     } catch (e) {
+      // Error handled silently
       _updateState(ConnectivityState.offline, 'Failed to initialize connectivity service');
     }
   }
@@ -136,17 +133,9 @@ class ConnectivityService extends GetxService {
         _updateState(ConnectivityState.offline, 'No internet connection');
       }
     } catch (e) {
+      // Error handled silently
       _updateState(ConnectivityState.offline, 'Failed to check connectivity');
     }
-  }
-
-  /// Start periodic server reachability checks
-  void _startPeriodicServerChecks() {
-    _serverCheckTimer = Timer.periodic(_serverCheckInterval, (timer) async {
-      if (isOnline.value) {
-        await _checkServerReachability();
-      }
-    });
   }
 
   // =============================================================================
@@ -172,6 +161,7 @@ class ConnectivityService extends GetxService {
 
       lastChecked.value = DateTime.now();
     } catch (e) {
+      // Error handled silently
       isServerReachable.value = false;
       _updateState(ConnectivityState.serverOffline, 'Server offline - unable to reach backend');
     }
@@ -194,6 +184,7 @@ class ConnectivityService extends GetxService {
           return true;
         }
       } catch (e) {
+      // Error handled silently
 
         if (attempt < _maxRetries) {
           await Future.delayed(Duration(seconds: attempt * 2)); // Exponential backoff
@@ -234,6 +225,7 @@ class ConnectivityService extends GetxService {
 
       return currentState.value;
     } catch (e) {
+      // Error handled silently
       _updateState(ConnectivityState.offline, 'Failed to check connectivity');
       return ConnectivityState.offline;
     }
