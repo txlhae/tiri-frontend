@@ -225,8 +225,9 @@ class _PendingApprovalScreenState extends State<PendingApprovalScreen>
                       const SizedBox(height: 20),
 
                       // Back to login option
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                      Wrap(
+                        alignment: WrapAlignment.center,
+                        crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           const Text(
                             "Need to use a different account?",
@@ -240,6 +241,11 @@ class _PendingApprovalScreenState extends State<PendingApprovalScreen>
                               // Clear current session and go back to login
                               authController.logout();
                             },
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              minimumSize: const Size(0, 0),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
                             child: const Text(
                               'Login',
                               style: TextStyle(
