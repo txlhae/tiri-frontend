@@ -256,7 +256,7 @@ class HomeScreen extends StatelessWidget {
                                       child: SvgPicture.asset(
                                         'assets/icons/search_icon.svg',
                                         fit: BoxFit.scaleDown,
-                                        color: const Color(0xFF008CAA),
+                                        colorFilter: const ColorFilter.mode(Color(0xFF008CAA), BlendMode.srcIn),
                                       ),
                                     ),
                                     suffixIcon: Obx(() {

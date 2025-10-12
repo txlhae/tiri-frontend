@@ -221,6 +221,7 @@ class FirebaseNotificationService extends GetxService {
       if (ApiConfig.enableLogging) {
       }
     } catch (e) {
+      // Failed to register FCM token with backend
     }
   }
 

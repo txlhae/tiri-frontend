@@ -140,6 +140,7 @@ class ChatWebSocketService {
     try {
       await _channel?.sink.close(status.normalClosure);
     } catch (e) {
+      // Channel already closed or error during close
     } finally {
       _channel = null;
       _currentRoomId = null;
@@ -177,10 +178,11 @@ class ChatWebSocketService {
         'sender_id': _currentUserId,
         'room_id': _currentRoomId,
       };
-      
+
       _channel!.sink.add(json.encode(message));
-      
+
     } catch (e) {
+      // Failed to send chat message
     }
   }
 
@@ -195,10 +197,11 @@ class ChatWebSocketService {
         'sender_id': _currentUserId,
         'room_id': _currentRoomId,
       };
-      
+
       _channel!.sink.add(json.encode(message));
-      
+
     } catch (e) {
+      // Failed to send typing indicator
     }
   }
 
@@ -246,6 +249,7 @@ class ChatWebSocketService {
           final Map<String, dynamic> messageData = json.decode(data);
           _handleIncomingMessage(messageData);
         } catch (e) {
+          // Failed to parse incoming message
         }
       },
       onError: (error) {
@@ -282,6 +286,7 @@ class ChatWebSocketService {
         default:
       }
     } catch (e) {
+      // Failed to handle incoming message
     }
   }
 
@@ -366,12 +371,15 @@ class ChatWebSocketService {
         try {
           _messageController.add(message);
         } catch (streamError) {
+          // Failed to add message to stream
         }
       } else {
       }
-      
-      
+
+
+
     } catch (e) {
+      // Failed to process chat message
     }
   }
 
@@ -421,6 +429,7 @@ class ChatWebSocketService {
           };
           _channel!.sink.add(json.encode(heartbeat));
         } catch (e) {
+          // Failed to send heartbeat
         }
       }
     });

@@ -73,7 +73,7 @@ class _FeedbackState extends State<Feedback> {
         ),
         // Stats section
         Obx(() {
-          final stats = requestController.feedbackStats.value;
+          final stats = requestController.feedbackStats;
           if (stats.isNotEmpty) {
             return Container(
               margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -193,13 +193,9 @@ class _FeedbackState extends State<Feedback> {
                       final item = feedbackList[index];
                       final feedback = item['feedback'] as FeedbackModel;
                       final username = item['username'] ?? 'Unknown User';
-                      final firstName = item['firstName'] ?? '';
-                      final lastName = item['lastName'] ?? '';
                       final imageUrl = item['imageUrl'];
                       final title = item['title'] ?? 'Untitled Request';
                       final reputationDisplay = item['reputationDisplay'] ?? '';
-                      final totalHoursHelped = item['totalHoursHelped'] ?? 0;
-                      final averageRating = item['averageRating'] ?? 0.0;
 
                       // Enhanced TIRI Brief compliant feedback card
                       return Container(

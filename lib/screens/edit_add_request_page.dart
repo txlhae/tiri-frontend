@@ -90,7 +90,7 @@ final hours = requestController.validateIntField(controller: requestController.h
       requestedTime: requestController.selectedDateTime.value ??
           widget.request.requestedTime,
       status: RequestStatus.values.firstWhere((e) => e.name == updatedStatus, orElse: () => RequestStatus.pending),
-      acceptedUser: widget.request.acceptedUser ?? [],
+      acceptedUser: widget.request.acceptedUser,
       numberOfPeople: number,
       hoursNeeded: hours,
     );

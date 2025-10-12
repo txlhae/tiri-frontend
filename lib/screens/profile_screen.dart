@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:tiri/controllers/auth_controller.dart';
 import 'package:tiri/controllers/chat_controller.dart';
 import 'package:tiri/controllers/request_controller.dart';
@@ -205,7 +204,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         const SizedBox(height: 20),
                         // Display user's full name
                         Text(
-                          user.username ?? 'Unknown User',
+                          user.username,
                           style: const TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,

@@ -839,28 +839,8 @@ class _RequestDetailsState extends State<RequestDetails> {
       );
     }
     
-    // 🎯 Determine display based on actual backend status
-    String statusTitle;
-    String statusSubtitle;
-    Color statusColor;
-    IconData statusIcon;
-    
-    switch (actualVolunteerStatus?.toLowerCase()) {
-      case 'rejected':
-        statusTitle = "Request Rejected ❌";
-        statusSubtitle = "Your volunteer request was not accepted";
-        statusColor = Colors.red.shade700;
-        statusIcon = Icons.cancel;
-        break;
-      case 'pending':
-      default:
-        statusTitle = "Request Pending ⏳";
-        statusSubtitle = "Waiting for requester approval";
-        statusColor = Colors.orange.shade700;
-        statusIcon = Icons.pending_actions;
-        break;
-    }
-    
+    // Note: Status variables removed as they were unused after assignment
+
     return Column(
       children: [
         // Chat button for pending volunteers - NEW FEATURE

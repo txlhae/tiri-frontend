@@ -1,7 +1,6 @@
 // lib/services/connectivity_service.dart
 
 import 'dart:async';
-import 'dart:io';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:get/get.dart';
@@ -281,8 +280,8 @@ class ConnectivityService extends GetxService {
     final result = await completer.future;
 
     // Cleanup
-    timeoutTimer?.cancel();
-    stateSubscription?.cancel();
+    timeoutTimer.cancel();
+    stateSubscription.cancel();
 
     return result;
   }
