@@ -74,6 +74,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       // Fetch feedback
       await requestController.fetchProfileFeedback(targetUserId);
     } catch (e) {
+      // Failed to fetch profile data
     }
   }
 

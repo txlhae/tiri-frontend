@@ -174,6 +174,7 @@ class AuthController extends GetxController {
       _userStateService = Get.find<UserStateService>();
       _connectivityService = Get.find<ConnectivityService>();
     } catch (e) {
+      // Services not initialized yet, will be available later
     }
   }
 
@@ -214,6 +215,7 @@ class AuthController extends GetxController {
         isLoggedIn.value = false;
         currentUserStore.value = null;
       } catch (clearError) {
+        // Failed to clear storage, app will handle on next startup
       }
     }
   }
@@ -567,6 +569,7 @@ class AuthController extends GetxController {
     try {
       isLoading.value = true;
     } catch (e) {
+      // Loading state update failed, continue with logout
     }
 
     // Force clear reactive state FIRST - this is most critical
@@ -579,6 +582,7 @@ class AuthController extends GetxController {
         currentUserStore.value = null;
         isLoggedIn.value = false;
       } catch (e2) {
+        // State clearing failed, proceed with navigation anyway
       }
     }
 
@@ -586,6 +590,7 @@ class AuthController extends GetxController {
     try {
       Get.offAllNamed(Routes.loginPage);
     } catch (e) {
+      // Navigation failed, user may need to restart app
     }
 
     // Try to show success message (but don't fail if it doesn't work)
@@ -598,6 +603,7 @@ class AuthController extends GetxController {
         colorText: Colors.white,
       );
     } catch (e) {
+      // Snackbar display failed, user still logged out successfully
     }
 
     // 🚨 NEW: Use centralized cleanup service in background
@@ -610,10 +616,12 @@ class AuthController extends GetxController {
       // 🚨 NEW: Use centralized StorageCleanupService for complete flush
       await StorageCleanupService.performLogoutCleanup();
     } catch (e) {
+      // Cleanup failed, some cached data may remain
     } finally {
       try {
         isLoading.value = false;
       } catch (e) {
+        // Failed to update loading state
       }
     }
   }
@@ -1022,6 +1030,7 @@ class AuthController extends GetxController {
         update();
       }
     } catch (e) {
+      // Failed to refresh user profile
     }
   }
 
@@ -1127,6 +1136,7 @@ class AuthController extends GetxController {
             'decidedAt': decidedAt?.toIso8601String(),
           }));
         } catch (e) {
+          // Failed to parse individual approval history item
         }
       }
 
@@ -1483,6 +1493,7 @@ class AuthController extends GetxController {
               currentUserStore.value = user;
               await _saveUserToStorage(user);
             } catch (e) {
+              // Failed to parse or save user data from verification status
             }
           }
           
@@ -1882,9 +1893,10 @@ class AuthController extends GetxController {
         // 🔥 CRITICAL FIX: Use setupPushNotifications instead of registerTokenWithBackend
         // This ensures permissions are requested before token registration
         await firebaseService.setupPushNotifications();
-        
+
       }
     } catch (e) {
+      // Failed to setup FCM after login
     }
   }
 
@@ -1915,6 +1927,7 @@ class AuthController extends GetxController {
         'approvalExpiresAt': user.approvalExpiresAt?.toIso8601String(),
       }));
     } catch (e) {
+      // Failed to save user to storage
     }
   }
 
@@ -1924,6 +1937,7 @@ class AuthController extends GetxController {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('user');
     } catch (e) {
+      // Failed to clear user data from storage
     }
   }
 

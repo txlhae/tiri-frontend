@@ -50,6 +50,7 @@ class NotificationController extends GetxController {
     try {
       ApiFoundationInitializer.initialize();
     } catch (e) {
+      // API service initialization failed
     }
   }
 
@@ -58,6 +59,7 @@ class NotificationController extends GetxController {
     try {
       _webSocketService = WebSocketService.instance;
     } catch (e) {
+      // WebSocket service initialization failed
     }
   }
 
@@ -94,8 +96,9 @@ class NotificationController extends GetxController {
 
       // Connect to WebSocket
       await _webSocketService!.connect();
-      
+
     } catch (e) {
+      // WebSocket connection failed
     }
   }
 
@@ -290,6 +293,7 @@ class NotificationController extends GetxController {
         _notifications.assignAll(<NotificationModel>[]);
       }
     } catch (e) {
+      // Failed to load notifications from storage
     }
   }
 
@@ -297,6 +301,7 @@ class NotificationController extends GetxController {
     try {
       // await _store.updateNotification(notify);
     } catch (e) {
+      // Failed to update notification
     }
   }
 
@@ -513,9 +518,10 @@ class NotificationController extends GetxController {
         
         // Update unread count
         await _calculateUnreadCountFromApi();
-        
+
       }
     } catch (e) {
+      // Failed to mark notification as read
     }
   }
   
@@ -561,6 +567,7 @@ class NotificationController extends GetxController {
       if (response.success) {
       }
     } catch (e) {
+      // Failed to save FCM token
     }
   }
   
@@ -573,6 +580,7 @@ class NotificationController extends GetxController {
         return response.data;
       }
     } catch (e) {
+      // Failed to get notification statistics
     }
     return null;
   }

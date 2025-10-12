@@ -65,7 +65,8 @@
       "Bash(awk:*)",
       "Read(///**)",
       "Bash(do echo \"=== $file ===\")",
-      "Bash(for file in lib/screens/request_details.dart lib/screens/add_request_page.dart lib/screens/feedback.dart lib/screens/add_feedback_page.dart lib/screens/home_screen.dart lib/screens/contact_us.dart lib/screens/edit_add_request_page.dart lib/screens/privacy_and_security.dart)"
+      "Bash(for file in lib/screens/request_details.dart lib/screens/add_request_page.dart lib/screens/feedback.dart lib/screens/add_feedback_page.dart lib/screens/home_screen.dart lib/screens/contact_us.dart lib/screens/edit_add_request_page.dart lib/screens/privacy_and_security.dart)",
+      "Bash(~/fvm/versions/stable/bin/flutter analyze)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",

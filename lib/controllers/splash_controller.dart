@@ -386,8 +386,9 @@ class SplashController extends GetxController {
 
       // Clear user state service
       await _userStateService.clearState();
-      
+
     } catch (e) {
+      // Failed to reset user state
     }
   }
 }

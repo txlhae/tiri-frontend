@@ -63,6 +63,7 @@ class HomeController extends GetxController
       } else {
       }
     } catch (e) {
+      // Failed to accept request
     }
   }
 
