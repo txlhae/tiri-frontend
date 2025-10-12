@@ -14,8 +14,7 @@ class CacheCleanupService {
 
   /// Target maximum cache sizes
   static const double maxApiCacheMB = 5.0;
-  static const double maxImageCacheMB = 10.0;
-  static const double maxTotalCacheMB = 20.0;
+  static const double maxTotalCacheMB = 10.0;
 
   /// Private constructor
   CacheCleanupService._();
@@ -31,10 +30,7 @@ class CacheCleanupService {
       // Clean API cache
       await _cleanApiCache();
 
-      // Clean image cache
-      await _cleanImageCache();
-
-      // Clean temporary files
+      // Clean temporary files (including any old image cache directories)
       await _cleanTempFiles();
 
       // Clean SharedPreferences if too large
@@ -67,35 +63,32 @@ class CacheCleanupService {
     }
   }
 
-  /// Clean image cache
-  static Future<void> _cleanImageCache() async {
-    try {
-      final tempDir = await getTemporaryDirectory();
-      final imageCacheDir = Directory('${tempDir.path}/image_cache');
-
-      if (imageCacheDir.existsSync()) {
-        final size = await _getDirectorySizeMB(imageCacheDir);
-
-        if (size > maxImageCacheMB) {
-          await imageCacheDir.delete(recursive: true);
-          await imageCacheDir.create();
-
-          if (kDebugMode) {
-          }
-        }
-      }
-    } catch (e) {
-      if (kDebugMode) {
-      }
-    }
-  }
-
-  /// Clean temporary files older than 24 hours
+  /// Clean temporary files older than 1 hour (reduced from 24 hours)
   static Future<void> _cleanTempFiles() async {
     try {
       final tempDir = await getTemporaryDirectory();
-      final cutoffTime = DateTime.now().subtract(const Duration(days: 1));
+      final cutoffTime = DateTime.now().subtract(const Duration(hours: 1));
 
+      // Also clean up any legacy image cache directories
+      final legacyCacheDirs = [
+        Directory('${tempDir.path}/image_cache'),
+        Directory('${tempDir.path}/libCachedImageData'),
+      ];
+
+      for (final dir in legacyCacheDirs) {
+        if (dir.existsSync()) {
+          try {
+            await dir.delete(recursive: true);
+            if (kDebugMode) {
+              print('Deleted legacy image cache: ${dir.path}');
+            }
+          } catch (e) {
+            // Directory might be in use, skip
+          }
+        }
+      }
+
+      // Clean old temp files
       await for (final entity in tempDir.list(recursive: true)) {
         if (entity is File) {
           final lastModified = await entity.lastModified();
@@ -168,14 +161,8 @@ class CacheCleanupService {
       // API cache
       totalSize += await ApiClient.getCacheSizeMB();
 
-      // Image cache
-      final tempDir = await getTemporaryDirectory();
-      final imageCacheDir = Directory('${tempDir.path}/image_cache');
-      if (imageCacheDir.existsSync()) {
-        totalSize += await _getDirectorySizeMB(imageCacheDir);
-      }
-
       // Temp directory
+      final tempDir = await getTemporaryDirectory();
       totalSize += await _getDirectorySizeMB(tempDir);
 
       return totalSize;
@@ -216,21 +203,13 @@ class CacheCleanupService {
       final apiCacheSize = await ApiClient.getCacheSizeMB();
       final totalSize = await getTotalCacheSizeMB();
 
-      final tempDir = await getTemporaryDirectory();
-      final imageCacheDir = Directory('${tempDir.path}/image_cache');
-      final imageSize = imageCacheDir.existsSync()
-          ? await _getDirectorySizeMB(imageCacheDir)
-          : 0.0;
-
       return {
         'total_cache_mb': totalSize,
         'api_cache_mb': apiCacheSize,
-        'image_cache_mb': imageSize,
-        'temp_cache_mb': totalSize - apiCacheSize - imageSize,
+        'temp_cache_mb': totalSize - apiCacheSize,
         'cleanup_needed': totalSize > maxTotalCacheMB,
         'limits': {
           'max_api_cache_mb': maxApiCacheMB,
-          'max_image_cache_mb': maxImageCacheMB,
           'max_total_cache_mb': maxTotalCacheMB,
         },
       };

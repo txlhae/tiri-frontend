@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'api/api_client.dart';
 import 'cache_cleanup_service.dart';
-import 'image_cache_service.dart';
 import 'auth_storage.dart';
 
 /// Centralized cache management service
@@ -40,8 +39,9 @@ class AppCacheManager extends GetxService {
         maxCacheSizeMB: 2, // Very small cache
       );
 
-      // 2. Initialize image cache with strict limits
-      await ImageCacheService.initialize();
+      // 2. Disable Flutter's built-in image cache (no image caching)
+      PaintingBinding.instance.imageCache.maximumSize = 0;
+      PaintingBinding.instance.imageCache.maximumSizeBytes = 0;
 
       // 3. Schedule periodic cleanup
       CacheCleanupService.schedulePeriodicCleanup();
@@ -84,12 +84,10 @@ class AppCacheManager extends GetxService {
   static Future<Map<String, dynamic>> getCacheStatus() async {
     try {
       final cleanupStatus = await CacheCleanupService.getCacheStatus();
-      final imageCacheSize = await ImageCacheService.getImageCacheSizeMB();
       final authStorageSize = await AuthStorage.getStorageSizeKB();
 
       return {
         ...cleanupStatus,
-        'image_cache_mb': imageCacheSize,
         'auth_storage_kb': authStorageSize,
         'targets': {
           'app_mb': targets.appSizeMB,
@@ -98,7 +96,6 @@ class AppCacheManager extends GetxService {
         },
         'within_limits': {
           'cache': cleanupStatus['total_cache_mb'] <= targets.cacheSizeMB,
-          'image': imageCacheSize <= ImageCacheService.maxCacheSizeMB,
           'auth': authStorageSize <= AuthStorage.maxStorageSizeKB,
         },
       };
@@ -133,7 +130,6 @@ class AppCacheManager extends GetxService {
 
       // 1. Clear all caches
       await ApiClient.clearCache();
-      await ImageCacheService.clearImageCache();
       await AuthStorage.performCleanup();
 
       // 2. Comprehensive cache cleanup
