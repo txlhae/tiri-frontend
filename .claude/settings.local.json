@@ -55,7 +55,17 @@
       "Bash(~/flutter/bin/flutter analyze --no-fatal-infos)",
       "Bash(~/flutter/bin/flutter analyze)",
       "Bash(git commit:*)",
-      "Bash(~/flutter/bin/flutter build ios --debug --no-codesign)"
+      "Bash(~/flutter/bin/flutter build ios --debug --no-codesign)",
+      "Bash(timeout 30 flutter analyze --no-fatal-infos)",
+      "Bash(~/fvm/versions/stable/bin/flutter analyze --no-fatal-infos)",
+      "Bash(curl -X POST https://tiri.vercel.app/api/auth/login/ )",
+      "Bash(curl:*)",
+      "Bash(ls:*)",
+      "Bash(~/flutter/bin/dart analyze lib/screens/add_request_page.dart)",
+      "Bash(awk:*)",
+      "Read(///**)",
+      "Bash(do echo \"=== $file ===\")",
+      "Bash(for file in lib/screens/request_details.dart lib/screens/add_request_page.dart lib/screens/feedback.dart lib/screens/add_feedback_page.dart lib/screens/home_screen.dart lib/screens/contact_us.dart lib/screens/edit_add_request_page.dart lib/screens/privacy_and_security.dart)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",

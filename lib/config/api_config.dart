@@ -1,15 +1,15 @@
 // lib/config/api_config.dart
 
-
-// Enterprise API Configuration
+/// Enterprise API Configuration
 /// This file contains all API-related configuration for TIRI app
-/// 
+///
 /// Features:
 /// - Environment-based URLs (dev, staging, production)
 /// - Timeout configurations
 /// - Retry policies
 /// - Security headers
 /// - API versioning
+library;
 
 class ApiConfig {
   // =============================================================================

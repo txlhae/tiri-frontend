@@ -56,3 +56,6 @@ app.*.map.json
 # Development Assets Archive (Documentation, Screenshots, Test Files)
 Dev_Assets_Archive/
 .claude/
+
+# Documentation files
+docs/

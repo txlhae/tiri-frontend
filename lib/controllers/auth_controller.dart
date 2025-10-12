@@ -19,6 +19,7 @@ import 'package:tiri/services/user_state_service.dart';
 import 'package:tiri/services/firebase_notification_service.dart';
 import 'package:tiri/services/auth_redirect_handler.dart';
 import 'package:tiri/services/connectivity_service.dart';
+import 'package:tiri/services/storage_cleanup_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Enterprise AuthController for TIRI application
@@ -186,11 +187,22 @@ class AuthController extends GetxController {
       // Load user data from shared preferences
       final prefs = await SharedPreferences.getInstance();
       final userStr = prefs.getString('user');
-      
+
       if (userStr != null) {
         final userJson = jsonDecode(userStr);
         currentUserStore.value = UserModel.fromJson(userJson);
         isLoggedIn.value = true;
+
+        // 🔥 FIX: Refresh user profile from API if username looks like email
+        // This fixes the issue where old stored data has email as username
+        if (currentUserStore.value != null &&
+            currentUserStore.value!.username.contains('@')) {
+          try {
+            await refreshUserProfile();
+          } catch (e) {
+            // Silently fail - user will see the data eventually
+          }
+        }
       }
 
     } catch (e) {
@@ -547,8 +559,8 @@ class AuthController extends GetxController {
     await register();
   }
 
-  /// Logout current user - Bulletproof version
-  /// 🚨 ENHANCED: Proper token cleanup with maximum error protection
+  /// Logout current user - Bulletproof version with complete storage flush
+  /// 🚨 ENHANCED: Uses centralized StorageCleanupService to ensure ALL data is cleared
   Future<void> logout() async {
 
     // Set loading state safely
@@ -588,38 +600,15 @@ class AuthController extends GetxController {
     } catch (e) {
     }
 
-    // Clean up in background (these can fail without affecting UX)
+    // 🚨 NEW: Use centralized cleanup service in background
     _performBackgroundCleanup();
   }
 
   /// Background cleanup that can fail without affecting logout UX
   Future<void> _performBackgroundCleanup() async {
     try {
-
-      // Try API logout call
-      try {
-        await _authService.logout();
-      } catch (e) {
-      }
-
-      // Clear storage
-      try {
-        await _clearUserData();
-      } catch (e) {
-      }
-
-      // Clear tokens
-      try {
-        await _apiService.clearTokens();
-      } catch (e) {
-      }
-
-      // Clear user state
-      try {
-        await _userStateService.clearState();
-      } catch (e) {
-      }
-
+      // 🚨 NEW: Use centralized StorageCleanupService for complete flush
+      await StorageCleanupService.performLogoutCleanup();
     } catch (e) {
     } finally {
       try {
@@ -693,7 +682,11 @@ class AuthController extends GetxController {
 
     final mappedData = {
       'userId': userMap['userId']?.toString() ?? userMap['id']?.toString() ?? '',
-      'username': userMap['full_name'] ?? userMap['username'] ?? 'Unknown',
+      'username': userMap['full_name']?.toString().trim().isNotEmpty == true
+          ? userMap['full_name']
+          : (userMap['first_name']?.toString().trim().isNotEmpty == true
+              ? userMap['first_name']
+              : (userMap['username'] ?? 'Unknown')),
       'email': userMap['email']?.toString() ?? '',
       'imageUrl': userMap['profile_image'],
       'referralUserId': userMap['referral_user_id']?.toString(),
@@ -954,16 +947,14 @@ class AuthController extends GetxController {
   Future<void> deleteUserAccount({required String email, required String password}) async {
     try {
       isLoading.value = true;
-      
+
       // TODO: Implement Django API call to delete account
-      
-      // Clear user data
-      await _authService.logout();
+
+      // 🚨 NEW: Use centralized cleanup service
       currentUserStore.value = null;
       isLoggedIn.value = false;
-      await _clearUserData();
-      await _apiService.clearTokens(); // 🚨 FIXED: Clear tokens
-      
+      await StorageCleanupService.performLogoutCleanup();
+
       Get.offAllNamed(Routes.loginPage);
       Get.snackbar(
         'Account Deleted',
@@ -972,7 +963,7 @@ class AuthController extends GetxController {
         backgroundColor: cancel,
         colorText: Colors.white,
       );
-      
+
     } catch (e) {
       Get.snackbar(
         'Delete Failed',
@@ -1887,10 +1878,10 @@ class AuthController extends GetxController {
       // Get Firebase notification service
       if (Get.isRegistered<FirebaseNotificationService>()) {
         final firebaseService = Get.find<FirebaseNotificationService>();
-        
+
         // 🔥 CRITICAL FIX: Use setupPushNotifications instead of registerTokenWithBackend
         // This ensures permissions are requested before token registration
-        final success = await firebaseService.setupPushNotifications();
+        await firebaseService.setupPushNotifications();
         
       }
     } catch (e) {
@@ -1993,8 +1984,8 @@ class AuthController extends GetxController {
 
     // 🚨 SECURITY FIX: Must be BOTH email verified AND referrer approved
     final user = currentUserStore.value!;
-    final isVerified = user.isVerified ?? false;
-    final isApproved = user.isApproved ?? false;
+    final isVerified = user.isVerified;
+    final isApproved = user.isApproved;
 
     return isVerified && isApproved;
   }

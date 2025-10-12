@@ -53,7 +53,7 @@ class HomeScreen extends StatelessWidget {
           children: <Widget>[
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10),
-              height: 150,
+              height: 170,
               decoration: const BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
@@ -67,7 +67,7 @@ class HomeScreen extends StatelessWidget {
                       BorderRadius.vertical(bottom: Radius.circular(20))),
               child: Column(
                 children: [
-                  const SizedBox(height: 50),
+                  const SizedBox(height: 60),
                   Row(
                     children: [
                       Padding(

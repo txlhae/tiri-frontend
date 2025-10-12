@@ -37,18 +37,20 @@ class _AddFeedbackPageState extends State<AddFeedbackPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 30),
-                decoration: const BoxDecoration(
-                    color: Color.fromRGBO(0, 140, 170, 1),
-                    borderRadius: BorderRadius.vertical(
-                      bottom: Radius.circular(20),
-                    )),
-                height: 180,
+      body: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              Container(
+                  padding:
+                      const EdgeInsets.only(left: 10, right: 10, top: 50, bottom: 10),
+                  decoration: const BoxDecoration(
+                      color: Color.fromRGBO(0, 140, 170, 1),
+                      borderRadius: BorderRadius.vertical(
+                        bottom: Radius.circular(20),
+                      )),
+                  height: 170,
                 child: Column(
                   children: [
                     Row(
@@ -60,7 +62,7 @@ class _AddFeedbackPageState extends State<AddFeedbackPage> {
                       ],
                     ),
                     const SizedBox(
-                      height: 40,
+                      height: 20,
                     ),
                     const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -219,7 +221,8 @@ class _AddFeedbackPageState extends State<AddFeedbackPage> {
         );
             }),
           ]
-      ),
+        ),
+        ),
       ),
     );
   }

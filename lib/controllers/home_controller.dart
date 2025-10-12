@@ -4,7 +4,6 @@ import 'package:tiri/controllers/request_controller.dart';
 import 'package:tiri/infrastructure/routes.dart';
 import 'package:tiri/screens/widgets/dialog_widgets/logout_dialog.dart';
 import 'package:tiri/services/firebase_notification_service.dart';
-import 'package:tiri/services/auth_guard.dart';
 
 class HomeController extends GetxController
     with GetSingleTickerProviderStateMixin {

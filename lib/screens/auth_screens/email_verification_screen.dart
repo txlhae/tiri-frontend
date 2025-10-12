@@ -66,6 +66,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
       //   await accountStatusService.storeAccountStatus(status);
       // }
     } catch (e) {
+      // Ignore status check errors
     }
   }
 
@@ -125,19 +126,6 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
         );
         return;
       }
-
-      // Show success feedback
-      Get.snackbar(
-        'Verification Check Complete',
-        'Your verification status has been updated successfully.',
-        snackPosition: SnackPosition.TOP,
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-        duration: const Duration(seconds: 3),
-        icon: const Icon(Icons.check_circle, color: Colors.white),
-      );
-
-      return; // Exit early since we're using legacy verification
 
       // UNREACHABLE CODE - COMMENTED OUT
       // // Handle different verification states

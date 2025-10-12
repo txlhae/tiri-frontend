@@ -71,7 +71,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                       children: [
                         Container(
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.15),
+                            color: Colors.white.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: IconButton(
@@ -94,7 +94,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                             ? Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.15),
+                                  color: Colors.white.withValues(alpha: 0.15),
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 child: InkWell(
@@ -116,10 +116,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1),
+                        color: Colors.white.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(15),
                         border: Border.all(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                           width: 1,
                         ),
                       ),
@@ -131,12 +131,12 @@ class _NotificationsPageState extends State<NotificationsPage> {
                               Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.15),
+                                  color: Colors.white.withValues(alpha: 0.15),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Icon(
                                   Icons.inbox,
-                                  color: Colors.white.withOpacity(0.9),
+                                  color: Colors.white.withValues(alpha: 0.9),
                                   size: 20,
                                 ),
                               ),
@@ -147,7 +147,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                   Text(
                                     'Total',
                                     style: TextStyle(
-                                      color: Colors.white.withOpacity(0.7),
+                                      color: Colors.white.withValues(alpha: 0.7),
                                       fontSize: 12,
                                     ),
                                   ),
@@ -166,14 +166,14 @@ class _NotificationsPageState extends State<NotificationsPage> {
                           Container(
                             width: 1,
                             height: 40,
-                            color: Colors.white.withOpacity(0.2),
+                            color: Colors.white.withValues(alpha: 0.2),
                           ),
                           Row(
                             children: [
                               Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: Colors.red.withOpacity(0.2),
+                                  color: Colors.red.withValues(alpha: 0.2),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: const Icon(
@@ -189,7 +189,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                   Text(
                                     'Unread',
                                     style: TextStyle(
-                                      color: Colors.white.withOpacity(0.7),
+                                      color: Colors.white.withValues(alpha: 0.7),
                                       fontSize: 12,
                                     ),
                                   ),
@@ -362,13 +362,13 @@ class _NotificationsPageState extends State<NotificationsPage> {
           borderRadius: BorderRadius.circular(15),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
+              color: Colors.black.withValues(alpha: 0.08),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
           ],
           border: Border.all(
-            color: _getNotificationCategoryColor(notification.notificationType).withOpacity(0.3),
+            color: _getNotificationCategoryColor(notification.notificationType).withValues(alpha: 0.3),
             width: 2,
           ),
         ),
@@ -472,10 +472,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                   decoration: BoxDecoration(
-                                    color: _getPriorityColor(notification.priority!).withOpacity(0.1),
+                                    color: _getPriorityColor(notification.priority!).withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(10),
                                     border: Border.all(
-                                      color: _getPriorityColor(notification.priority!).withOpacity(0.3),
+                                      color: _getPriorityColor(notification.priority!).withValues(alpha: 0.3),
                                     ),
                                   ),
                                   child: Text(
@@ -533,7 +533,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
       width: 40,
       height: 40,
       decoration: BoxDecoration(
-        color: iconColor.withOpacity(0.1),
+        color: iconColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Icon(
@@ -596,10 +596,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: _getNotificationCategoryColor(notification.notificationType).withOpacity(0.1),
+                            color: _getNotificationCategoryColor(notification.notificationType).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: _getNotificationCategoryColor(notification.notificationType).withOpacity(0.3),
+                              color: _getNotificationCategoryColor(notification.notificationType).withValues(alpha: 0.3),
                             ),
                           ),
                           child: Text(

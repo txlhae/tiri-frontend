@@ -24,12 +24,21 @@ import 'error_handler.dart';
 /// - Token management
 class AuthService {
   /// Map backend user JSON (snake_case) to Flutter UserModel camelCase
+  /// 🔥 FIX: Prioritize full_name over username field since backend sends email in username
   Map<String, dynamic> _mapUserSnakeToCamel(Map<String, dynamic> user) {
+    // Prioritize full_name, then first_name, then username as fallback
+    String displayName = user['username'] ?? 'Unknown';
+    if (user['full_name'] != null && user['full_name'].toString().trim().isNotEmpty) {
+      displayName = user['full_name'];
+    } else if (user['first_name'] != null && user['first_name'].toString().trim().isNotEmpty) {
+      displayName = user['first_name'];
+    }
+
     return {
       'userId': user['userId'] ?? user['user_id'] ?? user['id'],
       'email': user['email'],
-      'username': user['username'],
-      'imageUrl': user['imageUrl'] ?? user['image_url'],
+      'username': displayName,  // 🔥 Use full_name instead of username
+      'imageUrl': user['imageUrl'] ?? user['image_url'] ?? user['profile_image'],
       'referralUserId': user['referralUserId'] ?? user['referral_user_id'],
       'phoneNumber': user['phoneNumber'] ?? user['phone_number'],
       'country': user['country'],

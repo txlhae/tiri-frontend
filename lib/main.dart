@@ -29,6 +29,7 @@ void main() async {
   try {
     await AppCacheManager.initializeCacheSystems();
   } catch (e) {
+    // Ignore cache initialization errors - app can continue without cache
   }
 
   // Initialize services with fixed circular dependency issue

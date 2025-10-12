@@ -61,9 +61,9 @@ class RequestController extends GetxController {
     try {
       isLoading.value = true;
       debugLog('🔄 RequestController: Submitting feedback $requestId');
-      
+
       // Submit feedback (this is working - 201 success)
-      final feedbackResult = await requestService.submitBulkFeedback(
+      await requestService.submitBulkFeedback(
         requestId: requestId,
         feedbackList: feedbackList,
       );

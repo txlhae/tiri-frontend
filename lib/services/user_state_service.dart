@@ -139,9 +139,8 @@ class UserStateService {
   // =============================================================================
   // CONSTANTS
   // =============================================================================
-  
+
   static const String _stateKey = 'user_approval_state';
-  static const String _logTag = 'USER_STATE';
   
   // =============================================================================
   // PRIVATE PROPERTIES
@@ -258,7 +257,6 @@ class UserStateService {
         route = '/expired';
         break;
       case UserApprovalState.unknown:
-      default:
         route = '/login';
         break;
     }
@@ -271,7 +269,6 @@ class UserStateService {
     try {
       final isVerified = response['is_verified'] == true;
       final approvalStatus = response['approval_status'] ?? 'unknown';
-      final autoLogin = response['auto_login'] == true;
       final userData = response['user'] ?? {};
       
       

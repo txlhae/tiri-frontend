@@ -619,20 +619,20 @@ class FirebaseNotificationService extends GetxService {
 
       // Handle different click actions
       if (clickAction.startsWith('open_chat:')) {
-        final chatId = clickAction.split(':')[1];
+        // final chatId = clickAction.split(':')[1];
         // Navigate to chat screen
         // Get.toNamed('/chat', arguments: {'chatId': chatId});
-        
+
       } else if (clickAction.startsWith('open_request:')) {
-        final requestId = clickAction.split(':')[1];
+        // final requestId = clickAction.split(':')[1];
         // Navigate to request details screen
         // Get.toNamed('/request-details', arguments: {'requestId': requestId});
-        
+
       } else if (clickAction.startsWith('open_approval:')) {
-        final approvalId = clickAction.split(':')[1];
+        // final approvalId = clickAction.split(':')[1];
         // Navigate to approval screen
         // Get.toNamed('/approvals', arguments: {'approvalId': approvalId});
-        
+
       } else {
       }
       
@@ -702,7 +702,6 @@ class FirebaseNotificationService extends GetxService {
       );
 
       if (response.statusCode == 200) {
-        final data = response.data;
         return true;
       }
 

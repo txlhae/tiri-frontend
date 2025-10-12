@@ -132,7 +132,8 @@ class _MyApplicationsScreenState extends State<MyApplicationsScreen> {
       backgroundColor: Colors.white,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(80),
-        child: AppBar(
+        child: SafeArea(
+          child: AppBar(
           backgroundColor: const Color.fromRGBO(3, 80, 135, 1),
           elevation: 0,
           shape: const RoundedRectangleBorder(
@@ -154,6 +155,7 @@ class _MyApplicationsScreenState extends State<MyApplicationsScreen> {
             ),
           ),
           centerTitle: true,
+          ),
         ),
       ),
       body: Obx(() {

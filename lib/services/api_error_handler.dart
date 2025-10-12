@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:tiri/infrastructure/routes.dart';
 import 'package:tiri/services/auth_storage.dart';
+import 'package:tiri/services/storage_cleanup_service.dart';
 
 /// ApiErrorHandler provides comprehensive error handling for authentication scenarios
 ///
@@ -164,7 +165,8 @@ class ApiErrorHandler {
   /// Handle token expiry by clearing local data and redirecting
   static void _handleTokenExpiry() async {
     try {
-      await AuthStorage.clearAuthData();
+      // 🚨 NEW: Use centralized cleanup service
+      await StorageCleanupService.flushStorageQuick();
 
       // Navigate to login screen
       Get.offAllNamed(Routes.loginPage);
@@ -185,7 +187,8 @@ class ApiErrorHandler {
   /// Handle account deletion scenarios
   static void _handleAccountDeletion() async {
     try {
-      await AuthStorage.clearAuthData();
+      // 🚨 NEW: Use centralized cleanup service
+      await StorageCleanupService.flushStorageQuick();
 
       // Navigate to login screen
       Get.offAllNamed(Routes.loginPage);

@@ -125,19 +125,21 @@ class _RequestDetailsState extends State<RequestDetails> {
     // final request = detailsController.requestModel.value ?? widget.request;
     return Scaffold(
       backgroundColor: Colors.white,
-      body: DeferredPointerHandler(
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 30),
-              decoration: const BoxDecoration(
-                color: Color.fromRGBO(0, 140, 170, 1),
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(20),
-                  bottomRight: Radius.circular(20),
+      body: SafeArea(
+        top: false,
+        child: DeferredPointerHandler(
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.only(left: 10, right: 10, top: 50, bottom: 10),
+                decoration: const BoxDecoration(
+                  color: Color.fromRGBO(0, 140, 170, 1),
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(20),
+                    bottomRight: Radius.circular(20),
+                  ),
                 ),
-              ),
-              height: 150,
+                height: 170,
               child: Column(
                 children: [
                   Row(
@@ -148,6 +150,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 20),
                   const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -175,7 +178,8 @@ class _RequestDetailsState extends State<RequestDetails> {
                 ),
               ),
             ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -992,9 +996,9 @@ class _RequestDetailsState extends State<RequestDetails> {
           padding: const EdgeInsets.all(16),
           margin: const EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
-            color: Color.fromRGBO(0, 140, 170, 1).withOpacity(0.1),
+            color: Color.fromRGBO(0, 140, 170, 1).withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Color.fromRGBO(0, 140, 170, 1).withOpacity(0.3)),
+            border: Border.all(color: Color.fromRGBO(0, 140, 170, 1).withValues(alpha: 0.3)),
           ),
           child: Row(
             children: [
@@ -1016,7 +1020,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                     Text(
                       "You are the owner of this request",
                       style: TextStyle(
-                        color: Color.fromRGBO(0, 140, 170, 1).withOpacity(0.8),
+                        color: Color.fromRGBO(0, 140, 170, 1).withValues(alpha: 0.8),
                         fontSize: 14,
                       ),
                     ),
@@ -1104,9 +1108,9 @@ class _RequestDetailsState extends State<RequestDetails> {
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.orange.withOpacity(0.1),
+              color: Colors.orange.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.orange.withOpacity(0.3)),
+              border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
             ),
             child: Row(
               children: [
@@ -1139,9 +1143,9 @@ class _RequestDetailsState extends State<RequestDetails> {
           width: double.infinity,
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.green.withOpacity(0.1),
+            color: Colors.green.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.green.withOpacity(0.3)),
+            border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
           ),
           child: Row(
             children: [
@@ -1256,9 +1260,9 @@ class _RequestDetailsState extends State<RequestDetails> {
             padding: const EdgeInsets.all(12),
             margin: const EdgeInsets.only(bottom: 16),
             decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.1),
+              color: Colors.blue.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.blue.withOpacity(0.3)),
+              border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
             ),
             child: Row(
               children: [
@@ -1327,9 +1331,9 @@ class _RequestDetailsState extends State<RequestDetails> {
         width: double.infinity,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.grey.withOpacity(0.1),
+          color: Colors.grey.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.withOpacity(0.3)),
+          border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
         ),
         child: Row(
           children: [
@@ -2253,7 +2257,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: Colors.blue.shade50.withOpacity(0.5),
+                      color: Colors.blue.shade50.withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: Colors.blue.shade100),
                     ),

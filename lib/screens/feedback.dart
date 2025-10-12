@@ -34,18 +34,20 @@ class _FeedbackState extends State<Feedback> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        body: DeferredPointerHandler(
-      child: Column(children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 30),
-          decoration: const BoxDecoration(
-            color: Color.fromRGBO(0, 140, 170, 1),
-            borderRadius: BorderRadius.only(
-              bottomLeft: Radius.circular(20),
-              bottomRight: Radius.circular(20),
-            ),
-          ),
-          height: 150,
+        body: SafeArea(
+          top: false,
+          child: DeferredPointerHandler(
+            child: Column(children: [
+              Container(
+                padding: const EdgeInsets.only(left: 10, right: 10, top: 50, bottom: 10),
+                decoration: const BoxDecoration(
+                  color: Color.fromRGBO(0, 140, 170, 1),
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(20),
+                    bottomRight: Radius.circular(20),
+                  ),
+                ),
+                height: 170,
           child: Column(
             children: [
               Row(
@@ -56,6 +58,7 @@ class _FeedbackState extends State<Feedback> {
                   ),
                 ],
               ),
+              const SizedBox(height: 20),
               const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -335,7 +338,8 @@ class _FeedbackState extends State<Feedback> {
                     },
                   );
                 })))
-      ]),
-    ));
+            ]),
+          ),
+        ));
   }
 }

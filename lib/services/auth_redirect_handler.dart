@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:tiri/infrastructure/routes.dart';
 import 'package:tiri/services/auth_storage.dart';
 import 'package:tiri/services/auth_service.dart';
+import 'package:tiri/services/storage_cleanup_service.dart';
 
 /// AuthRedirectHandler manages routing based on authentication response
 ///
@@ -319,7 +320,8 @@ class AuthRedirectHandler {
 
         case 'expired':
           await AuthStorage.updateAccountStatus('expired');
-          await AuthStorage.clearAuthData();
+          // 🚨 NEW: Use centralized cleanup service
+          await StorageCleanupService.flushStorageQuick();
 
           _showMessage(
             'Approval Expired',
@@ -342,7 +344,8 @@ class AuthRedirectHandler {
   /// Clear all auth data and redirect to login
   static Future<void> clearAuthAndRedirectToLogin() async {
     try {
-      await AuthStorage.clearAuthData();
+      // 🚨 NEW: Use centralized cleanup service
+      await StorageCleanupService.flushStorageQuick();
       Get.offAllNamed(Routes.loginPage);
 
       _showMessage(
@@ -351,7 +354,7 @@ class AuthRedirectHandler {
         const Color.fromRGBO(176, 48, 48, 1),
       );
     } catch (e) {
-      
+
     }
   }
 

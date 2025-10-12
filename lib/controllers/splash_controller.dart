@@ -137,10 +137,10 @@ class SplashController extends GetxController {
       
       // Step 4: Determine routing strategy based on current state
       final currentState = _userStateService.currentApprovalState;
-      
+
       await _routeBasedOnState(currentState);
-      
-    } catch (e, stackTrace) {
+
+    } catch (e) {
       
       // Fallback routing on error
       await _handleInitializationError();

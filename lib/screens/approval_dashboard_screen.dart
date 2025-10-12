@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:tiri/controllers/auth_controller.dart';
@@ -45,11 +47,13 @@ class _ApprovalDashboardScreenState extends State<ApprovalDashboardScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Column(
-        children: [
-          // Top Header with curved design matching Feedbacks screen
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 30),
+      body: SafeArea(
+        top: false,
+        child: Column(
+          children: [
+            // Top Header with curved design matching Feedbacks screen
+            Container(
+              padding: const EdgeInsets.only(left: 10, right: 10, top: 50, bottom: 10),
             decoration: const BoxDecoration(
               color: Color.fromRGBO(0, 140, 170, 1),
               borderRadius: BorderRadius.only(
@@ -140,7 +144,8 @@ class _ApprovalDashboardScreenState extends State<ApprovalDashboardScreen>
               ],
             ),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -255,7 +260,7 @@ class _ApprovalDashboardScreenState extends State<ApprovalDashboardScreen>
             Icon(
               icon,
               size: 80,
-              color: color.withOpacity(0.5),
+              color: color.withValues(alpha: 0.5),
             ),
             const SizedBox(height: 24),
             Text(
@@ -298,7 +303,7 @@ class _ApprovalDashboardScreenState extends State<ApprovalDashboardScreen>
             Icon(
               icon,
               size: 80,
-              color: color.withOpacity(0.7),
+              color: color.withValues(alpha: 0.7),
             ),
             const SizedBox(height: 24),
             Text(
@@ -381,7 +386,7 @@ class _ApprovalDashboardScreenState extends State<ApprovalDashboardScreen>
               children: [
                 CircleAvatar(
                   radius: 20,
-                  backgroundColor: statusColor.withOpacity(0.1),
+                  backgroundColor: statusColor.withValues(alpha: 0.1),
                   backgroundImage: approval.newUserProfileImage != null
                       ? NetworkImage(approval.newUserProfileImage!)
                       : null,
@@ -432,7 +437,7 @@ class _ApprovalDashboardScreenState extends State<ApprovalDashboardScreen>
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.1),
+                    color: statusColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Row(
@@ -484,9 +489,9 @@ class _ApprovalDashboardScreenState extends State<ApprovalDashboardScreen>
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.05),
+                  color: Colors.red.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.red.withOpacity(0.2)),
+                  border: Border.all(color: Colors.red.withValues(alpha: 0.2)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

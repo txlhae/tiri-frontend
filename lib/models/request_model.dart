@@ -14,13 +14,12 @@ List<UserModel> _acceptedUserFromJson(dynamic json) {
   if (json is! List) return [];
 
   try {
-    return (json as List)
+    return json
         .map((userJson) {
           if (userJson is! Map<String, dynamic>) return null;
           return UserModel.fromJson(userJson);
         })
-        .where((user) => user != null)
-        .cast<UserModel>()
+        .whereType<UserModel>()
         .toList();
   } catch (e) {
     return [];
@@ -86,6 +85,9 @@ class UserRequestStatus {
 
 @freezed
 class RequestModel with _$RequestModel {
+  // ignore: unused_element
+  const RequestModel._();
+
   const factory RequestModel({
   required String requestId,
   required String userId,
@@ -95,8 +97,10 @@ class RequestModel with _$RequestModel {
   required DateTime timestamp,
   DateTime? requestedTime, // Made nullable - might not always be set
   required RequestStatus status,
-  @JsonKey(fromJson: _acceptedUserFromJson) @Default([]) List<UserModel> acceptedUser, 
-  @JsonKey(ignore: true) List<FeedbackModel>? feedbackList,
+  // ignore: invalid_annotation_target
+  @JsonKey(fromJson: _acceptedUserFromJson) @Default([]) List<UserModel> acceptedUser,
+  // ignore: invalid_annotation_target
+  @JsonKey(includeFromJson: false, includeToJson: false) List<FeedbackModel>? feedbackList,
   @Default(1) int numberOfPeople, // Removed required for @Default fields
   @Default(1) int hoursNeeded, // Removed required for @Default fields
 }) = _RequestModel;
@@ -183,18 +187,13 @@ extension RequestModelExtension on RequestModel {
   
   /// Clear all user request status cache entries
   static void clearAllUserStatusCache() {
-    final cacheSize = _userRequestStatusCache.length;
     _userRequestStatusCache.clear();
   }
 
   /// Clear ALL caches - user status and requester cache
   static void clearAllCache() {
-    final userStatusCacheSize = _userRequestStatusCache.length;
-    final requesterCacheSize = _requesterCache.length;
-
     _userRequestStatusCache.clear();
     _requesterCache.clear();
-
   }
   
   // Get requester for this request

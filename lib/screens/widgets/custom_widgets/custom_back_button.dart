@@ -12,20 +12,31 @@ class CustomBackButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return IconButton(
-      icon: CircleAvatar(
-          backgroundColor: const Color.fromRGBO(235, 237, 237, 0.5),
-          child: SvgPicture.asset(
-            'assets/icons/back_button_new.svg',
-            width: 15,
-            height: 15,
-          )),
-      onPressed: () {
-        if (controller is RequestController) {
-          (controller as RequestController).clearFields();
-        }
-        Get.back();
-      },
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          if (controller is RequestController) {
+            (controller as RequestController).clearFields();
+          }
+          Get.back();
+        },
+        borderRadius: BorderRadius.circular(22),
+        child: Container(
+          width: 44,
+          height: 44,
+          alignment: Alignment.center,
+          child: CircleAvatar(
+            radius: 18,
+            backgroundColor: const Color.fromRGBO(235, 237, 237, 0.5),
+            child: SvgPicture.asset(
+              'assets/icons/back_button_new.svg',
+              width: 15,
+              height: 15,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

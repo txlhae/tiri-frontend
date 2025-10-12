@@ -42,11 +42,13 @@ class _MyHelpsState extends State<MyHelps> with SingleTickerProviderStateMixin {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Column(
-        children: [
-          //  Top Header
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 30),
+      body: SafeArea(
+        top: false,
+        child: Column(
+          children: [
+            //  Top Header
+            Container(
+              padding: const EdgeInsets.only(left: 10, right: 10, top: 50, bottom: 10),
             decoration: const BoxDecoration(
               color: Color.fromRGBO(0, 140, 170, 1),
               borderRadius: BorderRadius.only(
@@ -108,7 +110,8 @@ class _MyHelpsState extends State<MyHelps> with SingleTickerProviderStateMixin {
               );
             }),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -138,7 +141,7 @@ class _MyHelpsState extends State<MyHelps> with SingleTickerProviderStateMixin {
                 color: const Color.fromRGBO(246, 248, 249, 1),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withValues(alpha: 0.1),
                     blurRadius: 5,
                     offset: const Offset(0, 2),
                   ),

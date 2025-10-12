@@ -12,17 +12,19 @@ class ContactUs extends StatelessWidget {
     final requestController = Get.find<RequestController>();
 
     return Scaffold(
-      body: SingleChildScrollView(
-        // Add this to enable scrolling
-        child: Stack(
-          children: [
-            // Background Container
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 30),
-              decoration: const BoxDecoration(
-                color: Color.fromRGBO(0, 140, 170, 1),
-              ),
-              height: 200,
+      body: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          // Add this to enable scrolling
+          child: Stack(
+            children: [
+              // Background Container
+              Container(
+                padding: const EdgeInsets.only(left: 10, right: 10, top: 50, bottom: 10),
+                decoration: const BoxDecoration(
+                  color: Color.fromRGBO(0, 140, 170, 1),
+                ),
+                height: 170,
               child: Column(
                 children: [
                   Row(
@@ -129,6 +131,7 @@ class ContactUs extends StatelessWidget {
               ),
             ),
           ],
+          ),
         ),
       ),
     );

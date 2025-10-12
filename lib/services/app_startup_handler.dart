@@ -6,6 +6,7 @@ import 'package:tiri/config/api_config.dart';
 import 'package:tiri/infrastructure/routes.dart';
 import 'package:tiri/services/auth_storage.dart';
 import 'package:tiri/services/api_service.dart';
+import 'package:tiri/services/storage_cleanup_service.dart';
 
 /// AppStartupHandler determines the initial route based on user authentication state
 ///
@@ -40,7 +41,8 @@ class AppStartupHandler {
 
         if (!refreshed) {
           // Tokens are invalid and refresh failed
-          await AuthStorage.clearAuthData();
+          // 🚨 NEW: Use centralized cleanup service
+          await StorageCleanupService.flushStorageQuick();
           return Routes.loginPage;
         }
       }
@@ -62,7 +64,8 @@ class AppStartupHandler {
 
     } catch (e) {
       // Clear potentially corrupted data and route to login
-      await AuthStorage.clearAuthData();
+      // 🚨 NEW: Use centralized cleanup service
+      await StorageCleanupService.flushStorageQuick();
       return Routes.loginPage;
     }
   }
@@ -243,7 +246,8 @@ class AppStartupHandler {
   /// Clear session and reset to login
   static Future<void> clearSessionAndRedirect() async {
     try {
-      await AuthStorage.clearAuthData();
+      // 🚨 NEW: Use centralized cleanup service
+      await StorageCleanupService.flushStorageQuick();
       Get.offAllNamed(Routes.loginPage);
     } catch (e) {
     }

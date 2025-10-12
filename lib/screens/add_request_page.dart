@@ -19,30 +19,32 @@ class AddRequestPage extends StatelessWidget {
       },
       child: Scaffold(
         backgroundColor: Colors.white,
-        body: SingleChildScrollView(
-          child: Column(
-            children: [
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 30),
-                decoration: const BoxDecoration(
-                    color: Color.fromRGBO(0, 140, 170, 1),
-                    borderRadius: BorderRadius.vertical(
-                      bottom: Radius.circular(20),
-                    )),
-                height: 180,
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: [
-                        CustomBackButton(
-                          controller: controller,
-                        ),
-                      ],
-                    ),
+        body: SafeArea(
+          top: false,
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                Container(
+                  padding:
+                      const EdgeInsets.only(left: 10, right: 10, top: 50, bottom: 10),
+                  decoration: const BoxDecoration(
+                      color: Color.fromRGBO(0, 140, 170, 1),
+                      borderRadius: BorderRadius.vertical(
+                        bottom: Radius.circular(20),
+                      )),
+                  height: 170,
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                          CustomBackButton(
+                            controller: controller,
+                          ),
+                        ],
+                      ),
                     const SizedBox(
-                      height: 40,
+                      height: 20,
                     ),
                     const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -302,32 +304,28 @@ class AddRequestPage extends StatelessWidget {
                     )),
              const SizedBox(height: 20),
                     Obx(() => Column(
-                          children: [
-                            CustomFormField(
-                              hintText: "Number of People  : 1",
-                              haveObscure: false,
-                              textController:
-                                  controller.numberOfPeopleController.value,
-                              keyboardType: TextInputType.number,                            
-                               inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'\d'))],
-                                // add this:
-                                onChanged: (value) => controller.validateIntegerInput(
-                                  value: value,
-                                  fieldName: 'Number of People',
-                                ),
-                              ),
-                              Obx(() => controller.numberOfPeopleWarning.value.isNotEmpty
-                                  ? Text(
-                                      controller.numberOfPeopleWarning.value,
-                                      style: const TextStyle(color: Colors.orange),
-                                    )
-                                  : const SizedBox()
-                                  ),    
-                                  ] 
-                                 )         
-                                )      
-                             ],
-                        )),
+                      children: [
+                        CustomFormField(
+                          hintText: "Number of People  : 1",
+                          haveObscure: false,
+                          textController:
+                              controller.numberOfPeopleController.value,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'\d'))],
+                          onChanged: (value) => controller.validateIntegerInput(
+                            value: value,
+                            fieldName: 'Number of People',
+                          ),
+                        ),
+                        Obx(() => controller.numberOfPeopleWarning.value.isNotEmpty
+                            ? Text(
+                                controller.numberOfPeopleWarning.value,
+                                style: const TextStyle(color: Colors.orange),
+                              )
+                            : const SizedBox(),
+                        ),
+                      ],
+                    )),
                         const SizedBox(height: 20),
                     Padding(
                       padding: const EdgeInsets.symmetric(
@@ -344,10 +342,12 @@ class AddRequestPage extends StatelessWidget {
                   ],
                 ),
               ),
-           
+            ],
           ),
-        );
-      
+        ),
+      ),
+    ),
+    );
   }
 }
 

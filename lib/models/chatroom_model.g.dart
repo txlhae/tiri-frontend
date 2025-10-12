@@ -18,6 +18,7 @@ _$ChatRoomModelImpl _$$ChatRoomModelImplFromJson(Map<String, dynamic> json) =>
           : DateTime.parse(json['lastMessageTime'] as String),
       unreadCountForReceiver:
           (json['unreadCountForReceiver'] as num?)?.toInt() ?? 0,
+      // ignore: unnecessary_null_in_if_null_operators
       lastSenderId: json['lastSenderId'] as String? ?? null,
       serviceRequestId: json['serviceRequestId'] as String?,
       createdAt: json['createdAt'] == null

@@ -175,8 +175,9 @@ class _ChatPageState extends State<ChatPage> {
     
     return Scaffold(
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(80), 
-        child: AppBar(
+        preferredSize: const Size.fromHeight(80),
+        child: SafeArea(
+          child: AppBar(
           backgroundColor: Colors.blue,
           elevation: 0,
          // iconTheme: const IconThemeData(color: Colors.white),
@@ -247,6 +248,7 @@ class _ChatPageState extends State<ChatPage> {
               ],
             ),
           ),
+        ),
         ),
       ),
       body: Column(
@@ -375,7 +377,7 @@ class _ChatPageState extends State<ChatPage> {
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
+                                  color: Colors.black.withValues(alpha: 0.1),
                                   offset: const Offset(0, 1),
                                   blurRadius: 2,
                                 ),
