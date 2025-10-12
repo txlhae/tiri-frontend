@@ -23,23 +23,24 @@ class _RefferalDialogState extends State<RefferalDialog> {
   Widget build(BuildContext context) {
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 15.0),
-        child: SizedBox(
-          height: MediaQuery.of(context).size.height * 0.4,
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 15.0),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            mainAxisSize: MainAxisSize.min,
             children: [
               const Text(
                 'Got a referral code from a friend or recruiter? Enter it here.',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 15, color: Colors.black),
               ),
+              const SizedBox(height: 16),
               CustomFormField(
                 hintText: "Referral code",
                 haveObscure: false,
                 textController: referralCodeController,
               ),
+              const SizedBox(height: 16),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 40.0),
                 child: CustomButton(
@@ -81,6 +82,7 @@ class _RefferalDialogState extends State<RefferalDialog> {
                   },
                 ),
               ),
+              const SizedBox(height: 16),
               // OR divider
               const Row(
                 children: [
@@ -98,6 +100,7 @@ class _RefferalDialogState extends State<RefferalDialog> {
                   Expanded(child: Divider(color: Colors.grey)),
                 ],
               ),
+              const SizedBox(height: 16),
               // QR Scanner Button
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 40.0),
@@ -127,6 +130,7 @@ class _RefferalDialogState extends State<RefferalDialog> {
                   ),
                 ),
               ),
+              const SizedBox(height: 12),
               NavigateRow(
                 textData: "Already have an account?",
                 buttonTextData: "Login Here",
