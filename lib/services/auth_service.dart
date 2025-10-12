@@ -10,6 +10,7 @@ import '../models/auth_models.dart';
 import 'api_service.dart';
 import 'firebase_notification_service.dart';
 import 'auth_storage.dart';
+import 'error_handler.dart';
 
 /// Authentication Service for TIRI application
 /// 
@@ -222,10 +223,11 @@ class AuthService {
       return EnhancedAuthResult.failure(
         message: 'Registration failed: Invalid response format',
       );
-      
+
     } catch (e) {
+      final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Registration failed. Please try again.');
       return EnhancedAuthResult.failure(
-        message: _extractErrorMessage(e),
+        message: ErrorHandler.mapErrorToUserMessage(errorMessage),
       );
     }
   }
@@ -420,8 +422,9 @@ class AuthService {
       }
 
     } catch (e) {
+      final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Login failed. Please try again.');
       return EnhancedAuthResult.failure(
-        message: _extractErrorMessage(e),
+        message: ErrorHandler.mapErrorToUserMessage(errorMessage),
       );
     }
   }
@@ -525,14 +528,16 @@ class AuthService {
           message: data['message'] ?? 'Email verified successfully',
         );
       }
-      
+
+
       return AuthResult.failure(
         message: 'Email verification failed',
       );
-      
+
     } catch (e) {
+      final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Email verification failed. Please try again.');
       return AuthResult.failure(
-        message: _extractErrorMessage(e),
+        message: ErrorHandler.mapErrorToUserMessage(errorMessage),
       );
     }
   }
@@ -602,11 +607,12 @@ class AuthService {
       throw Exception('Failed to check verification status - HTTP ${response.statusCode}');
       
     } catch (e) {
+      final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not check verification status');
       return {
         'is_verified': false,
         'auto_login': false,
         'approval_status': 'error',
-        'message': _extractErrorMessage(e),
+        'message': ErrorHandler.mapErrorToUserMessage(errorMessage),
         'access_token': null,
         'refresh_token': null,
         'user': null,
@@ -645,12 +651,13 @@ class AuthService {
       }
 
       return AuthResult.failure(
-        message: 'Password reset request failed',
+        message: 'Password reset request failed. Please try again.',
       );
 
     } catch (e) {
+      final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Password reset request failed');
       return AuthResult.failure(
-        message: _extractErrorMessage(e),
+        message: ErrorHandler.mapErrorToUserMessage(errorMessage),
       );
     }
   }
@@ -689,12 +696,13 @@ class AuthService {
       }
 
       return AuthResult.failure(
-        message: 'Password reset confirmation failed',
+        message: 'Password reset confirmation failed. Please try again.',
       );
 
     } catch (e) {
+      final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Password reset failed');
       return AuthResult.failure(
-        message: _extractErrorMessage(e),
+        message: ErrorHandler.mapErrorToUserMessage(errorMessage),
       );
     }
   }
@@ -731,12 +739,13 @@ class AuthService {
       }
 
       return AuthResult.failure(
-        message: 'Failed to resend verification email',
+        message: 'Failed to resend verification email. Please try again.',
       );
 
     } catch (e) {
+      final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Failed to send verification email');
       return AuthResult.failure(
-        message: _extractErrorMessage(e),
+        message: ErrorHandler.mapErrorToUserMessage(errorMessage),
       );
     }
   }
@@ -782,12 +791,13 @@ class AuthService {
       }
 
       return AuthResult.failure(
-        message: 'Email verification failed',
+        message: 'Email verification failed. Please try again.',
       );
 
     } catch (e) {
+      final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Email verification failed');
       return AuthResult.failure(
-        message: _extractErrorMessage(e),
+        message: ErrorHandler.mapErrorToUserMessage(errorMessage),
       );
     }
   }
@@ -837,11 +847,12 @@ class AuthService {
       throw Exception('Failed to get verification status - HTTP ${response.statusCode}');
 
     } catch (e) {
+      final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not get verification status');
       return {
         'is_verified': false,
         'auto_login': false,
         'approval_status': 'error',
-        'message': _extractErrorMessage(e),
+        'message': ErrorHandler.mapErrorToUserMessage(errorMessage),
         'access_token': null,
         'refresh_token': null,
         'user': null,
@@ -880,6 +891,7 @@ class AuthService {
       throw Exception('Failed to get registration status - HTTP ${response.statusCode}');
 
     } catch (e) {
+      final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not get registration status');
       return {
         'account_status': 'error',
         'next_step': 'verify_email',
@@ -888,7 +900,7 @@ class AuthService {
         'can_access_app': false,
         'approval_status': 'error',
         'registration_stage': null,
-        'message': _extractErrorMessage(e),
+        'message': ErrorHandler.mapErrorToUserMessage(errorMessage),
       };
     }
   }
@@ -925,12 +937,13 @@ class AuthService {
       }
 
       return AuthResult.failure(
-        message: 'Token refresh failed',
+        message: 'Session expired. Please log in again.',
       );
 
     } catch (e) {
+      final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Session refresh failed');
       return AuthResult.failure(
-        message: _extractErrorMessage(e),
+        message: ErrorHandler.mapErrorToUserMessage(errorMessage),
       );
     }
   }
@@ -1013,11 +1026,11 @@ class AuthService {
   // =============================================================================
 
   /// Validate referral code (updated to use new backend endpoint)
-  /// 
+  ///
   /// Parameters:
   /// - [code]: Referral code to validate
-  /// 
-  /// Returns: Map with validation result and referrer info
+  ///
+  /// Returns: Map with validation result and referrer info, or error info
   Future<Map<String, dynamic>?> validateReferralCode(String code) async {
     try {
 
@@ -1028,20 +1041,28 @@ class AuthService {
 
       if (response.statusCode == 200) {
         final data = response.data;
-        
-        
+
+
         return {
           'valid': data['valid'] ?? false,
           'referrer_name': data['referrer_name'],
           'referrer_email': data['referrer_email'],
           'referrer': data['referrer'],
+          'error': null,
         };
       }
-      
-      return null;
-      
+
+      return {
+        'valid': false,
+        'error': 'Failed to validate referral code',
+      };
+
     } catch (e) {
-      return null;
+      final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Invalid referral code');
+      return {
+        'valid': false,
+        'error': ErrorHandler.mapErrorToUserMessage(errorMessage),
+      };
     }
   }
 
@@ -1067,11 +1088,14 @@ class AuthService {
         
         return approvals.cast<Map<String, dynamic>>();
       }
-      
-      throw Exception('Failed to fetch pending approvals - HTTP ${response.statusCode}');
-      
+
+
+      final errorMessage = 'Failed to fetch pending approvals - HTTP ${response.statusCode}';
+      throw Exception(errorMessage);
+
     } catch (e) {
-      rethrow;
+      final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not load pending approvals');
+      throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
     }
   }
 
@@ -1102,14 +1126,16 @@ class AuthService {
           message: data['message'] ?? 'User approved successfully',
         );
       }
-      
+
+
       return AuthResult.failure(
-        message: 'Failed to approve user - HTTP ${response.statusCode}',
+        message: 'Failed to approve user. Please try again.',
       );
-      
+
     } catch (e) {
+      final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not approve user');
       return AuthResult.failure(
-        message: _extractErrorMessage(e),
+        message: ErrorHandler.mapErrorToUserMessage(errorMessage),
       );
     }
   }
@@ -1144,14 +1170,16 @@ class AuthService {
           message: data['message'] ?? 'User rejected successfully',
         );
       }
-      
+
+
       return AuthResult.failure(
-        message: 'Failed to reject user - HTTP ${response.statusCode}',
+        message: 'Failed to reject user. Please try again.',
       );
-      
+
     } catch (e) {
+      final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not reject user');
       return AuthResult.failure(
-        message: _extractErrorMessage(e),
+        message: ErrorHandler.mapErrorToUserMessage(errorMessage),
       );
     }
   }
@@ -1213,11 +1241,14 @@ class AuthService {
         
         return validHistory;
       }
-      
-      throw Exception('Failed to fetch approval history - HTTP ${response.statusCode}');
-      
+
+
+      final errorMessage = 'Failed to fetch approval history - HTTP ${response.statusCode}';
+      throw Exception(errorMessage);
+
     } catch (e) {
-      rethrow;
+      final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not load approval history');
+      throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
     }
   }
 
@@ -1256,10 +1287,12 @@ class AuthService {
           'message': data['message'] ?? 'Status retrieved successfully',
         };
       }
-      
+
+
       throw Exception('Failed to check approval status - HTTP ${response.statusCode}');
-      
+
     } catch (e) {
+      final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not check approval status');
       return {
         'status': 'error',
         'is_approved': false,
@@ -1267,7 +1300,7 @@ class AuthService {
         'rejection_reason': null,
         'expires_at': null,
         'can_login': false,
-        'message': _extractErrorMessage(e),
+        'message': ErrorHandler.mapErrorToUserMessage(errorMessage),
       };
     }
   }
@@ -1374,101 +1407,6 @@ class AuthService {
       });
     } catch (e) {
     }
-  }
-
-  // =============================================================================
-  // UTILITY METHODS
-  // =============================================================================
-  
-  /// Extract user-friendly error message from exception
-  String _extractErrorMessage(dynamic error) {
-    // Handle DioException to extract proper Django error messages
-    if (error is DioException) {
-      final response = error.response;
-      final data = response?.data;
-      
-      if (data != null) {
-        // Handle Django serializer errors format
-        if (data is Map) {
-          final Map<String, dynamic> errorData = Map<String, dynamic>.from(data);
-          
-          // Check for non_field_errors (common in Django login errors)
-          if (errorData.containsKey('non_field_errors')) {
-            final nonFieldErrors = errorData['non_field_errors'];
-            if (nonFieldErrors is List && nonFieldErrors.isNotEmpty) {
-              final firstError = nonFieldErrors.first;
-              if (firstError is Map && firstError.containsKey('string')) {
-                return firstError['string'];
-              } else {
-                return firstError.toString();
-              }
-            }
-          }
-          
-          // Check for field-specific errors
-          if (errorData.containsKey('email')) {
-            final emailErrors = errorData['email'];
-            if (emailErrors is List && emailErrors.isNotEmpty) {
-              return emailErrors.first.toString();
-            }
-          }
-          
-          if (errorData.containsKey('password')) {
-            final passwordErrors = errorData['password'];
-            if (passwordErrors is List && passwordErrors.isNotEmpty) {
-              return passwordErrors.first.toString();
-            }
-          }
-          
-          // Check for detail field (common in DRF responses)
-          if (errorData.containsKey('detail')) {
-            return errorData['detail'].toString();
-          }
-          
-          // Check for message field
-          if (errorData.containsKey('message')) {
-            return errorData['message'].toString();
-          }
-          
-          // Check for error field
-          if (errorData.containsKey('error')) {
-            return errorData['error'].toString();
-          }
-        }
-        
-        // If data is a string, return it directly
-        if (data is String) {
-          return data;
-        }
-      }
-      
-      // Fallback to HTTP status message
-      switch (response?.statusCode) {
-        case 400:
-          return 'Invalid email or password.';
-        case 401:
-          return 'Authentication failed. Please check your credentials.';
-        case 404:
-          return 'Service not found. Please try again.';
-        case 500:
-          return 'Server error. Please try again later.';
-        default:
-          return 'Network error. Please check your connection.';
-      }
-    }
-    
-    if (error is Exception) {
-      final message = error.toString();
-      
-      // Remove "Exception: " prefix if present
-      if (message.startsWith('Exception: ')) {
-        return message.substring(11);
-      }
-      
-      return message;
-    }
-    
-    return 'An unexpected error occurred. Please try again.';
   }
 
   // =============================================================================

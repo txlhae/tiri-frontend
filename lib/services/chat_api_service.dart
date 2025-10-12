@@ -2,6 +2,7 @@
 
 import 'package:dio/dio.dart';
 import '../services/api_service.dart';
+import '../services/error_handler.dart';
 import '../models/chatroom_model.dart';
 import '../models/chat_message_model.dart';
 
@@ -40,14 +41,12 @@ class ChatApiService {
         
         return chatRooms;
       } else {
-        throw DioException(
-          requestOptions: response.requestOptions,
-          response: response,
-          message: 'Failed to fetch chat rooms',
-        );
+        final errorMessage = ErrorHandler.getErrorMessage(response, defaultMessage: 'Failed to load chat rooms');
+        throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
     } catch (e) {
-      rethrow;
+      final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not load conversations');
+      throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
     }
   }
 
@@ -92,18 +91,12 @@ class ChatApiService {
         
         return chatRoom;
       } else {
-        
-        
-        throw DioException(
-          requestOptions: response.requestOptions,
-          response: response,
-          message: 'Failed to get or create chat room',
-        );
+        final errorMessage = ErrorHandler.getErrorMessage(response, defaultMessage: 'Failed to create conversation');
+        throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
     } catch (e) {
-      
-      
-      rethrow;
+      final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not create conversation');
+      throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
     }
   }
 
@@ -117,14 +110,12 @@ class ChatApiService {
         final chatRoom = _mapChatRoomFromBackend(response.data as Map<String, dynamic>);
         return chatRoom;
       } else {
-        throw DioException(
-          requestOptions: response.requestOptions,
-          response: response,
-          message: 'Failed to fetch chat room',
-        );
+        final errorMessage = ErrorHandler.getErrorMessage(response, defaultMessage: 'Failed to load conversation');
+        throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
     } catch (e) {
-      rethrow;
+      final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not load conversation details');
+      throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
     }
   }
 
@@ -166,17 +157,16 @@ class ChatApiService {
         // Log first message for debugging
         if (messages.isNotEmpty) {
         }
-        
+
+
         return messages;
       } else {
-        throw DioException(
-          requestOptions: response.requestOptions,
-          response: response,
-          message: 'Failed to fetch messages',
-        );
+        final errorMessage = ErrorHandler.getErrorMessage(response, defaultMessage: 'Failed to load messages');
+        throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
     } catch (e) {
-      rethrow;
+      final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not load messages');
+      throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
     }
   }
 
@@ -218,14 +208,12 @@ class ChatApiService {
         final message = _mapMessageFromBackend(response.data as Map<String, dynamic>);
         return message;
       } else {
-        throw DioException(
-          requestOptions: response.requestOptions,
-          response: response,
-          message: 'Failed to send message',
-        );
+        final errorMessage = ErrorHandler.getErrorMessage(response, defaultMessage: 'Failed to send message');
+        throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
     } catch (e) {
-      rethrow;
+      final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not send message');
+      throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
     }
   }
 
@@ -244,15 +232,14 @@ class ChatApiService {
       );
       
       if (response.statusCode == 200 || response.statusCode == 204) {
+        // Success - messages marked as read
       } else {
-        throw DioException(
-          requestOptions: response.requestOptions,
-          response: response,
-          message: 'Failed to mark messages as read',
-        );
+        final errorMessage = ErrorHandler.getErrorMessage(response, defaultMessage: 'Failed to mark messages as read');
+        throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
     } catch (e) {
-      rethrow;
+      final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not mark messages as read');
+      throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
     }
   }
 
@@ -295,14 +282,12 @@ class ChatApiService {
         final chatRoom = _mapChatRoomFromBackend(chatRoomData);
         return chatRoom;
       } else {
-        throw DioException(
-          requestOptions: response.requestOptions,
-          response: response,
-          message: 'Failed to create chat room',
-        );
+        final errorMessage = ErrorHandler.getErrorMessage(response, defaultMessage: 'Failed to create conversation');
+        throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
     } catch (e) {
-      rethrow;
+      final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not create conversation');
+      throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
     }
   }
 

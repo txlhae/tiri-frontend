@@ -9,6 +9,7 @@ import 'package:tiri/models/category_model.dart';
 import 'package:tiri/models/request_model.dart';
 import 'package:tiri/models/user_model.dart';
 import 'package:tiri/services/api_service.dart';
+import 'package:tiri/services/error_handler.dart';
 
 /// Enterprise RequestService with Django Field Mapping
 /// 
@@ -46,10 +47,11 @@ class RequestService extends GetxController {
       if (response.statusCode == 200 || response.statusCode == 201) {
         return response.data;
       } else {
-        throw Exception('Failed to submit feedback: ${response.statusMessage}');
+        throw Exception('Failed to submit feedback. Please try again.');
       }
     } catch (e) {
-      rethrow;
+      final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not submit feedback');
+      throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
     }
   }
 
@@ -66,37 +68,30 @@ class RequestService extends GetxController {
       if (response.statusCode == 200 || response.statusCode == 201) {
         return response.data;
       } else {
-        
-        // Extract error message from response if available
-        String errorMessage = 'Failed to complete request';
-        if (response.data is Map && response.data['detail'] != null) {
-          errorMessage = response.data['detail'];
-        } else if (response.data is Map && response.data['error'] != null) {
-          errorMessage = response.data['error'];
-        } else if (response.data is String) {
-          errorMessage = response.data;
-        }
-        
-        throw Exception('$errorMessage (Status: ${response.statusCode})');
+        final errorMessage = ErrorHandler.getErrorMessage(response, defaultMessage: 'Failed to complete request');
+        throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
     } catch (e) {
-      rethrow;
+      final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not complete request');
+      throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
     }
   }
 
   /// Fetch requests where the current user is a volunteer (My Helps)
+  /// Throws exception if request fails, returns empty list if no volunteer requests found
   Future<List<RequestModel>> fetchMyVolunteeredRequests() async {
     try {
-      
       // Check if API service is authenticated before making request
       if (!_apiService.isAuthenticated) {
-        return [];
+        throw Exception('Authentication required. Please log in again.');
       }
 
       final response = await _apiService.get('/api/requests/?view=my_volunteering');
+
       if (response.statusCode == 401) {
-        return [];
+        throw Exception('Authentication required. Please log in again.');
       }
+
       if (response.statusCode == 200 && response.data != null) {
         final dynamic responseData = response.data;
         final List<dynamic> requestsJson = responseData is Map ?
@@ -113,14 +108,17 @@ class RequestService extends GetxController {
             })
             .whereType<RequestModel>()
             .toList();
-        if (requests.isEmpty) {
-        }
-        return requests;
+        return requests;  // Empty list is valid - means no volunteered requests
       } else {
-        return [];
+        final errorMessage = ErrorHandler.getErrorMessage(response, defaultMessage: 'Failed to load your volunteered requests');
+        throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
-    } catch (e, stack) {
-      return [];
+    } catch (e) {
+      if (e is Exception && e.toString().contains('Authentication required')) {
+        rethrow;  // Re-throw auth errors as-is
+      }
+      final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not load your volunteered requests');
+      throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
     }
   }
   
@@ -410,24 +408,23 @@ class RequestService extends GetxController {
   // =============================================================================
   
   /// Fetch all community requests from Django backend
-  /// 🚨 ENHANCED: Now includes Django field mapping
+  /// Throws exception if request fails, returns empty list if no requests found
   Future<List<RequestModel>> fetchRequests() async {
     try {
-      
       // Check if API service is authenticated before making request
       if (!_apiService.isAuthenticated) {
-        return [];
+        throw Exception('Authentication required. Please log in again.');
       }
-      
+
       final response = await _apiService.get('/api/requests/');
-      
+
       if (response.statusCode == 200 && response.data != null) {
         final dynamic responseData = response.data;
-        final List<dynamic> requestsJson = responseData is Map ? 
-          (responseData['results'] ?? responseData['data'] ?? []) : 
+        final List<dynamic> requestsJson = responseData is Map ?
+          (responseData['results'] ?? responseData['data'] ?? []) :
           (responseData is List ? responseData : []);
-        
-        
+
+
         // 🎯 APPLY FIELD MAPPING
         final List<RequestModel> requests = requestsJson
             .map((djangoJson) {
@@ -435,36 +432,40 @@ class RequestService extends GetxController {
               return RequestModelExtension.fromJsonWithRequester(flutterJson);
             })
             .toList();
-        
-        
-        return requests;
+
+
+        return requests;  // Empty list is valid - means no requests available
       } else {
-        return [];
+        final errorMessage = ErrorHandler.getErrorMessage(response, defaultMessage: 'Failed to load requests');
+        throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
     } catch (e) {
-      return [];
+      if (e is Exception && e.toString().contains('Authentication required')) {
+        rethrow;
+      }
+      final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not load community requests');
+      throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
     }
   }
   
   /// Fetch current user's requests
-  /// 🚨 ENHANCED: Now includes Django field mapping  
+  /// Throws exception if request fails, returns empty list if user has no requests
   Future<List<RequestModel>> fetchMyRequests() async {
     try {
-      
       // Check if API service is authenticated before making request
       if (!_apiService.isAuthenticated) {
-        return [];
+        throw Exception('Authentication required. Please log in again.');
       }
-      
+
       final response = await _apiService.get('/api/requests/?view=my_requests');
-      
+
       if (response.statusCode == 200 && response.data != null) {
         final dynamic responseData = response.data;
-        final List<dynamic> requestsJson = responseData is Map ? 
-          (responseData['results'] ?? responseData['data'] ?? []) : 
+        final List<dynamic> requestsJson = responseData is Map ?
+          (responseData['results'] ?? responseData['data'] ?? []) :
           (responseData is List ? responseData : []);
-        
-        
+
+
         // 🎯 APPLY FIELD MAPPING
         final List<RequestModel> requests = requestsJson
             .map((djangoJson) {
@@ -472,29 +473,29 @@ class RequestService extends GetxController {
               return RequestModelExtension.fromJsonWithRequester(flutterJson);
             })
             .toList();
-        
-        return requests;
+
+        return requests;  // Empty list is valid - means user has no requests
       } else {
-        return [];
+        final errorMessage = ErrorHandler.getErrorMessage(response, defaultMessage: 'Failed to load your requests');
+        throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
     } catch (e) {
-      return [];
+      if (e is Exception && e.toString().contains('Authentication required')) {
+        rethrow;
+      }
+      final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not load your requests');
+      throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
     }
   }
   
   /// Get single request by ID
-  /// 🚨 ENHANCED: Now includes Django field mapping
+  /// Throws exception with specific error message if fails
   Future<RequestModel?> getRequest(String requestId) async {
     try {
-      
       final response = await _apiService.get('/api/requests/$requestId/');
-      
-      // Enhanced debug logging for API response
-      
+
       if (response.statusCode == 200 && response.data != null) {
         try {
-          // 🔍 DEBUG: Log raw Django response
-          
           // Check if user_request_status exists in response
           final rawData = response.data as Map<String, dynamic>;
           if (rawData.containsKey('user_request_status')) {
@@ -508,156 +509,143 @@ class RequestService extends GetxController {
               }
             }
           }
-          
+
           // 🎯 APPLY FIELD MAPPING
           final flutterJson = _mapDjangoToFlutter(response.data as Map<String, dynamic>);
-          
+
           final RequestModel request = RequestModelExtension.fromJsonWithRequester(flutterJson);
-          
+
           return request;
-          
+
         } catch (parseError) {
-          return null;
+          throw Exception('Failed to parse request data. Please try again.');
         }
+      } else if (response.statusCode == 404) {
+        throw Exception('Request not found. It may have been deleted.');
+      } else if (response.statusCode == 403) {
+        throw Exception('You don\'t have permission to view this request.');
       } else {
-        return null;
+        final errorMessage = ErrorHandler.getErrorMessage(response, defaultMessage: 'Failed to load request');
+        throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
     } catch (e) {
-      return null;
+      if (e is Exception && (e.toString().contains('not found') ||
+          e.toString().contains('permission') ||
+          e.toString().contains('parse'))) {
+        rethrow;
+      }
+      final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not load request details');
+      throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
     }
   }
   
   /// Create new request
-  /// 🚨 FIXED: Using correct endpoint /api/requests/
+  /// Throws exception with specific error if fails, returns true on success
   Future<bool> createRequest(Map<String, dynamic> requestData) async {
-    try {
-      
+    try{
       final response = await _apiService.post('/api/requests/', data: requestData);
-      
+
       if (response.statusCode == 201 || response.statusCode == 200) {
         return true;
       } else {
-        return false;
+        final errorMessage = ErrorHandler.getErrorMessage(response, defaultMessage: 'Failed to create request');
+        throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
     } catch (e) {
-      
-      // 🚨 CRITICAL: Extract DioException details to see actual Django errors
-      if (e is DioException) {
-        
-        // Extract field-specific errors from Django
-        if (e.response?.data is Map) {
-          final errors = e.response!.data as Map;
-          errors.forEach((field, error) {
-          });
-        }
-      }
-      
-      return false;
+      final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not create request');
+      throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
     }
   }
   
   /// Update existing request
-  /// 🚨 CRITICAL FIX: Changed PUT to PATCH for partial updates
+  /// Throws exception with specific error if fails
   Future<bool> updateRequest(String requestId, Map<String, dynamic> requestData) async {
     try {
-      
-      // 🚨 KEY FIX: Use PATCH instead of PUT for partial updates
       final response = await _apiService.patch('/api/requests/$requestId/', data: requestData);
-      
+
       if (response.statusCode == 200) {
         return true;
       } else {
-        return false;
+        final errorMessage = ErrorHandler.getErrorMessage(response, defaultMessage: 'Failed to update request');
+        throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
     } catch (e) {
-      return false;
+      final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not update request');
+      throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
     }
   }
-  
+
   /// Delete request
-  /// 🚨 FIXED: Using correct endpoint /api/requests/{id}/
+  /// Throws exception with specific error if fails
   Future<bool> deleteRequest(String requestId) async {
     try {
-      
       final response = await _apiService.delete('/api/requests/$requestId/');
-      
+
       if (response.statusCode == 204 || response.statusCode == 200) {
         return true;
       } else {
-        return false;
+        final errorMessage = ErrorHandler.getErrorMessage(response, defaultMessage: 'Failed to delete request');
+        throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
     } catch (e) {
-      return false;
+      final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not delete request');
+      throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
     }
   }
-  
+
   /// Request to volunteer for a request
-  /// Sends a volunteer request to the Django backend
+  /// Throws exception with specific error if fails
   Future<bool> requestToVolunteer(String requestId, String message) async {
     try {
-      
-      final requestData = {'message_to_requester': message};
-      
-      // Also try alternative field names that the backend might expect
+      // Try alternative field names that the backend might expect
       final alternativeData = {
         'message_to_requester': message,
         'message_content': message,
         'volunteer_message': message,
         'message': message,
       };
-      
+
       final response = await _apiService.post(
-        '/api/requests/$requestId/accept/', 
+        '/api/requests/$requestId/accept/',
         data: alternativeData
       );
-      
-      
+
       if (response.statusCode == 200 || response.statusCode == 201) {
         return true;
       } else {
-        return false;
+        final errorMessage = ErrorHandler.getErrorMessage(response, defaultMessage: 'Failed to request volunteer spot');
+        throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
     } catch (e) {
-      return false;
+      final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not submit volunteer request');
+      throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
     }
   }
-  
+
   /// Cancel volunteer request for a request
-  /// Cancels an existing volunteer request via Django backend
+  /// Throws exception with specific error if fails
   Future<bool> cancelVolunteerRequest(String requestId, {String? reason}) async {
     try {
-      if (reason != null) {
-      }
-      
       // Prepare request data with optional reason
       final Map<String, dynamic> requestData = {};
       if (reason != null && reason.isNotEmpty) {
         requestData['reason'] = reason;
       }
-      
-      
+
       final response = await _apiService.post(
         '/api/requests/$requestId/cancel_acceptance/',
         data: requestData.isNotEmpty ? requestData : null,
       );
-      
-      
+
       if (response.statusCode == 200) {
         return true;
       } else {
-        return false;
+        final errorMessage = ErrorHandler.getErrorMessage(response, defaultMessage: 'Failed to cancel volunteer request');
+        throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
     } catch (e) {
-      
-      // Enhanced error logging for Dio errors
-      if (e.toString().contains('DioError') || e.runtimeType.toString().contains('Dio')) {
-        try {
-          final dioError = e as dynamic;
-        } catch (castError) {
-        }
-      }
-      
-      return false;
+      final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not cancel volunteer request');
+      throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
     }
   }
   
@@ -666,24 +654,30 @@ class RequestService extends GetxController {
   // =============================================================================
 
   /// Get user by ID
-  /// 🚨 FIXED: Using correct endpoint /api/profile/users/{id}/
+  /// Throws exception with specific error if fails
   Future<UserModel?> getUser(String userId) async {
     try {
-
       final response = await _apiService.get('/api/profile/users/$userId/');
-      
+
       if (response.statusCode == 200 && response.data != null) {
         // Apply user field mapping if needed
         final userData = response.data as Map<String, dynamic>;
         final flutterUserData = _mapDjangoUserToFlutter(userData);
         final UserModel user = UserModel.fromJson(flutterUserData);
-        
+
         return user;
+      } else if (response.statusCode == 404) {
+        throw Exception('User not found.');
       } else {
-        return null;
+        final errorMessage = ErrorHandler.getErrorMessage(response, defaultMessage: 'Failed to load user profile');
+        throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
     } catch (e) {
-      return null;
+      if (e is Exception && e.toString().contains('not found')) {
+        rethrow;
+      }
+      final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not load user profile');
+      throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
     }
   }
   
@@ -692,23 +686,22 @@ class RequestService extends GetxController {
   // =============================================================================
   
   /// Search requests by query
-  /// 🚨 ENHANCED: Now includes Django field mapping
+  /// Throws exception if request fails, returns empty list if no results found
   Future<List<RequestModel>> searchRequests(String query, {String? location}) async {
     try {
-      
       String endpoint = '/api/requests/?search=$query';
       if (location != null && location.isNotEmpty) {
         endpoint += '&location=$location';
       }
-      
+
       final response = await _apiService.get(endpoint);
-      
+
       if (response.statusCode == 200 && response.data != null) {
         final dynamic responseData = response.data;
-        final List<dynamic> requestsJson = responseData is Map ? 
-          (responseData['results'] ?? responseData['data'] ?? []) : 
+        final List<dynamic> requestsJson = responseData is Map ?
+          (responseData['results'] ?? responseData['data'] ?? []) :
           (responseData is List ? responseData : []);
-        
+
         // 🎯 APPLY FIELD MAPPING
         final List<RequestModel> requests = requestsJson
             .map((djangoJson) {
@@ -716,13 +709,15 @@ class RequestService extends GetxController {
               return RequestModelExtension.fromJsonWithRequester(flutterJson);
             })
             .toList();
-        
-        return requests;
+
+        return requests;  // Empty list is valid - means no search results
       } else {
-        return [];
+        final errorMessage = ErrorHandler.getErrorMessage(response, defaultMessage: 'Search failed');
+        throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
     } catch (e) {
-      return [];
+      final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not search requests');
+      throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
     }
   }
   
@@ -731,74 +726,76 @@ class RequestService extends GetxController {
   // =============================================================================
   
   /// Get user dashboard statistics
-  /// 🚨 FIXED: Using correct endpoint /api/dashboard/
+  /// Throws exception with specific error if fails
   Future<Map<String, dynamic>?> getDashboardStats() async {
     try {
-      
       final response = await _apiService.get('/api/dashboard/');
-      
+
       if (response.statusCode == 200 && response.data != null) {
         return response.data as Map<String, dynamic>;
       } else {
-        return null;
+        final errorMessage = ErrorHandler.getErrorMessage(response, defaultMessage: 'Failed to load dashboard stats');
+        throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
     } catch (e) {
-      return null;
+      final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not load dashboard');
+      throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
     }
   }
 
   /// Approve a volunteer request for a specific request
-  /// ✅ NEW: Allows request owners to approve pending volunteer requests
+  /// Throws exception with specific error if fails
   Future<bool> approveVolunteerRequest(String requestId, String volunteerUserId) async {
     try {
-      
       final response = await _apiService.post(
-        '/api/requests/$requestId/approve-volunteer/', 
+        '/api/requests/$requestId/approve-volunteer/',
         data: {'volunteer_id': volunteerUserId}
       );
-      
+
       if (response.statusCode == 200) {
         return true;
       } else {
-        return false;
+        final errorMessage = ErrorHandler.getErrorMessage(response, defaultMessage: 'Failed to approve volunteer');
+        throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
     } catch (e) {
-      return false;
+      final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not approve volunteer');
+      throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
     }
   }
 
   /// Reject a volunteer request for a specific service request
-  /// ✅ NEW: Enterprise-grade reject volunteer functionality
+  /// Throws exception with specific error if fails
   Future<bool> rejectVolunteerRequest(String requestId, String volunteerUserId) async {
     try {
-      
       final response = await _apiService.post(
-        '/api/requests/$requestId/reject-volunteer/', 
+        '/api/requests/$requestId/reject-volunteer/',
         data: {'volunteer_id': volunteerUserId}
       );
-      
+
       if (response.statusCode == 200) {
         return true;
       } else {
-        return false;
+        final errorMessage = ErrorHandler.getErrorMessage(response, defaultMessage: 'Failed to reject volunteer');
+        throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
     } catch (e) {
-      return false;
+      final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not reject volunteer');
+      throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
     }
   }
 
   /// Get volunteer requests for a specific request
-  /// ✅ NEW: Retrieves pending volunteer requests for approval workflow
+  /// Throws exception if request fails, returns empty list if no volunteer requests
   Future<List<Map<String, dynamic>>> getVolunteerRequests(String requestId) async {
     try {
-      
       final response = await _apiService.get('/api/requests/$requestId/volunteer-requests/');
-      
+
       if (response.statusCode == 200 && response.data != null) {
         final data = response.data as Map<String, dynamic>;
         final requests = data['volunteer_requests'] as List<dynamic>? ?? [];
-        
-        
+
+
         // Convert to list of maps with proper field mapping for actual backend structure
         final mappedRequests = requests.map((request) {
           final requestData = request as Map<String, dynamic>;
@@ -812,14 +809,16 @@ class RequestService extends GetxController {
           };
           return mapped;
         }).toList();
-        
-        return mappedRequests;
-        
+
+        return mappedRequests;  // Empty list is valid - means no volunteer requests
+
       } else {
-        return [];
+        final errorMessage = ErrorHandler.getErrorMessage(response, defaultMessage: 'Failed to load volunteer requests');
+        throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
     } catch (e) {
-      return [];
+      final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not load volunteer requests');
+      throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
     }
   }
   
@@ -828,35 +827,31 @@ class RequestService extends GetxController {
   // =============================================================================
   
   /// Fetch all categories from Django backend
-  /// Returns list of categories for request categorization
+  /// Throws exception if request fails, returns empty list if no categories
   Future<List<CategoryModel>> fetchCategories() async {
     try {
-      
       final response = await _apiService.get('/api/categories/');
-      
+
       if (response.statusCode == 200 && response.data != null) {
         final dynamic responseData = response.data;
-        final List<dynamic> categoriesJson = responseData is Map ? 
-          (responseData['results'] ?? responseData['data'] ?? []) : 
+        final List<dynamic> categoriesJson = responseData is Map ?
+          (responseData['results'] ?? responseData['data'] ?? []) :
           (responseData is List ? responseData : []);
-        
-        
+
+
         final List<CategoryModel> categories = categoriesJson
             .map((categoryJson) => CategoryModel.fromJson(categoryJson as Map<String, dynamic>))
             .toList();
-        
-        
-        return categories;
+
+
+        return categories;  // Empty list is valid - means no categories
       } else {
-        return [];
+        final errorMessage = ErrorHandler.getErrorMessage(response, defaultMessage: 'Failed to load categories');
+        throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
     } catch (e) {
-      
-      // 🚨 Enhanced error logging for category fetching
-      if (e is DioException) {
-      }
-      
-      return [];
+      final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not load categories');
+      throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
     }
   }
   
@@ -945,38 +940,32 @@ class RequestService extends GetxController {
   }
 
   /// Complete request and submit feedback for all volunteers
-  /// POST /api/requests/{request_id}/complete/
+  /// Throws exception with specific error if fails
   Future<Map<String, dynamic>?> completeRequestWithFeedback(
     String requestId,
     List<Map<String, dynamic>> feedbackList,
     {String? completionNotes}
   ) async {
     try {
-      
       final requestData = {
         'feedback_list': feedbackList,
         if (completionNotes?.isNotEmpty == true) 'completion_notes': completionNotes,
       };
-      
-      
+
       final response = await _apiService.post(
-        '/api/requests/$requestId/complete/', 
+        '/api/requests/$requestId/complete/',
         data: requestData
       );
-      
-      
+
       if (response.statusCode == 200) {
         return response.data as Map<String, dynamic>?;
       } else {
-        return null;
+        final errorMessage = ErrorHandler.getErrorMessage(response, defaultMessage: 'Failed to complete request');
+        throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
     } catch (e) {
-      
-      // Enhanced error logging for debugging
-      if (e is DioException) {
-      }
-      
-      return null;
+      final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not complete request with feedback');
+      throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
     }
   }
   

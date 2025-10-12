@@ -54,7 +54,8 @@
       "Bash($HOME/flutter/bin/flutter analyze:*)",
       "Bash(~/flutter/bin/flutter analyze --no-fatal-infos)",
       "Bash(~/flutter/bin/flutter analyze)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(~/flutter/bin/flutter build ios --debug --no-codesign)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",
