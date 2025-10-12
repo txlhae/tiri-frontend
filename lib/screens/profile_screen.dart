@@ -137,46 +137,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               children: [
                                 CustomBackButton(controller: authController),
                                 const Spacer(),
-                              // QR Code Scanner Button
-                              GestureDetector(
-                                behavior: HitTestBehavior.opaque,
-                                onTap: () => Get.toNamed('/qrScanner'),
-                                child: Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.9),
-                                    borderRadius: BorderRadius.circular(20),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(alpha: 0.1),
-                                        blurRadius: 4,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                  child: const Icon(
-                                    Icons.qr_code_scanner,
-                                    color: Color.fromRGBO(3, 80, 135, 1),
-                                    size: 24,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              if (isCurrentUser)
+                              if (isCurrentUser) ...[
+                                // QR Code Scanner Button (only for current user)
                                 GestureDetector(
                                   behavior: HitTestBehavior.opaque,
-                                  onTap: () async {
-                                    Get.dialog(EditDialog(
-                                        user: authController.currentUserStore.value!));
-                                  },
-                                  child: SvgPicture.asset(
-                                    "assets/icons/edit_icon.svg",
-                                  ),
-                                ),
-                              if (!isCurrentUser)
-                                GestureDetector(
-                                  behavior: HitTestBehavior.opaque,
-                                  onTap: () => _openChatWithUser(user),
+                                  onTap: () => Get.toNamed('/qrScanner'),
                                   child: Container(
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
@@ -191,12 +156,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       ],
                                     ),
                                     child: const Icon(
-                                      Icons.chat_bubble_outline,
+                                      Icons.qr_code_scanner,
                                       color: Color.fromRGBO(3, 80, 135, 1),
                                       size: 24,
                                     ),
                                   ),
                                 ),
+                                const SizedBox(width: 10),
+                                GestureDetector(
+                                  behavior: HitTestBehavior.opaque,
+                                  onTap: () async {
+                                    Get.dialog(EditDialog(
+                                        user: authController.currentUserStore.value!));
+                                  },
+                                  child: SvgPicture.asset(
+                                    "assets/icons/edit_icon.svg",
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
                         ),
