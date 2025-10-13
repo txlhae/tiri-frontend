@@ -1407,7 +1407,7 @@ class RequestController extends GetxController {
     );
 
     selectedDateController.value.text = DateFormat('dd/MM/yyyy').format(date);
-    selectedTimeController.value.text = DateFormat('HH:mm').format(DateTime(
+    selectedTimeController.value.text = DateFormat('h:mm a').format(DateTime(
       date.year,
       date.month,
       date.day,
@@ -1593,7 +1593,7 @@ class RequestController extends GetxController {
       
       if (picked != null) {
         selectedTime.value = picked;
-        selectedTimeController.value.text = DateFormat('HH:mm').format(DateTime(
+        selectedTimeController.value.text = DateFormat('h:mm a').format(DateTime(
           2000, 1, 1, picked.hour, picked.minute,
         ));
         
@@ -1824,7 +1824,7 @@ class RequestController extends GetxController {
   }
 
   String formatDateTime(DateTime dateTime) {
-    return DateFormat('dd/MM/yyyy, HH:mm').format(dateTime);
+    return DateFormat('dd/MM/yyyy, h:mm a').format(dateTime);
   }
 
   String getRelativeTime(DateTime dateTime) {
