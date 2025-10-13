@@ -26,13 +26,19 @@ mixin _$RequestModel {
   String get description => throw _privateConstructorUsedError;
   String? get location =>
       throw _privateConstructorUsedError; // Made nullable - can be null from backend
-  DateTime get timestamp => throw _privateConstructorUsedError;
+// ignore: invalid_annotation_target
+  @JsonKey(fromJson: _dateTimeFromJson)
+  DateTime get timestamp =>
+      throw _privateConstructorUsedError; // ignore: invalid_annotation_target
+  @JsonKey(fromJson: _nullableDateTimeFromJson)
   DateTime? get requestedTime =>
       throw _privateConstructorUsedError; // Made nullable - might not always be set
-  RequestStatus get status => throw _privateConstructorUsedError;
+  RequestStatus get status =>
+      throw _privateConstructorUsedError; // ignore: invalid_annotation_target
   @JsonKey(fromJson: _acceptedUserFromJson)
-  List<UserModel> get acceptedUser => throw _privateConstructorUsedError;
-  @JsonKey(ignore: true)
+  List<UserModel> get acceptedUser =>
+      throw _privateConstructorUsedError; // ignore: invalid_annotation_target
+  @JsonKey(includeFromJson: false, includeToJson: false)
   List<FeedbackModel>? get feedbackList => throw _privateConstructorUsedError;
   int get numberOfPeople =>
       throw _privateConstructorUsedError; // Removed required for @Default fields
@@ -60,11 +66,12 @@ abstract class $RequestModelCopyWith<$Res> {
       String title,
       String description,
       String? location,
-      DateTime timestamp,
-      DateTime? requestedTime,
+      @JsonKey(fromJson: _dateTimeFromJson) DateTime timestamp,
+      @JsonKey(fromJson: _nullableDateTimeFromJson) DateTime? requestedTime,
       RequestStatus status,
       @JsonKey(fromJson: _acceptedUserFromJson) List<UserModel> acceptedUser,
-      @JsonKey(ignore: true) List<FeedbackModel>? feedbackList,
+      @JsonKey(includeFromJson: false, includeToJson: false)
+      List<FeedbackModel>? feedbackList,
       int numberOfPeople,
       int hoursNeeded});
 }
@@ -164,11 +171,12 @@ abstract class _$$RequestModelImplCopyWith<$Res>
       String title,
       String description,
       String? location,
-      DateTime timestamp,
-      DateTime? requestedTime,
+      @JsonKey(fromJson: _dateTimeFromJson) DateTime timestamp,
+      @JsonKey(fromJson: _nullableDateTimeFromJson) DateTime? requestedTime,
       RequestStatus status,
       @JsonKey(fromJson: _acceptedUserFromJson) List<UserModel> acceptedUser,
-      @JsonKey(ignore: true) List<FeedbackModel>? feedbackList,
+      @JsonKey(includeFromJson: false, includeToJson: false)
+      List<FeedbackModel>? feedbackList,
       int numberOfPeople,
       int hoursNeeded});
 }
@@ -254,23 +262,25 @@ class __$$RequestModelImplCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$RequestModelImpl implements _RequestModel {
+class _$RequestModelImpl extends _RequestModel {
   const _$RequestModelImpl(
       {required this.requestId,
       required this.userId,
       required this.title,
       required this.description,
       this.location,
-      required this.timestamp,
-      this.requestedTime,
+      @JsonKey(fromJson: _dateTimeFromJson) required this.timestamp,
+      @JsonKey(fromJson: _nullableDateTimeFromJson) this.requestedTime,
       required this.status,
       @JsonKey(fromJson: _acceptedUserFromJson)
       final List<UserModel> acceptedUser = const [],
-      @JsonKey(ignore: true) final List<FeedbackModel>? feedbackList,
+      @JsonKey(includeFromJson: false, includeToJson: false)
+      final List<FeedbackModel>? feedbackList,
       this.numberOfPeople = 1,
       this.hoursNeeded = 1})
       : _acceptedUser = acceptedUser,
-        _feedbackList = feedbackList;
+        _feedbackList = feedbackList,
+        super._();
 
   factory _$RequestModelImpl.fromJson(Map<String, dynamic> json) =>
       _$$RequestModelImplFromJson(json);
@@ -286,14 +296,20 @@ class _$RequestModelImpl implements _RequestModel {
   @override
   final String? location;
 // Made nullable - can be null from backend
+// ignore: invalid_annotation_target
   @override
+  @JsonKey(fromJson: _dateTimeFromJson)
   final DateTime timestamp;
+// ignore: invalid_annotation_target
   @override
+  @JsonKey(fromJson: _nullableDateTimeFromJson)
   final DateTime? requestedTime;
 // Made nullable - might not always be set
   @override
   final RequestStatus status;
+// ignore: invalid_annotation_target
   final List<UserModel> _acceptedUser;
+// ignore: invalid_annotation_target
   @override
   @JsonKey(fromJson: _acceptedUserFromJson)
   List<UserModel> get acceptedUser {
@@ -302,9 +318,11 @@ class _$RequestModelImpl implements _RequestModel {
     return EqualUnmodifiableListView(_acceptedUser);
   }
 
+// ignore: invalid_annotation_target
   final List<FeedbackModel>? _feedbackList;
+// ignore: invalid_annotation_target
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   List<FeedbackModel>? get feedbackList {
     final value = _feedbackList;
     if (value == null) return null;
@@ -387,21 +405,24 @@ class _$RequestModelImpl implements _RequestModel {
   }
 }
 
-abstract class _RequestModel implements RequestModel {
+abstract class _RequestModel extends RequestModel {
   const factory _RequestModel(
       {required final String requestId,
       required final String userId,
       required final String title,
       required final String description,
       final String? location,
-      required final DateTime timestamp,
+      @JsonKey(fromJson: _dateTimeFromJson) required final DateTime timestamp,
+      @JsonKey(fromJson: _nullableDateTimeFromJson)
       final DateTime? requestedTime,
       required final RequestStatus status,
       @JsonKey(fromJson: _acceptedUserFromJson)
       final List<UserModel> acceptedUser,
-      @JsonKey(ignore: true) final List<FeedbackModel>? feedbackList,
+      @JsonKey(includeFromJson: false, includeToJson: false)
+      final List<FeedbackModel>? feedbackList,
       final int numberOfPeople,
       final int hoursNeeded}) = _$RequestModelImpl;
+  const _RequestModel._() : super._();
 
   factory _RequestModel.fromJson(Map<String, dynamic> json) =
       _$RequestModelImpl.fromJson;
@@ -416,17 +437,20 @@ abstract class _RequestModel implements RequestModel {
   String get description;
   @override
   String? get location; // Made nullable - can be null from backend
+// ignore: invalid_annotation_target
   @override
-  DateTime get timestamp;
+  @JsonKey(fromJson: _dateTimeFromJson)
+  DateTime get timestamp; // ignore: invalid_annotation_target
   @override
+  @JsonKey(fromJson: _nullableDateTimeFromJson)
   DateTime? get requestedTime; // Made nullable - might not always be set
   @override
-  RequestStatus get status;
+  RequestStatus get status; // ignore: invalid_annotation_target
   @override
   @JsonKey(fromJson: _acceptedUserFromJson)
-  List<UserModel> get acceptedUser;
+  List<UserModel> get acceptedUser; // ignore: invalid_annotation_target
   @override
-  @JsonKey(ignore: true)
+  @JsonKey(includeFromJson: false, includeToJson: false)
   List<FeedbackModel>? get feedbackList;
   @override
   int get numberOfPeople; // Removed required for @Default fields

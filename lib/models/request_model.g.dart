@@ -13,10 +13,9 @@ _$RequestModelImpl _$$RequestModelImplFromJson(Map<String, dynamic> json) =>
       title: json['title'] as String,
       description: json['description'] as String,
       location: json['location'] as String?,
-      timestamp: DateTime.parse(json['timestamp'] as String),
-      requestedTime: json['requestedTime'] == null
-          ? null
-          : DateTime.parse(json['requestedTime'] as String),
+      timestamp: _dateTimeFromJson(json['timestamp'] as String),
+      requestedTime:
+          _nullableDateTimeFromJson(json['requestedTime'] as String?),
       status: $enumDecode(_$RequestStatusEnumMap, json['status']),
       acceptedUser: json['acceptedUser'] == null
           ? const []

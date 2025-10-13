@@ -26,6 +26,17 @@ List<UserModel> _acceptedUserFromJson(dynamic json) {
   }
 }
 
+// JSON converter for UTC DateTime to Local DateTime
+DateTime _dateTimeFromJson(String json) {
+  return DateTime.parse(json).toUtc().toLocal();
+}
+
+// JSON converter for nullable UTC DateTime to Local DateTime
+DateTime? _nullableDateTimeFromJson(String? json) {
+  if (json == null) return null;
+  return DateTime.parse(json).toUtc().toLocal();
+}
+
 /// Enhanced user request status for volunteer workflow
 class UserRequestStatus {
   final String requestStatus;
@@ -48,24 +59,24 @@ class UserRequestStatus {
 
   factory UserRequestStatus.fromJson(Map<String, dynamic> json) {
     // Try multiple possible field names for the message
-    final messageContent = json['message_content'] ?? 
-                          json['message_to_requester'] ?? 
-                          json['volunteer_message'] ?? 
-                          json['message'] ?? 
+    final messageContent = json['message_content'] ??
+                          json['message_to_requester'] ??
+                          json['volunteer_message'] ??
+                          json['message'] ??
                           json['user_message'] ?? '';
-    
-    
+
+
     return UserRequestStatus(
       requestStatus: json['request_status'] ?? 'not_requested',
       canRequest: json['can_request'] ?? false,
       canCancelRequest: json['can_cancel_request'] ?? false,
       messageContent: messageContent,
       hasVolunteered: json['has_volunteered'] ?? false,
-      requestedAt: json['requested_at'] != null 
-          ? DateTime.tryParse(json['requested_at']) 
+      requestedAt: json['requested_at'] != null
+          ? DateTime.tryParse(json['requested_at'])?.toUtc().toLocal()
           : null,
-      acceptedAt: json['accepted_at'] != null 
-          ? DateTime.tryParse(json['accepted_at']) 
+      acceptedAt: json['accepted_at'] != null
+          ? DateTime.tryParse(json['accepted_at'])?.toUtc().toLocal()
           : null,
     );
   }
@@ -94,8 +105,10 @@ class RequestModel with _$RequestModel {
   required String title,
   required String description,
   String? location, // Made nullable - can be null from backend
-  required DateTime timestamp,
-  DateTime? requestedTime, // Made nullable - might not always be set
+  // ignore: invalid_annotation_target
+  @JsonKey(fromJson: _dateTimeFromJson) required DateTime timestamp,
+  // ignore: invalid_annotation_target
+  @JsonKey(fromJson: _nullableDateTimeFromJson) DateTime? requestedTime, // Made nullable - might not always be set
   required RequestStatus status,
   // ignore: invalid_annotation_target
   @JsonKey(fromJson: _acceptedUserFromJson) @Default([]) List<UserModel> acceptedUser,
@@ -148,8 +161,8 @@ extension RequestModelExtension on RequestModel {
     // Store completion data if available
     if (json['completed_at'] != null) {
       try {
-        RequestModelExtension._completedAtCache[requestModel.requestId] = 
-            DateTime.parse(json['completed_at']);
+        RequestModelExtension._completedAtCache[requestModel.requestId] =
+            DateTime.parse(json['completed_at']).toUtc().toLocal();
       } catch (e) {
         RequestModelExtension._completedAtCache[requestModel.requestId] = null;
       }

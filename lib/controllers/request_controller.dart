@@ -1020,15 +1020,16 @@ class RequestController extends GetxController {
     return location;
   }
 
-  /// Format date and time from response data
+  /// Format date and time from response data (UTC to local conversion)
   String _formatDateTimeFromResponse(dynamic dateNeeded) {
     if (dateNeeded == null) {
       return 'Not specified';
     }
 
     try {
-      final DateTime dateTime = DateTime.parse(dateNeeded.toString()).toLocal();
-      return "${dateTime.day}/${dateTime.month}/${dateTime.year} at ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}";
+      // Parse as UTC and convert to local time
+      final DateTime dateTime = DateTime.parse(dateNeeded.toString()).toUtc().toLocal();
+      return DateFormat('dd/MM/yyyy \'at\' h:mm a').format(dateTime);
     } catch (e) {
       debugLog("❌ Error formatting date: $e");
       return 'Not specified';

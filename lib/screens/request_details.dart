@@ -2,6 +2,7 @@ import 'package:defer_pointer/defer_pointer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import 'package:tiri/controllers/auth_controller.dart';
 import 'package:tiri/controllers/chat_controller.dart';
 import 'package:tiri/controllers/request_controller.dart';
@@ -318,7 +319,7 @@ class _RequestDetailsState extends State<RequestDetails> {
               ),
               const SizedBox(height: 5),
               Text(
-                "${(request.requestedTime ?? request.timestamp).day}/${(request.requestedTime ?? request.timestamp).month}/${(request.requestedTime ?? request.timestamp).year} at ${(request.requestedTime ?? request.timestamp).hour}:${(request.requestedTime ?? request.timestamp).minute.toString().padLeft(2, '0')}",
+                DateFormat('dd/MM/yyyy \'at\' h:mm a').format(request.requestedTime ?? request.timestamp),
                 style: const TextStyle(
                   fontSize: 15,
                   height: 1.5,
@@ -350,7 +351,7 @@ class _RequestDetailsState extends State<RequestDetails> {
               DetailsRow(
                 icon: Icons.access_time,
                 label: "Posted on",
-                value: "${request.timestamp.day}/${request.timestamp.month}/${request.timestamp.year} at ${request.timestamp.hour}:${request.timestamp.minute.toString().padLeft(2, '0')}",
+                value: DateFormat('dd/MM/yyyy \'at\' h:mm a').format(request.timestamp),
               ),
               const SizedBox(height: 12),
               StatusRow(

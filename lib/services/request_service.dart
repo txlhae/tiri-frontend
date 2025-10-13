@@ -254,22 +254,23 @@ class RequestService extends GetxController {
     return location;
   }
   
-  /// Parse Django datetime strings to Flutter DateTime
+  /// Parse Django datetime strings to Flutter DateTime (already in UTC from backend)
+  /// Returns ISO8601 string that will be parsed as UTC and converted to local by the model
   String _parseDjangoDateTime(dynamic dateValue) {
     if (dateValue == null) {
-      return DateTime.now().toIso8601String();
+      return DateTime.now().toUtc().toIso8601String();
     }
-    
+
     try {
       if (dateValue is String) {
-        // Handle Django datetime format
-        final dateTime = DateTime.parse(dateValue);
+        // Django sends UTC datetime - ensure it's properly formatted as UTC
+        final dateTime = DateTime.parse(dateValue).toUtc();
         return dateTime.toIso8601String();
       }
-      return DateTime.now().toIso8601String();
+      return DateTime.now().toUtc().toIso8601String();
     } catch (e) {
       // Error handled silently
-      return DateTime.now().toIso8601String();
+      return DateTime.now().toUtc().toIso8601String();
     }
   }
   
