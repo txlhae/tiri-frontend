@@ -742,19 +742,35 @@ class RequestController extends GetxController {
   }
 
   /// Show success dialog after request creation
-  Future<void> showRequestCreatedSuccessDialog(BuildContext context) async {
-    final String title = titleController.value.text.trim();
-    final String category = selectedCategory.value?.name ?? 'Home Help';
-    final String location = locationController.value.text.trim();
-    final String dateTime = selectedDateTime.value != null 
-        ? "${selectedDateTime.value!.day}/${selectedDateTime.value!.month}/${selectedDateTime.value!.year} at ${selectedDateTime.value!.hour}:${selectedDateTime.value!.minute.toString().padLeft(2, '0')}"
-        : 'Not specified';
-    final String volunteers = numberOfPeopleController.value.text.isNotEmpty 
-        ? "${numberOfPeopleController.value.text} volunteers"
-        : "1 volunteer";
-    final String hours = hoursNeededController.value.text.isNotEmpty 
-        ? "${hoursNeededController.value.text} hours"
-        : "1 hour";
+  /// Uses response data from backend to ensure accuracy and consistency
+  Future<void> showRequestCreatedSuccessDialog(BuildContext context, Map<String, dynamic> responseData) async {
+    // Extract data from backend response
+    final String requestId = responseData['id']?.toString() ?? '';
+    final String title = responseData['title']?.toString() ?? '';
+
+    // Get category name from category ID
+    final int? categoryId = responseData['category'];
+    String categoryName = '';
+    if (categoryId != null) {
+      final category = CategoryModel.getAllCategories().firstWhere(
+        (cat) => cat.id == categoryId,
+        orElse: () => CategoryModel.getAllCategories().first,
+      );
+      categoryName = category.displayText;
+    }
+
+    // Build location string from response
+    final String location = _buildLocationFromResponse(responseData);
+
+    // Format date and time from response
+    final String dateTime = _formatDateTimeFromResponse(responseData['date_needed']);
+
+    // Get volunteers and hours from response
+    final int volunteersNeeded = responseData['volunteers_needed'] ?? 1;
+    final String volunteers = volunteersNeeded == 1 ? "1 volunteer" : "$volunteersNeeded volunteers";
+
+    final int estimatedHours = responseData['estimated_hours'] ?? 1;
+    final String hours = estimatedHours == 1 ? "1 hour" : "$estimatedHours hours";
 
     return showDialog<void>(
       context: context,
@@ -766,20 +782,22 @@ class RequestController extends GetxController {
           ),
           elevation: 10,
           backgroundColor: Colors.transparent,
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 10,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-            ),
-            child: SingleChildScrollView(
-              child: Column(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: SingleChildScrollView(
+                child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                 // Header with success icon and title
@@ -853,7 +871,7 @@ class RequestController extends GetxController {
                       ),
                       const SizedBox(height: 16),
                       
-                      // Details container
+                      // Details container - showing only select details
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.all(16),
@@ -867,9 +885,9 @@ class RequestController extends GetxController {
                         ),
                         child: Column(
                           children: [
-                            _buildDetailRow('📝 Title', title),
-                            _buildDetailRow('📂 Category', category),
-                            _buildDetailRow('📍 Location', location),
+                            if (title.isNotEmpty) _buildDetailRow('📝 Title', title),
+                            if (categoryName.isNotEmpty) _buildDetailRow('📂 Category', categoryName),
+                            if (location.isNotEmpty) _buildDetailRow('📍 Location', location),
                             _buildDetailRow('📅 Date & Time', dateTime),
                             _buildDetailRow('👥 Volunteers Needed', volunteers),
                             _buildDetailRow('⏰ Estimated Time', hours),
@@ -922,8 +940,14 @@ class RequestController extends GetxController {
                   child: GestureDetector(
                     onTap: () {
                       Navigator.of(context).pop();
-                      // Navigate to home page (request management)
+                      // Navigate to the newly created request details page
                       Get.offAllNamed(Routes.homePage);
+                      // If we have a valid request ID, navigate to it after home page loads
+                      if (requestId.isNotEmpty) {
+                        Future.delayed(const Duration(milliseconds: 500), () {
+                          Get.toNamed(Routes.requestDetailsPage, arguments: {'requestId': requestId});
+                        });
+                      }
                     },
                     child: Container(
                       width: double.infinity,
@@ -943,13 +967,13 @@ class RequestController extends GetxController {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           const Icon(
-                            Icons.list_alt,
+                            Icons.visibility,
                             color: Colors.white,
                             size: 20,
                           ),
                           const SizedBox(width: 10),
                           const Text(
-                            'View My Requests',
+                            'View My Request',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -964,10 +988,51 @@ class RequestController extends GetxController {
               ],
             ),
           ),
+            ),
           ),
         );
       },
     );
+  }
+
+  /// Build location string from response data
+  String _buildLocationFromResponse(Map<String, dynamic> responseData) {
+    List<String> locationParts = [];
+
+    if (responseData['address'] != null && responseData['address'].toString().isNotEmpty) {
+      locationParts.add(responseData['address'].toString());
+    }
+
+    if (responseData['city'] != null && responseData['city'].toString().isNotEmpty) {
+      locationParts.add(responseData['city'].toString());
+    }
+
+    if (responseData['state'] != null && responseData['state'].toString().isNotEmpty) {
+      locationParts.add(responseData['state'].toString());
+    }
+
+    String location = locationParts.join(', ');
+
+    if (location.isEmpty) {
+      location = responseData['location_notes']?.toString() ?? '';
+    }
+
+    return location;
+  }
+
+  /// Format date and time from response data
+  String _formatDateTimeFromResponse(dynamic dateNeeded) {
+    if (dateNeeded == null) {
+      return 'Not specified';
+    }
+
+    try {
+      final DateTime dateTime = DateTime.parse(dateNeeded.toString()).toLocal();
+      return "${dateTime.day}/${dateTime.month}/${dateTime.year} at ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}";
+    } catch (e) {
+      debugLog("❌ Error formatting date: $e");
+      return 'Not specified';
+    }
   }
 
   /// Helper method to build detail rows in success dialog
@@ -1103,37 +1168,40 @@ class RequestController extends GetxController {
       
       // 🚨 ADD DETAILED ERROR HANDLING
       try {
-        final success = await requestService.createRequest(requestData);
-        
-        if (success) {
-          debugLog("✅ createRequest: Request created successfully");
-          
-          // Show success dialog
-          if (Get.context != null) {
-            await showRequestCreatedSuccessDialog(Get.context!);
-          }
-          
+        final responseData = await requestService.createRequest(requestData);
+
+        if (responseData != null) {
+          final requestId = responseData['id']?.toString() ?? '';
+          debugLog("✅ createRequest: Request created successfully, requestId: $requestId");
+
           clearForm();
+
+          // Load requests BEFORE showing dialog to ensure the new request is in the list
           await loadRequests();
+
+          // Show success dialog with the full response data
+          if (Get.context != null) {
+            await showRequestCreatedSuccessDialog(Get.context!, responseData);
+          }
+
           return true;
         } else {
-          debugLog("❌ createRequest: Failed to create request - service returned false");
-          debugLog("🔍 Check RequestService.createRequest() logs for Django response details");
+          debugLog("❌ createRequest: No response data received");
           return false;
         }
       } catch (serviceError) {
         debugLog("💥 createRequest: Service error details: $serviceError");
         debugLog("💥 Service error type: ${serviceError.runtimeType}");
-        
+
         // Check if it's a DioException with response details
         if (serviceError.toString().contains('400')) {
           debugLog("🔍 400 Bad Request detected - likely Django validation error");
           debugLog("🔍 This suggests Django is rejecting specific field values or formats");
         }
-        
+
         return false;
       }
-      
+
     } catch (e) {
       debugLog("❌ createRequest controller error: $e");
       debugLog("❌ Controller error type: ${e.runtimeType}");

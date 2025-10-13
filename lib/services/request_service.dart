@@ -550,18 +550,31 @@ class RequestService extends GetxController {
   }
   
   /// Create new request
-  /// Throws exception with specific error if fails, returns true on success
-  Future<bool> createRequest(Map<String, dynamic> requestData) async {
+  /// Throws exception with specific error if fails, returns request ID on success
+  Future<Map<String, dynamic>?> createRequest(Map<String, dynamic> requestData) async {
     try{
       final response = await _apiService.post('/api/requests/', data: requestData);
 
+      print('🔍 CREATE REQUEST RESPONSE DEBUG:');
+      print('   Status Code: ${response.statusCode}');
+      print('   Response Data Type: ${response.data?.runtimeType}');
+      print('   Response Data: ${response.data}');
+
       if (response.statusCode == 201 || response.statusCode == 200) {
-        return true;
+        // Return full response data for use in success dialog
+        if (response.data != null && response.data is Map<String, dynamic>) {
+          print('   ✅ Response is a Map');
+          print('   Available keys: ${response.data.keys.toList()}');
+          return response.data as Map<String, dynamic>;
+        }
+        print('   ❌ Response is NOT a Map or is null');
+        return null;
       } else {
         final errorMessage = ErrorHandler.getErrorMessage(response, defaultMessage: 'Failed to create request');
         throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
     } catch (e) {
+      print('   💥 Exception: $e');
       // Error handled silently
       final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not create request');
       throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
