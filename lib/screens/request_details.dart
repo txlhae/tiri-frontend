@@ -333,7 +333,7 @@ class _RequestDetailsState extends State<RequestDetails> {
               DetailsRow(
                 icon: Icons.person,
                 label: "Posted by",
-                value: request.requester?.referralCode ?? request.requester?.username ?? "Unknown User",
+                value: request.requester?.fullName ?? request.requester?.username ?? "Unknown User",
               ),
               const SizedBox(height: 16),
               DetailsRow(
@@ -890,7 +890,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                   arguments: {
                     'chatRoomId': roomId,
                     'receiverId': request.userId,
-                    'receiverName': requester.username,
+                    'receiverName': requester.fullName ?? requester.username,
                     'receiverProfilePic': requester.imageUrl ?? " ",
                   },
                 );
@@ -1503,7 +1503,8 @@ class _RequestDetailsState extends State<RequestDetails> {
   Widget _buildVolunteerRequestCard(Map<String, dynamic> volunteer, String requestId) {
     final volunteerData = volunteer['volunteer'] ?? {};
     final volunteerId = volunteerData['userId'] ?? '';
-    final volunteerName = volunteerData['username'] ?? 'Unknown';
+    final volunteerFullName = volunteerData['full_name'] ?? volunteerData['fullName'] ?? '';
+    final volunteerName = volunteerFullName.isNotEmpty ? volunteerFullName : (volunteerData['username'] ?? 'Unknown');
     final volunteerEmail = volunteerData['email'] ?? '';
     final volunteerMessage = volunteer['message'] ?? '';
     final appliedAt = volunteer['applied_at'] ?? '';
@@ -2333,7 +2334,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                           Icon(Icons.person, color: Colors.purple.shade700, size: 20),
                           const SizedBox(height: 4),
                           Text(
-                            fromUser['username'] ?? fromUser['full_name'] ?? "Unknown",
+                            fromUser['full_name'] ?? fromUser['username'] ?? "Unknown",
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               color: Colors.purple.shade800,
@@ -2441,7 +2442,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                 Icon(Icons.person, size: 16, color: Colors.grey.shade600),
                 const SizedBox(width: 8),
                 Text(
-                  volunteer.username,
+                  volunteer.fullName ?? volunteer.username,
                   style: const TextStyle(
                     fontSize: 14,
                     color: Colors.black87,
@@ -2509,7 +2510,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                     child: DetailsRow(
                       icon: Icons.person,
                       label: "Name",
-                      value: requester?.username ?? "Unknown User",
+                      value: requester?.fullName ?? requester?.username ?? "Unknown User",
                     ),
                   ),
                   // Profile view icon for requester
@@ -2562,7 +2563,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                                     arguments: {
                                       'chatRoomId': roomId,
                                       'receiverId': request.userId,
-                                      'receiverName': requester.username,
+                                      'receiverName': requester.fullName ?? requester.username,
                                       'receiverProfilePic': requester.imageUrl ?? " ",
                                     },
                                   );

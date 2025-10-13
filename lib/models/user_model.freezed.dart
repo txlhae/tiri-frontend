@@ -28,6 +28,8 @@ mixin _$UserModel {
   String? get phoneNumber => throw _privateConstructorUsedError;
   String? get country => throw _privateConstructorUsedError;
   String? get referralCode => throw _privateConstructorUsedError;
+  String? get fullName =>
+      throw _privateConstructorUsedError; // Full name of the user
   double? get rating => throw _privateConstructorUsedError;
   int? get hours => throw _privateConstructorUsedError;
   DateTime? get createdAt => throw _privateConstructorUsedError;
@@ -63,6 +65,7 @@ abstract class $UserModelCopyWith<$Res> {
       String? phoneNumber,
       String? country,
       String? referralCode,
+      String? fullName,
       double? rating,
       int? hours,
       DateTime? createdAt,
@@ -96,6 +99,7 @@ class _$UserModelCopyWithImpl<$Res, $Val extends UserModel>
     Object? phoneNumber = freezed,
     Object? country = freezed,
     Object? referralCode = freezed,
+    Object? fullName = freezed,
     Object? rating = freezed,
     Object? hours = freezed,
     Object? createdAt = freezed,
@@ -137,6 +141,10 @@ class _$UserModelCopyWithImpl<$Res, $Val extends UserModel>
       referralCode: freezed == referralCode
           ? _value.referralCode
           : referralCode // ignore: cast_nullable_to_non_nullable
+              as String?,
+      fullName: freezed == fullName
+          ? _value.fullName
+          : fullName // ignore: cast_nullable_to_non_nullable
               as String?,
       rating: freezed == rating
           ? _value.rating
@@ -191,6 +199,7 @@ abstract class _$$UserModelImplCopyWith<$Res>
       String? phoneNumber,
       String? country,
       String? referralCode,
+      String? fullName,
       double? rating,
       int? hours,
       DateTime? createdAt,
@@ -222,6 +231,7 @@ class __$$UserModelImplCopyWithImpl<$Res>
     Object? phoneNumber = freezed,
     Object? country = freezed,
     Object? referralCode = freezed,
+    Object? fullName = freezed,
     Object? rating = freezed,
     Object? hours = freezed,
     Object? createdAt = freezed,
@@ -263,6 +273,10 @@ class __$$UserModelImplCopyWithImpl<$Res>
       referralCode: freezed == referralCode
           ? _value.referralCode
           : referralCode // ignore: cast_nullable_to_non_nullable
+              as String?,
+      fullName: freezed == fullName
+          ? _value.fullName
+          : fullName // ignore: cast_nullable_to_non_nullable
               as String?,
       rating: freezed == rating
           ? _value.rating
@@ -312,6 +326,7 @@ class _$UserModelImpl implements _UserModel {
       this.phoneNumber,
       this.country,
       this.referralCode,
+      this.fullName,
       this.rating,
       this.hours,
       this.createdAt = null,
@@ -341,6 +356,9 @@ class _$UserModelImpl implements _UserModel {
   @override
   final String? referralCode;
   @override
+  final String? fullName;
+// Full name of the user
+  @override
   final double? rating;
   @override
   final int? hours;
@@ -365,7 +383,7 @@ class _$UserModelImpl implements _UserModel {
 
   @override
   String toString() {
-    return 'UserModel(userId: $userId, email: $email, username: $username, imageUrl: $imageUrl, referralUserId: $referralUserId, phoneNumber: $phoneNumber, country: $country, referralCode: $referralCode, rating: $rating, hours: $hours, createdAt: $createdAt, isVerified: $isVerified, isApproved: $isApproved, approvalStatus: $approvalStatus, rejectionReason: $rejectionReason, approvalExpiresAt: $approvalExpiresAt)';
+    return 'UserModel(userId: $userId, email: $email, username: $username, imageUrl: $imageUrl, referralUserId: $referralUserId, phoneNumber: $phoneNumber, country: $country, referralCode: $referralCode, fullName: $fullName, rating: $rating, hours: $hours, createdAt: $createdAt, isVerified: $isVerified, isApproved: $isApproved, approvalStatus: $approvalStatus, rejectionReason: $rejectionReason, approvalExpiresAt: $approvalExpiresAt)';
   }
 
   @override
@@ -386,6 +404,8 @@ class _$UserModelImpl implements _UserModel {
             (identical(other.country, country) || other.country == country) &&
             (identical(other.referralCode, referralCode) ||
                 other.referralCode == referralCode) &&
+            (identical(other.fullName, fullName) ||
+                other.fullName == fullName) &&
             (identical(other.rating, rating) || other.rating == rating) &&
             (identical(other.hours, hours) || other.hours == hours) &&
             (identical(other.createdAt, createdAt) ||
@@ -414,6 +434,7 @@ class _$UserModelImpl implements _UserModel {
       phoneNumber,
       country,
       referralCode,
+      fullName,
       rating,
       hours,
       createdAt,
@@ -449,6 +470,7 @@ abstract class _UserModel implements UserModel {
       final String? phoneNumber,
       final String? country,
       final String? referralCode,
+      final String? fullName,
       final double? rating,
       final int? hours,
       final DateTime? createdAt,
@@ -477,6 +499,8 @@ abstract class _UserModel implements UserModel {
   String? get country;
   @override
   String? get referralCode;
+  @override
+  String? get fullName; // Full name of the user
   @override
   double? get rating;
   @override

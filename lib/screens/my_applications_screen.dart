@@ -111,7 +111,7 @@ class _MyApplicationsScreenState extends State<MyApplicationsScreen> {
         arguments: {
           'chatRoomId': roomId,
           'receiverId': request.userId,
-          'receiverName': request.requester?.username ?? "Requester",
+          'receiverName': request.requester?.fullName ?? request.requester?.username ?? "Requester",
           'receiverProfilePic': request.requester?.imageUrl ?? " ",
         },
       );

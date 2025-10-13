@@ -4,7 +4,6 @@ part 'user_model.freezed.dart';
 part 'user_model.g.dart';
 
 @freezed
-@JsonSerializable(explicitToJson: true)
 class UserModel with _$UserModel {
   const factory UserModel({
     required String userId,
@@ -15,6 +14,7 @@ class UserModel with _$UserModel {
     String? phoneNumber,
     String? country,
     String? referralCode,
+    String? fullName, // Full name of the user
     double? rating,
     int? hours,
     @Default(null) DateTime? createdAt,
@@ -34,23 +34,35 @@ class UserModel with _$UserModel {
       userId: json['id'] ?? '',
       email: json['email'] ?? '', // Use the email from backend requester object
       username: json['username'] ?? '',
+      fullName: json['full_name'], // Properly map full_name
       imageUrl: json['profile_image_url'],
       rating: (json['average_rating'] as num?)?.toDouble(),
       hours: json['total_hours_helped'] as int?,
-      createdAt: json['created_at'] != null 
-          ? DateTime.parse(json['created_at']) 
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
           : null,
       isVerified: json['is_verified'] ?? false,
       // Map the additional fields to existing fields where possible
       country: json['location_display'], // Use country field for location_display
-      referralCode: json['full_name'], // Use referralCode field for full_name
+      referralCode: json['referral_code'], // Properly map referral_code
       // Approval fields
       isApproved: json['is_approved'] ?? false,
       approvalStatus: json['approval_status'],
       rejectionReason: json['rejection_reason'],
-      approvalExpiresAt: json['approval_expires_at'] != null 
-          ? DateTime.parse(json['approval_expires_at']) 
+      approvalExpiresAt: json['approval_expires_at'] != null
+          ? DateTime.parse(json['approval_expires_at'])
           : null,
     );
+  }
+}
+
+/// Extension methods for UserModel
+extension UserModelExtension on UserModel {
+  /// Get the display name - returns full name if available, otherwise username
+  String get displayName {
+    if (fullName != null && fullName!.isNotEmpty) {
+      return fullName!;
+    }
+    return username;
   }
 }

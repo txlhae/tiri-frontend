@@ -16,6 +16,7 @@ _$UserModelImpl _$$UserModelImplFromJson(Map<String, dynamic> json) =>
       phoneNumber: json['phoneNumber'] as String?,
       country: json['country'] as String?,
       referralCode: json['referralCode'] as String?,
+      fullName: json['fullName'] as String?,
       rating: (json['rating'] as num?)?.toDouble(),
       hours: (json['hours'] as num?)?.toInt(),
       createdAt: json['createdAt'] == null
@@ -40,6 +41,7 @@ Map<String, dynamic> _$$UserModelImplToJson(_$UserModelImpl instance) =>
       'phoneNumber': instance.phoneNumber,
       'country': instance.country,
       'referralCode': instance.referralCode,
+      'fullName': instance.fullName,
       'rating': instance.rating,
       'hours': instance.hours,
       'createdAt': instance.createdAt?.toIso8601String(),
