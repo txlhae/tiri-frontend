@@ -187,17 +187,60 @@ class DeepLinkService extends GetxService {
   // =============================================================================
   // GENERIC LINK HANDLER
   // =============================================================================
-  
-  /// Handle generic deep links (navigation, etc.)
+
+  /// Handle generic deep links (tiri://open and others)
+  /// 🚨 SECURITY FIX: Does NOT force navigation - preserves app state
+  /// Only triggers a state refresh if user is on verification pages
   void _handleGenericLink(Uri uri) {
-    
-    // Navigate based on authentication status
+
+    // Get authentication state
     final authController = Get.find<AuthController>();
-    if (authController.isLoggedIn.value) {
-      Get.offAllNamed(Routes.homePage);
-    } else {
+
+    if (!authController.isLoggedIn.value) {
+      // Not logged in - go to login page
       Get.offAllNamed(Routes.loginPage);
+      return;
     }
+
+    // User is logged in - DO NOT force navigation to home
+    // Instead, check if user is on a verification screen and refresh status
+    final currentRoute = Get.currentRoute;
+
+
+    if (currentRoute == Routes.emailVerificationPage) {
+      // User is on email verification page - trigger refresh
+      _showProcessingDialog('Checking verification status...');
+      authController.checkVerificationStatus().then((success) {
+        _closeProcessingDialog();
+        if (!success) {
+          Get.snackbar(
+            'Still Pending',
+            'Email verification is still pending. Please check your email.',
+            snackPosition: SnackPosition.TOP,
+            backgroundColor: Colors.orange,
+            colorText: Colors.white,
+            duration: const Duration(seconds: 3),
+          );
+        }
+      });
+    } else if (currentRoute == Routes.pendingApprovalPage) {
+      // User is on pending approval page - trigger refresh
+      _showProcessingDialog('Checking approval status...');
+      authController.checkVerificationStatus().then((success) {
+        _closeProcessingDialog();
+        if (!success) {
+          Get.snackbar(
+            'Still Pending',
+            'Referral approval is still pending. Please wait for your referrer to approve.',
+            snackPosition: SnackPosition.TOP,
+            backgroundColor: Colors.orange,
+            colorText: Colors.white,
+            duration: const Duration(seconds: 3),
+          );
+        }
+      });
+    }
+    // For all other routes (including home), do nothing - preserve app state
   }
 
   // =============================================================================
