@@ -3,6 +3,12 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'user_model.freezed.dart';
 part 'user_model.g.dart';
 
+// Helper function to read fullName from both snake_case and camelCase
+Object? _readFullName(Map json, String key) {
+  // Try full_name (snake_case from backend) first, then fullName (camelCase)
+  return json['full_name'] ?? json['fullName'] ?? json['first_name'] ?? json['firstName'];
+}
+
 @freezed
 class UserModel with _$UserModel {
   const factory UserModel({
@@ -14,7 +20,8 @@ class UserModel with _$UserModel {
     String? phoneNumber,
     String? country,
     String? referralCode,
-    String? fullName, // Full name of the user
+    // ignore: invalid_annotation_target
+    @JsonKey(name: 'fullName', readValue: _readFullName) String? fullName, // Full name of the user
     double? rating,
     int? hours,
     @Default(null) DateTime? createdAt,

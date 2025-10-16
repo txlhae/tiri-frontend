@@ -179,14 +179,33 @@ class _RequestDetailsState extends State<RequestDetails> {
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.only(left: 24.0, right: 24.0, top: 24.0),
-                child: SingleChildScrollView(
-                  child: Obx(() {
-                    if (requestController.isLoadingRequestDetails.value) {
-                      return _buildLoadingContent();
-                    }
+                child: RefreshIndicator(
+                  onRefresh: () async {
+                    // Get requestId from navigation arguments
+                    final arguments = Get.arguments;
+                    final String? requestId = arguments is Map<String, dynamic>
+                        ? arguments['requestId']?.toString()
+                        : null;
 
-                    return _buildLoadedContent();
-                  }),
+                    if (requestId != null && requestId.isNotEmpty) {
+                      await requestController.loadRequestDetails(requestId);
+                      // Also reload pending volunteers if user is the request owner
+                      final request = requestController.currentRequestDetails.value;
+                      if (request != null && request.userId == authController.currentUserStore.value?.userId) {
+                        await requestController.loadPendingVolunteers(requestId);
+                      }
+                    }
+                  },
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: Obx(() {
+                      if (requestController.isLoadingRequestDetails.value) {
+                        return _buildLoadingContent();
+                      }
+
+                      return _buildLoadedContent();
+                    }),
+                  ),
                 ),
               ),
             ),
@@ -333,7 +352,7 @@ class _RequestDetailsState extends State<RequestDetails> {
               DetailsRow(
                 icon: Icons.person,
                 label: "Posted by",
-                value: request.requester?.fullName ?? request.requester?.username ?? "Unknown User",
+                value: request.requester?.displayName ?? "Unknown User",
               ),
               const SizedBox(height: 16),
               DetailsRow(
@@ -792,7 +811,7 @@ class _RequestDetailsState extends State<RequestDetails> {
   Widget _buildPendingRequestState(RequestModel request) {
     // 🔍 NEW: Get the actual volunteer status from backend
     final actualVolunteerStatus = _getCurrentUserVolunteerStatus(request);
-    
+
     // For approved status, don't show the status card - the "Accepted by" section will handle it
     if (actualVolunteerStatus?.toLowerCase() == 'approved') {
       // Return the cancel button for approved volunteers
@@ -802,16 +821,16 @@ class _RequestDetailsState extends State<RequestDetails> {
           width: double.infinity,
           child: OutlinedButton.icon(
             onPressed: requestController.isLoading.value ? null : () async {
-              
+
               // Show cancel reason dialog
               final String? reason = await _showCancelReasonDialog();
-              
-              
+
+
               // If user didn't cancel the dialog
               if (reason != null) {
                 try {
                   await requestController.cancelVolunteerRequest(request.requestId, reason: reason);
-                  
+
                   Get.snackbar(
                     'Success',
                     'Your volunteer request has been cancelled',
@@ -853,7 +872,7 @@ class _RequestDetailsState extends State<RequestDetails> {
         )),
       );
     }
-    
+
     // Note: Status variables removed as they were unused after assignment
 
     return Column(
@@ -866,7 +885,7 @@ class _RequestDetailsState extends State<RequestDetails> {
             onPressed: () async {
               final currentUserId = authController.currentUserStore.value?.userId;
               final requester = request.requester;
-              
+
               if (currentUserId == null || requester == null) {
                 Get.snackbar(
                   'Error',
@@ -876,7 +895,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                 );
                 return;
               }
-              
+
               try {
                 final chatController = Get.put(ChatController());
                 final roomId = await chatController.createOrGetChatRoom(
@@ -884,13 +903,13 @@ class _RequestDetailsState extends State<RequestDetails> {
                   request.userId,
                   serviceRequestId: request.requestId,
                 );
-                
+
                 Get.toNamed(
                   Routes.chatPage,
                   arguments: {
                     'chatRoomId': roomId,
                     'receiverId': request.userId,
-                    'receiverName': requester.fullName ?? requester.username,
+                    'receiverName': requester.displayName,
                     'receiverProfilePic': requester.imageUrl ?? " ",
                   },
                 );
@@ -915,22 +934,22 @@ class _RequestDetailsState extends State<RequestDetails> {
             ),
           ),
         ),
-        
+
         // Cancel Request button with loading state
         Obx(() => SizedBox(
           width: double.infinity,
           child: OutlinedButton.icon(
             onPressed: requestController.isLoading.value ? null : () async {
-              
+
               // Show cancel reason dialog
               final String? reason = await _showCancelReasonDialog();
-              
-              
+
+
               // If user didn't cancel the dialog
               if (reason != null) {
                 try {
                   await requestController.cancelVolunteerRequest(request.requestId, reason: reason);
-                  
+
                   Get.snackbar(
                     'Success',
                     'Volunteer request canceled successfully',
@@ -955,7 +974,7 @@ class _RequestDetailsState extends State<RequestDetails> {
               } else {
               }
             },
-            icon: requestController.isLoading.value 
+            icon: requestController.isLoading.value
                 ? const SizedBox(
                     width: 16,
                     height: 16,
@@ -980,13 +999,12 @@ class _RequestDetailsState extends State<RequestDetails> {
   /// Builds the owner delete button for request owners
   /// ✅ FIX: Only shows delete button before request time passes
   Widget _buildOwnerDeleteButton(RequestModel request) {
-    // Check if request time has passed
-    final bool timeHasPassed = (request.requestedTime ?? request.timestamp).isBefore(DateTime.now());
-    // Check if request is in progress
+    // Check if request is in progress or completed
     final bool isInProgress = request.status == RequestStatus.inprogress;
+    final bool isComplete = request.status == RequestStatus.complete;
 
-    // ✅ FIX: Only show delete button if request time hasn't passed and not in progress
-    if (!timeHasPassed && !isInProgress) {
+    // ✅ Show delete button for pending/accepted/delayed requests (not in progress or complete)
+    if (!isInProgress && !isComplete) {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 50.0),
         child: Obx(() => SizedBox(
@@ -1118,24 +1136,24 @@ class _RequestDetailsState extends State<RequestDetails> {
             ],
           ),
         ),
-        
+
         const SizedBox(height: 16),
-        
+
         // Cancel Request button for approved volunteers
         Obx(() => SizedBox(
           width: double.infinity,
           child: OutlinedButton.icon(
             onPressed: requestController.isLoading.value ? null : () async {
-              
+
               // Show cancel reason dialog
               final String? reason = await _showCancelReasonDialog();
-              
-              
+
+
               // If user didn't cancel the dialog
               if (reason != null) {
                 try {
                   await requestController.cancelVolunteerRequest(request.requestId, reason: reason);
-                  
+
                   Get.snackbar(
                     'Success',
                     'Your volunteer request has been cancelled',
@@ -1437,7 +1455,10 @@ class _RequestDetailsState extends State<RequestDetails> {
     final volunteerData = volunteer['volunteer'] ?? {};
     final volunteerId = volunteerData['userId'] ?? '';
     final volunteerFullName = volunteerData['full_name'] ?? volunteerData['fullName'] ?? '';
-    final volunteerName = volunteerFullName.isNotEmpty ? volunteerFullName : (volunteerData['username'] ?? 'Unknown');
+    final volunteerFirstName = volunteerData['first_name'] ?? volunteerData['firstName'] ?? '';
+    final volunteerName = volunteerFullName.isNotEmpty
+        ? volunteerFullName
+        : (volunteerFirstName.isNotEmpty ? volunteerFirstName : (volunteerData['username'] ?? 'Unknown'));
     final volunteerEmail = volunteerData['email'] ?? '';
     final volunteerMessage = volunteer['message'] ?? '';
     final appliedAt = volunteer['applied_at'] ?? '';
@@ -1534,15 +1555,6 @@ class _RequestDetailsState extends State<RequestDetails> {
                         ],
                       ],
                     ),
-                    if (volunteerEmail.isNotEmpty)
-                      Text(
-                        volunteerEmail,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey.shade600,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
                   ],
                 ),
               ),
@@ -2267,7 +2279,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                           Icon(Icons.person, color: Colors.purple.shade700, size: 20),
                           const SizedBox(height: 4),
                           Text(
-                            fromUser['full_name'] ?? fromUser['username'] ?? "Unknown",
+                            fromUser['full_name'] ?? fromUser['first_name'] ?? fromUser['username'] ?? "Unknown",
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               color: Colors.purple.shade800,
@@ -2375,7 +2387,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                 Icon(Icons.person, size: 16, color: Colors.grey.shade600),
                 const SizedBox(width: 8),
                 Text(
-                  volunteer.fullName ?? volunteer.username,
+                  volunteer.displayName,
                   style: const TextStyle(
                     fontSize: 14,
                     color: Colors.black87,
@@ -2443,7 +2455,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                     child: DetailsRow(
                       icon: Icons.person,
                       label: "Name",
-                      value: requester?.fullName ?? requester?.username ?? "Unknown User",
+                      value: requester?.displayName ?? "Unknown User",
                     ),
                   ),
                   // Profile view icon for requester
@@ -2496,7 +2508,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                                     arguments: {
                                       'chatRoomId': roomId,
                                       'receiverId': request.userId,
-                                      'receiverName': requester.fullName ?? requester.username,
+                                      'receiverName': requester.displayName,
                                       'receiverProfilePic': requester.imageUrl ?? " ",
                                     },
                                   );

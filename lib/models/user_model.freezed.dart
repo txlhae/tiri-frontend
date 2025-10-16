@@ -27,7 +27,9 @@ mixin _$UserModel {
   String? get referralUserId => throw _privateConstructorUsedError;
   String? get phoneNumber => throw _privateConstructorUsedError;
   String? get country => throw _privateConstructorUsedError;
-  String? get referralCode => throw _privateConstructorUsedError;
+  String? get referralCode =>
+      throw _privateConstructorUsedError; // ignore: invalid_annotation_target
+  @JsonKey(name: 'fullName', readValue: _readFullName)
   String? get fullName =>
       throw _privateConstructorUsedError; // Full name of the user
   double? get rating => throw _privateConstructorUsedError;
@@ -65,7 +67,7 @@ abstract class $UserModelCopyWith<$Res> {
       String? phoneNumber,
       String? country,
       String? referralCode,
-      String? fullName,
+      @JsonKey(name: 'fullName', readValue: _readFullName) String? fullName,
       double? rating,
       int? hours,
       DateTime? createdAt,
@@ -199,7 +201,7 @@ abstract class _$$UserModelImplCopyWith<$Res>
       String? phoneNumber,
       String? country,
       String? referralCode,
-      String? fullName,
+      @JsonKey(name: 'fullName', readValue: _readFullName) String? fullName,
       double? rating,
       int? hours,
       DateTime? createdAt,
@@ -326,7 +328,7 @@ class _$UserModelImpl implements _UserModel {
       this.phoneNumber,
       this.country,
       this.referralCode,
-      this.fullName,
+      @JsonKey(name: 'fullName', readValue: _readFullName) this.fullName,
       this.rating,
       this.hours,
       this.createdAt = null,
@@ -355,7 +357,9 @@ class _$UserModelImpl implements _UserModel {
   final String? country;
   @override
   final String? referralCode;
+// ignore: invalid_annotation_target
   @override
+  @JsonKey(name: 'fullName', readValue: _readFullName)
   final String? fullName;
 // Full name of the user
   @override
@@ -470,6 +474,7 @@ abstract class _UserModel implements UserModel {
       final String? phoneNumber,
       final String? country,
       final String? referralCode,
+      @JsonKey(name: 'fullName', readValue: _readFullName)
       final String? fullName,
       final double? rating,
       final int? hours,
@@ -498,8 +503,9 @@ abstract class _UserModel implements UserModel {
   @override
   String? get country;
   @override
-  String? get referralCode;
+  String? get referralCode; // ignore: invalid_annotation_target
   @override
+  @JsonKey(name: 'fullName', readValue: _readFullName)
   String? get fullName; // Full name of the user
   @override
   double? get rating;

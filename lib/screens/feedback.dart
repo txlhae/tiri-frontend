@@ -247,11 +247,11 @@ class _FeedbackState extends State<Feedback> {
                                 children: [
                                   CircleAvatar(
                                     radius: 18,
-                                    backgroundImage: imageUrl != null
+                                    backgroundImage: imageUrl != null && imageUrl.trim().isNotEmpty && imageUrl != "file:///"
                                         ? NetworkImage(imageUrl)
                                         : null,
                                     backgroundColor: const Color.fromRGBO(0, 140, 170, 0.1),
-                                    child: imageUrl == null
+                                    child: imageUrl == null || imageUrl.trim().isEmpty || imageUrl == "file:///"
                                         ? const Icon(
                                             Icons.person,
                                             color: Color.fromRGBO(0, 140, 170, 1),

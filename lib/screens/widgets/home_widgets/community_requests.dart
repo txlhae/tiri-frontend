@@ -135,12 +135,13 @@ class _CommunityRequestsState extends State<CommunityRequests> {
                                         ListTile(
                                           contentPadding: EdgeInsets.zero,
                                           leading: CircleAvatar(
-                                            backgroundImage: request.requester?.imageUrl !=
-                                                    null
+                                            backgroundImage: request.requester?.imageUrl != null &&
+                                                    request.requester!.imageUrl!.isNotEmpty
                                                 ? NetworkImage(request.requester!.imageUrl!)
                                                 : null,
                                             radius: 30,
-                                            child: request.requester?.imageUrl == null
+                                            child: request.requester?.imageUrl == null ||
+                                                    request.requester!.imageUrl!.isEmpty
                                                 ? const Icon(Icons.person)
                                                 : null,
                                           ),

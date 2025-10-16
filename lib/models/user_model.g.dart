@@ -16,7 +16,7 @@ _$UserModelImpl _$$UserModelImplFromJson(Map<String, dynamic> json) =>
       phoneNumber: json['phoneNumber'] as String?,
       country: json['country'] as String?,
       referralCode: json['referralCode'] as String?,
-      fullName: json['fullName'] as String?,
+      fullName: _readFullName(json, 'fullName') as String?,
       rating: (json['rating'] as num?)?.toDouble(),
       hours: (json['hours'] as num?)?.toInt(),
       createdAt: json['createdAt'] == null

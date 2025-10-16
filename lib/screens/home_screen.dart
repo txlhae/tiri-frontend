@@ -34,9 +34,9 @@ class HomeScreen extends StatelessWidget {
     // 🚨 SAFETY FIX: Ensure requests are loaded when HomeScreen is displayed
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // Check if we have user but no requests and not currently loading
-      if (authController.isLoggedIn.value && 
+      if (authController.isLoggedIn.value &&
           authController.currentUserStore.value != null &&
-          requestController.requestList.isEmpty && 
+          requestController.requestList.isEmpty &&
           requestController.myRequestList.isEmpty &&
           !requestController.isLoading.value) {
         requestController.loadRequests();
@@ -82,26 +82,24 @@ class HomeScreen extends StatelessWidget {
                           child: Row(
                             children: [
                               Obx(
-                                () => authController.currentUserStore.value !=
-                                            null &&
-                                        authController.currentUserStore.value!
-                                                .imageUrl !=
-                                            null &&
-                                        authController.currentUserStore.value!
-                                            .imageUrl!.isNotEmpty
-                                    ? CircleAvatar(
-                                        backgroundColor: Colors.white,
-                                        backgroundImage: NetworkImage(
-                                            authController.currentUserStore
-                                                .value!.imageUrl!),
-                                      )
-                                    : const CircleAvatar(
-                                        backgroundColor: Colors.white,
-                                        child: Icon(
-                                          Icons.person,
-                                          color: Color.fromRGBO(3, 80, 135, 1),
-                                        ),
-                                      ),
+                                () {
+                                  final user = authController.currentUserStore.value;
+                                  final imageUrl = user?.imageUrl;
+                                  final hasValidImage = imageUrl != null && imageUrl.trim().isNotEmpty;
+
+                                  return CircleAvatar(
+                                    backgroundColor: Colors.white,
+                                    backgroundImage: hasValidImage
+                                        ? NetworkImage(imageUrl)
+                                        : null,
+                                    child: !hasValidImage
+                                        ? const Icon(
+                                            Icons.person,
+                                            color: Color.fromRGBO(3, 80, 135, 1),
+                                          )
+                                        : null,
+                                  );
+                                },
                               ),
                               const SizedBox(width: 10),
                               Column(

@@ -35,18 +35,34 @@ class MyRequests extends StatelessWidget {
           .toList();
 
       if (myRequests.isEmpty) {
-        return const Center(
-          child: Text(
-            "No requests found.",
-            style: TextStyle(color: Colors.black),
+        return RefreshIndicator(
+          onRefresh: () async {
+            await requestController.loadRequests();
+          },
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            children: const [
+              SizedBox(height: 200),
+              Center(
+                child: Text(
+                  "No requests found.",
+                  style: TextStyle(color: Colors.black),
+                ),
+              ),
+            ],
           ),
         );
       }
 
-      return ListView.builder(
-        padding: const EdgeInsets.only(bottom: 60),
-        itemCount: myRequests.length,
-        itemBuilder: (context, index) {
+      return RefreshIndicator(
+        onRefresh: () async {
+          await requestController.loadRequests();
+        },
+        child: ListView.builder(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.only(bottom: 60),
+          itemCount: myRequests.length,
+          itemBuilder: (context, index) {
           final request = myRequests[index];
 
           return GestureDetector(
@@ -60,11 +76,7 @@ class MyRequests extends StatelessWidget {
               child: Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(20),
-                  color: Colors.white,
-                  border: Border.all(
-                    color: _getStatusBorderColor(request.status),
-                    width: request.status == RequestStatus.complete ? 3 : 3,
-                  ),
+                  color: const Color.fromRGBO(246, 248, 249, 1),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.1),
@@ -73,63 +85,84 @@ class MyRequests extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.all(15.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+                child: Stack(
+                  children: [
+                    // Status indicator on the left border
+                    Positioned(
+                      left: 0,
+                      top: 0,
+                      bottom: 0,
+                      child: Container(
+                        width: 4,
+                        decoration: BoxDecoration(
+                          color: _getStatusBorderColor(request.status),
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(20),
+                            bottomLeft: Radius.circular(20),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(15.0),
+                      child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: Text(
-                              request.title,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black,
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  request.title,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 2,
+                                ),
                               ),
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 2,
-                            ),
+                              const SizedBox(width: 8),
+                              _buildStatusBadge(request.status),
+                            ],
                           ),
-                          const SizedBox(width: 8),
-                          _buildStatusBadge(request.status),
+                          const SizedBox(height: 5),
+                          _buildRequestDetail(
+                              "Required date: ",
+                              DateFormat('dd MMM yyyy', 'en_US')
+                                  .format(request.requestedTime ?? request.timestamp)),
+                          _buildRequestDetail(
+                              "Time: ",
+                              requestController
+                                  .formatDateTime(request.requestedTime ?? request.timestamp)
+                                  .split(", ")
+                                  .last),
+                          _buildRequestDetail("Location: ", request.location ?? 'Not specified'),
+                          const SizedBox(height: 5),
+                          Row(
+                            children: [
+                              Text(
+                                requestController
+                                    .getRelativeTime(request.timestamp),
+                                style: TextStyle(
+                                    color: Colors.grey[500], fontSize: 10),
+                              ),
+                              const Spacer(),
+                              if (!_isRequestCompleted(request.status) &&
+                                  request.status != RequestStatus.inprogress)
+                                _buildCancelButton(request),
+                            ],
+                          ),
                         ],
                       ),
-                      const SizedBox(height: 5),
-                      _buildRequestDetail(
-                          "Required date: ",
-                          DateFormat('dd MMM yyyy', 'en_US')
-                              .format(request.requestedTime ?? request.timestamp)),
-                      _buildRequestDetail(
-                          "Time: ",
-                          requestController
-                              .formatDateTime(request.requestedTime ?? request.timestamp)
-                              .split(", ")
-                              .last),
-                      _buildRequestDetail("Location: ", request.location ?? 'Not specified'),
-                      const SizedBox(height: 5),
-                      Row(
-                        children: [
-                          Text(
-                            requestController
-                                .getRelativeTime(request.timestamp),
-                            style: TextStyle(
-                                color: Colors.grey[500], fontSize: 10),
-                          ),
-                          const Spacer(),
-                          if (!_isRequestCompleted(request.status) &&
-                              (request.requestedTime ?? request.timestamp).isAfter(DateTime.now()))
-                            _buildCancelButton(request),
-                        ],
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),
           );
         },
+        ),
       );
     });
   }

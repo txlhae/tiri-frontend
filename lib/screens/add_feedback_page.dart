@@ -128,8 +128,10 @@ class _AddFeedbackPageState extends State<AddFeedbackPage> {
                           Row(
                             children: [
                               CircleAvatar(
-                                backgroundImage: NetworkImage(user.imageUrl ?? ""),
-                                child: user.imageUrl == null
+                                backgroundImage: user.imageUrl != null && user.imageUrl!.trim().isNotEmpty
+                                    ? NetworkImage(user.imageUrl!)
+                                    : null,
+                                child: user.imageUrl == null || user.imageUrl!.trim().isEmpty
                                     ? const Icon(Icons.person)
                                     : null,
                               ),

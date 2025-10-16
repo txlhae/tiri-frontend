@@ -159,9 +159,13 @@ class _MyHelpsState extends State<MyHelps> with SingleTickerProviderStateMixin {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     CircleAvatar(
-                      backgroundImage: user?.imageUrl != null ? NetworkImage(user!.imageUrl!) : null,
+                      backgroundImage: user?.imageUrl != null && user!.imageUrl!.trim().isNotEmpty
+                          ? NetworkImage(user.imageUrl!)
+                          : null,
                       radius: 25,
-                      child: user?.imageUrl == null ? const Icon(Icons.person) : null,
+                      child: user?.imageUrl == null || user!.imageUrl!.trim().isEmpty
+                          ? const Icon(Icons.person)
+                          : null,
                     ),
                     const SizedBox(width: 10),
                     Expanded(
@@ -217,21 +221,18 @@ class _MyHelpsState extends State<MyHelps> with SingleTickerProviderStateMixin {
                         ],
                       ),
                     ),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: request.status != RequestStatus.complete &&
-                                request.status != RequestStatus.delayed &&
-                                (request.requestedTime ?? request.timestamp).isAfter(DateTime.now())
-                            ? const Color.fromRGBO(3, 80, 135, 1)
-                            : Colors.grey,
-                        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
-                        minimumSize: const Size(30, 35),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
-                      ),
-                      onPressed: () {
-                        if (request.status != RequestStatus.complete &&
-                            request.status != RequestStatus.delayed &&
-                            (request.requestedTime ?? request.timestamp).isAfter(DateTime.now())) {
+                    // Only show Cancel button if request is not complete, not delayed, and time hasn't passed
+                    if (request.status != RequestStatus.complete &&
+                        request.status != RequestStatus.delayed &&
+                        (request.requestedTime ?? request.timestamp).isAfter(DateTime.now()))
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color.fromRGBO(3, 80, 135, 1),
+                          padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+                          minimumSize: const Size(30, 35),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+                        ),
+                        onPressed: () {
                           Get.dialog(
                             CancelDialog(
                               questionText: "Are you sure you want to cancel?",
@@ -239,10 +240,9 @@ class _MyHelpsState extends State<MyHelps> with SingleTickerProviderStateMixin {
                               request: request,
                             ),
                           );
-                        }
-                      },
-                      child: const Text("Cancel", style: TextStyle(color: Colors.white)),
-                    ),
+                        },
+                        child: const Text("Cancel", style: TextStyle(color: Colors.white)),
+                      ),
                   ],
                 ),
               ),

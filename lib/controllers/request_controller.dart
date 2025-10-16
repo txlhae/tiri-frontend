@@ -1357,7 +1357,15 @@ class RequestController extends GetxController {
         locationController.value.text.isEmpty ? "Location is required" : null;
     dateTimeError.value =
         selectedDateTime.value == null ? "Please select a date and time" : null;
-    
+
+    // ✅ NEW: Time validation - check if selected time is in the past
+    if (selectedDateTime.value != null) {
+      final now = DateTime.now();
+      if (selectedDateTime.value!.isBefore(now)) {
+        dateTimeError.value = "Please select a future time";
+      }
+    }
+
     // ✅ NEW: Category validation
     categoryError.value = selectedCategory.value == null ? "Please select a category" : null;
 
