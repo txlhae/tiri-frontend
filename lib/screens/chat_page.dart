@@ -172,19 +172,19 @@ class _ChatPageState extends State<ChatPage> {
   @override
   Widget build(BuildContext context) {
     final currentUserId = authController.currentUserStore.value!.userId;
-    
+
     return Scaffold(
+      backgroundColor: Colors.blue,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(80),
-        child: SafeArea(
-          child: AppBar(
+        child: AppBar(
           backgroundColor: Colors.blue,
           elevation: 0,
          // iconTheme: const IconThemeData(color: Colors.white),
           titleSpacing: 4,
            shape: const RoundedRectangleBorder(
            borderRadius: BorderRadius.vertical(
-            bottom: Radius.circular(10), 
+            bottom: Radius.circular(10),
           ),
         ),
         leading:  Padding(
@@ -249,9 +249,10 @@ class _ChatPageState extends State<ChatPage> {
             ),
           ),
         ),
-        ),
       ),
-      body: Column(
+      body: Container(
+        color: Colors.white,
+        child: Column(
         children: [
           // Error message display
           Obx(() {
@@ -431,10 +432,11 @@ class _ChatPageState extends State<ChatPage> {
               );
             }),
           ),
-          Container(
+          SafeArea(
+            child: Container(
             padding:
                 const EdgeInsets.symmetric(horizontal: 10, vertical: 6), // Reduced vertical padding
-            color: Colors.grey.shade100,
+            color: Colors.white,
             child: Row(
               children: [
                 Expanded(
@@ -505,7 +507,9 @@ class _ChatPageState extends State<ChatPage> {
               ],
             ),
           ),
+          ),
         ],
+      ),
       ),
     );
   }
