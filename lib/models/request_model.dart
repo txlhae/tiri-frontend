@@ -1,6 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'user_model.dart';
 import 'feedback_model.dart';
+import 'category_model.dart';
 
 part 'request_model.freezed.dart';
 part 'request_model.g.dart';
@@ -35,6 +36,17 @@ DateTime _dateTimeFromJson(String json) {
 DateTime? _nullableDateTimeFromJson(String? json) {
   if (json == null) return null;
   return DateTime.parse(json).toUtc().toLocal();
+}
+
+// JSON converter for category field
+CategoryModel? _categoryFromJson(dynamic json) {
+  if (json == null) return null;
+  if (json is! Map<String, dynamic>) return null;
+  try {
+    return CategoryModel.fromJson(json);
+  } catch (e) {
+    return null;
+  }
 }
 
 /// Enhanced user request status for volunteer workflow
@@ -116,6 +128,8 @@ class RequestModel with _$RequestModel {
   @JsonKey(includeFromJson: false, includeToJson: false) List<FeedbackModel>? feedbackList,
   @Default(1) int numberOfPeople, // Removed required for @Default fields
   @Default(1) int hoursNeeded, // Removed required for @Default fields
+  // ignore: invalid_annotation_target
+  @JsonKey(fromJson: _categoryFromJson) CategoryModel? category, // Category from API
 }) = _RequestModel;
 
   // Convert JSON to Model

@@ -22,6 +22,7 @@ _$RequestModelImpl _$$RequestModelImplFromJson(Map<String, dynamic> json) =>
           : _acceptedUserFromJson(json['acceptedUser']),
       numberOfPeople: (json['numberOfPeople'] as num?)?.toInt() ?? 1,
       hoursNeeded: (json['hoursNeeded'] as num?)?.toInt() ?? 1,
+      category: _categoryFromJson(json['category']),
     );
 
 Map<String, dynamic> _$$RequestModelImplToJson(_$RequestModelImpl instance) =>
@@ -37,6 +38,7 @@ Map<String, dynamic> _$$RequestModelImplToJson(_$RequestModelImpl instance) =>
       'acceptedUser': instance.acceptedUser,
       'numberOfPeople': instance.numberOfPeople,
       'hoursNeeded': instance.hoursNeeded,
+      'category': instance.category,
     };
 
 const _$RequestStatusEnumMap = {

@@ -42,7 +42,11 @@ mixin _$RequestModel {
   List<FeedbackModel>? get feedbackList => throw _privateConstructorUsedError;
   int get numberOfPeople =>
       throw _privateConstructorUsedError; // Removed required for @Default fields
-  int get hoursNeeded => throw _privateConstructorUsedError;
+  int get hoursNeeded =>
+      throw _privateConstructorUsedError; // Removed required for @Default fields
+// ignore: invalid_annotation_target
+  @JsonKey(fromJson: _categoryFromJson)
+  CategoryModel? get category => throw _privateConstructorUsedError;
 
   /// Serializes this RequestModel to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -73,7 +77,8 @@ abstract class $RequestModelCopyWith<$Res> {
       @JsonKey(includeFromJson: false, includeToJson: false)
       List<FeedbackModel>? feedbackList,
       int numberOfPeople,
-      int hoursNeeded});
+      int hoursNeeded,
+      @JsonKey(fromJson: _categoryFromJson) CategoryModel? category});
 }
 
 /// @nodoc
@@ -103,6 +108,7 @@ class _$RequestModelCopyWithImpl<$Res, $Val extends RequestModel>
     Object? feedbackList = freezed,
     Object? numberOfPeople = null,
     Object? hoursNeeded = null,
+    Object? category = freezed,
   }) {
     return _then(_value.copyWith(
       requestId: null == requestId
@@ -153,6 +159,10 @@ class _$RequestModelCopyWithImpl<$Res, $Val extends RequestModel>
           ? _value.hoursNeeded
           : hoursNeeded // ignore: cast_nullable_to_non_nullable
               as int,
+      category: freezed == category
+          ? _value.category
+          : category // ignore: cast_nullable_to_non_nullable
+              as CategoryModel?,
     ) as $Val);
   }
 }
@@ -178,7 +188,8 @@ abstract class _$$RequestModelImplCopyWith<$Res>
       @JsonKey(includeFromJson: false, includeToJson: false)
       List<FeedbackModel>? feedbackList,
       int numberOfPeople,
-      int hoursNeeded});
+      int hoursNeeded,
+      @JsonKey(fromJson: _categoryFromJson) CategoryModel? category});
 }
 
 /// @nodoc
@@ -206,6 +217,7 @@ class __$$RequestModelImplCopyWithImpl<$Res>
     Object? feedbackList = freezed,
     Object? numberOfPeople = null,
     Object? hoursNeeded = null,
+    Object? category = freezed,
   }) {
     return _then(_$RequestModelImpl(
       requestId: null == requestId
@@ -256,6 +268,10 @@ class __$$RequestModelImplCopyWithImpl<$Res>
           ? _value.hoursNeeded
           : hoursNeeded // ignore: cast_nullable_to_non_nullable
               as int,
+      category: freezed == category
+          ? _value.category
+          : category // ignore: cast_nullable_to_non_nullable
+              as CategoryModel?,
     ));
   }
 }
@@ -277,7 +293,8 @@ class _$RequestModelImpl extends _RequestModel {
       @JsonKey(includeFromJson: false, includeToJson: false)
       final List<FeedbackModel>? feedbackList,
       this.numberOfPeople = 1,
-      this.hoursNeeded = 1})
+      this.hoursNeeded = 1,
+      @JsonKey(fromJson: _categoryFromJson) this.category})
       : _acceptedUser = acceptedUser,
         _feedbackList = feedbackList,
         super._();
@@ -338,10 +355,15 @@ class _$RequestModelImpl extends _RequestModel {
   @override
   @JsonKey()
   final int hoursNeeded;
+// Removed required for @Default fields
+// ignore: invalid_annotation_target
+  @override
+  @JsonKey(fromJson: _categoryFromJson)
+  final CategoryModel? category;
 
   @override
   String toString() {
-    return 'RequestModel(requestId: $requestId, userId: $userId, title: $title, description: $description, location: $location, timestamp: $timestamp, requestedTime: $requestedTime, status: $status, acceptedUser: $acceptedUser, feedbackList: $feedbackList, numberOfPeople: $numberOfPeople, hoursNeeded: $hoursNeeded)';
+    return 'RequestModel(requestId: $requestId, userId: $userId, title: $title, description: $description, location: $location, timestamp: $timestamp, requestedTime: $requestedTime, status: $status, acceptedUser: $acceptedUser, feedbackList: $feedbackList, numberOfPeople: $numberOfPeople, hoursNeeded: $hoursNeeded, category: $category)';
   }
 
   @override
@@ -369,7 +391,9 @@ class _$RequestModelImpl extends _RequestModel {
             (identical(other.numberOfPeople, numberOfPeople) ||
                 other.numberOfPeople == numberOfPeople) &&
             (identical(other.hoursNeeded, hoursNeeded) ||
-                other.hoursNeeded == hoursNeeded));
+                other.hoursNeeded == hoursNeeded) &&
+            (identical(other.category, category) ||
+                other.category == category));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -387,7 +411,8 @@ class _$RequestModelImpl extends _RequestModel {
       const DeepCollectionEquality().hash(_acceptedUser),
       const DeepCollectionEquality().hash(_feedbackList),
       numberOfPeople,
-      hoursNeeded);
+      hoursNeeded,
+      category);
 
   /// Create a copy of RequestModel
   /// with the given fields replaced by the non-null parameter values.
@@ -421,7 +446,9 @@ abstract class _RequestModel extends RequestModel {
       @JsonKey(includeFromJson: false, includeToJson: false)
       final List<FeedbackModel>? feedbackList,
       final int numberOfPeople,
-      final int hoursNeeded}) = _$RequestModelImpl;
+      final int hoursNeeded,
+      @JsonKey(fromJson: _categoryFromJson)
+      final CategoryModel? category}) = _$RequestModelImpl;
   const _RequestModel._() : super._();
 
   factory _RequestModel.fromJson(Map<String, dynamic> json) =
@@ -455,7 +482,11 @@ abstract class _RequestModel extends RequestModel {
   @override
   int get numberOfPeople; // Removed required for @Default fields
   @override
-  int get hoursNeeded;
+  int get hoursNeeded; // Removed required for @Default fields
+// ignore: invalid_annotation_target
+  @override
+  @JsonKey(fromJson: _categoryFromJson)
+  CategoryModel? get category;
 
   /// Create a copy of RequestModel
   /// with the given fields replaced by the non-null parameter values.

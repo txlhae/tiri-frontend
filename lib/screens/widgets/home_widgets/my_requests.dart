@@ -6,6 +6,7 @@ import 'package:tiri/controllers/request_controller.dart';
 import 'package:tiri/infrastructure/routes.dart';
 import 'package:tiri/models/request_model.dart';
 import 'package:tiri/screens/widgets/dialog_widgets/cancel_dialog.dart';
+import 'package:tiri/screens/widgets/request_widgets/status_row.dart';
 
 class MyRequests extends StatelessWidget {
   const MyRequests({super.key});
@@ -59,17 +60,11 @@ class MyRequests extends StatelessWidget {
               child: Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(20),
-                  color: request.status == RequestStatus.accepted ||  request.status == RequestStatus.incomplete 
-                      ? Colors.blue[50]
-                      : [
-                          'pending',
-                          'inprogress',
-                          'completed',
-                        ].contains(request.status.toString().split('.').last)
-                          ? Colors.grey[200]
-                          : request.status == RequestStatus.delayed
-                          ? Colors.orange[50]
-                          : const Color(0xFFF6F8F9),
+                  color: Colors.white,
+                  border: Border.all(
+                    color: _getStatusBorderColor(request.status),
+                    width: request.status == RequestStatus.complete ? 3 : 3,
+                  ),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.1),
@@ -83,14 +78,23 @@ class MyRequests extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        request.title,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 2,
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              request.title,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 2,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          _buildStatusBadge(request.status),
+                        ],
                       ),
                       const SizedBox(height: 5),
                       _buildRequestDetail(
@@ -180,5 +184,64 @@ class MyRequests extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// Get border color based on request status
+  Color _getStatusBorderColor(RequestStatus status) {
+    final statusString = status.toString().split('.').last;
+    // For completed status, use green border instead of white
+    if (statusString.toLowerCase() == 'complete' || statusString.toLowerCase() == 'completed') {
+      return const Color(0xFF4CAF50); // Material Green 500
+    }
+    return getStatusColor(statusString);
+  }
+
+  /// Build status badge widget
+  Widget _buildStatusBadge(RequestStatus status) {
+    final statusString = status.toString().split('.').last;
+    final backgroundColor = getStatusColor(statusString);
+    final textColor = getTextColor(statusString);
+    final borderColor = getStatusBorderColor(statusString);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(12),
+        border: borderColor != null
+            ? Border.all(color: borderColor, width: 2)
+            : null,
+      ),
+      child: Text(
+        _formatStatusText(statusString),
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+          color: textColor,
+        ),
+      ),
+    );
+  }
+
+  /// Format status text for display
+  String _formatStatusText(String status) {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return 'Pending';
+      case 'inprogress':
+        return 'In Progress';
+      case 'accepted':
+        return 'Accepted';
+      case 'complete':
+        return 'Completed';
+      case 'delayed':
+        return 'Delayed';
+      case 'incomplete':
+        return 'Incomplete';
+      case 'cancelled':
+        return 'Cancelled';
+      default:
+        return status;
+    }
   }
 }

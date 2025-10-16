@@ -192,6 +192,9 @@ class RequestService extends GetxController {
         'feedback': djangoJson['feedback'],
         'completed_at': djangoJson['completed_at']?.toString(),
         'completion_confirmed_by_requester': djangoJson['completion_confirmed_by_requester'],
+
+        // Category data from API
+        'category': djangoJson['category'],
       };
 
 
