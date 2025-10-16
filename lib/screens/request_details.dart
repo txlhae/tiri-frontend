@@ -1011,24 +1011,91 @@ class _RequestDetailsState extends State<RequestDetails> {
           width: double.infinity,
           child: OutlinedButton.icon(
           onPressed: requestController.isLoading.value ? null : () async {
-            // Show confirmation dialog
+            // Show confirmation dialog with consistent design
             final bool? confirmed = await Get.dialog<bool>(
-              AlertDialog(
-                title: const Text('Delete Request'),
-                content: const Text('Are you sure you want to delete this request? This action cannot be undone.'),
-                actions: [
-                  TextButton(
-                    onPressed: () => Get.back(result: false),
-                    child: const Text('Cancel'),
-                  ),
-                  TextButton(
-                    onPressed: () => Get.back(result: true),
-                    style: TextButton.styleFrom(
-                      foregroundColor: Colors.red,
+              Dialog(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 15.0),
+                  child: SizedBox(
+                    height: 250,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            GestureDetector(
+                              onTap: () => Get.back(result: false),
+                              child: SvgPicture.asset(
+                                'assets/icons/close_icon.svg',
+                                fit: BoxFit.cover,
+                                height: 20,
+                                width: 20,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const Text(
+                          'Are you sure you want to delete this request? This action cannot be undone.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 18, color: Colors.black),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 40.0),
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: () => Get.back(result: true),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color.fromRGBO(0, 140, 170, 1),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(30),
+                                ),
+                              ),
+                              child: const Text(
+                                "Proceed to delete",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 40.0),
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton(
+                              onPressed: () => Get.back(result: false),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: const Color.fromRGBO(0, 140, 170, 1),
+                                side: const BorderSide(
+                                  color: Color.fromRGBO(0, 140, 170, 1),
+                                  width: 2,
+                                ),
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(30),
+                                ),
+                              ),
+                              child: const Text(
+                                'No',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    child: const Text('Delete'),
                   ),
-                ],
+                ),
               ),
             );
 
