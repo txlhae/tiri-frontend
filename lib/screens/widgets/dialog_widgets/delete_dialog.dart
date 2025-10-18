@@ -20,7 +20,7 @@ class DeleteDialog extends StatelessWidget {
       backgroundColor: Colors.white,
       child: Padding(
         padding: const EdgeInsets.all(24.0),
-        child: Column(
+        child: Obx(() => Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             const Text(
@@ -41,6 +41,7 @@ class DeleteDialog extends StatelessWidget {
             const SizedBox(height: 24),
             TextField(
               controller: emailController,
+              enabled: !authController.isLoading.value,
               decoration: const InputDecoration(
                 labelText: 'Email',
                 hintText: 'Enter your email',
@@ -50,6 +51,7 @@ class DeleteDialog extends StatelessWidget {
             const SizedBox(height: 16),
             TextField(
               controller: passwordController,
+              enabled: !authController.isLoading.value,
               obscureText: true,
               decoration: const InputDecoration(
                 labelText: 'Password',
@@ -61,7 +63,9 @@ class DeleteDialog extends StatelessWidget {
 
             CustomCancel(
               buttonText: 'Cancel',
-              onButtonPressed: () => Get.back(),
+              onButtonPressed: authController.isLoading.value
+                ? () {}
+                : () => Get.back(),
             ),
             const SizedBox(height: 16),
             Container(
@@ -69,26 +73,44 @@ class DeleteDialog extends StatelessWidget {
                 color: Colors.red,
                 borderRadius: BorderRadius.circular(30),
               ),
-              child: CustomButton(
-                buttonText: 'Delete Account',
-                onButtonPressed: () async {
-                  final email = emailController.text.trim();
-                  final password = passwordController.text;
+              child: authController.isLoading.value
+                ? const Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    ),
+                  )
+                : CustomButton(
+                    buttonText: 'Delete Account',
+                    onButtonPressed: () async {
+                      final email = emailController.text.trim();
+                      final password = passwordController.text;
 
-                  if (email.isEmpty || password.isEmpty) {
-                    Get.snackbar("Error", "Email and password are required");
-                    return;
-                  }
+                      if (email.isEmpty || password.isEmpty) {
+                        Get.snackbar(
+                          "Error",
+                          "Email and password are required",
+                          snackPosition: SnackPosition.TOP,
+                          backgroundColor: Colors.red,
+                          colorText: Colors.white,
+                        );
+                        return;
+                      }
 
-                  await authController.deleteUserAccount(
-                    email: email,
-                    password: password,
-                  );
-                },
-              ),
+                      await authController.deleteUserAccount(
+                        email: email,
+                        password: password,
+                      );
+                    },
+                  ),
             ),
           ],
-        ),
+        )),
       ),
     );
   }

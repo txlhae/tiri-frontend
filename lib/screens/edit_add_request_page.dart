@@ -55,14 +55,13 @@ void didChangeDependencies() {
 
 }
 
-  void updateRequestClick() {
+  void updateRequestClick() async {
+    // Validate required fields
     if (requestController.titleController.value.text.isEmpty ||
         requestController.descriptionController.value.text.isEmpty ||
         requestController.locationController.value.text.isEmpty ||
         requestController.selectedDateController.value.text.isEmpty ||
-        requestController.selectedTimeController.value.text.isEmpty
- 
-        ) {
+        requestController.selectedTimeController.value.text.isEmpty) {
       Get.snackbar(
         'Error',
         'All fields including date & time must be filled!',
@@ -72,53 +71,208 @@ void didChangeDependencies() {
       );
       return;
     }
-    final number = requestController.validateIntField(controller: requestController.numberOfPeopleController.value);
 
-final hours = requestController.validateIntField(controller: requestController.hoursNeededController.value);
+    // Validate integer fields
+    final number = requestController.validateIntField(
+        controller: requestController.numberOfPeopleController.value);
+    final hours = requestController.validateIntField(
+        controller: requestController.hoursNeededController.value);
 
-
-    // Recalculate status using the already validated `number`
-    final updatedStatus = requestController.determineRequestStatus(widget.request.copyWith(numberOfPeople: number));
-
-    final request = RequestModel(
-      requestId: widget.request.requestId,
-      userId: widget.request.userId,
-      title: requestController.titleController.value.text,
-      description: requestController.descriptionController.value.text,
-      location: requestController.locationController.value.text,
-      timestamp: DateTime.now(),
-      requestedTime: requestController.selectedDateTime.value ??
-          widget.request.requestedTime,
-      status: RequestStatus.values.firstWhere((e) => e.name == updatedStatus, orElse: () => RequestStatus.pending),
-      acceptedUser: widget.request.acceptedUser,
-      numberOfPeople: number,
-      hoursNeeded: hours,
-    );
-
-
-    requestController
-        .controllerUpdateRequest(widget.request.requestId, request)
-        .then((_) {
-      requestController.clearFields();
-      detailsController.refreshData();
-      Get.back();
-      Get.snackbar(
-        'Success',
-        'Request updated successfully!',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-      );
-    }).catchError((error) {
+    // Validate volunteers needed range (1-10)
+    if (number < 1 || number > 10) {
       Get.snackbar(
         'Error',
-        'Failed to update request',
+        'Number of volunteers must be between 1 and 10',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,
       );
-    });
+      return;
+    }
 
+    // Validate hours range (1-24)
+    if (hours < 1 || hours > 24) {
+      Get.snackbar(
+        'Error',
+        'Estimated hours must be between 1 and 24',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
+    // Validate date is in the future
+    if (requestController.selectedDateTime.value != null &&
+        requestController.selectedDateTime.value!.isBefore(DateTime.now())) {
+      Get.snackbar(
+        'Error',
+        'Please select a future date and time',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      return;
+    }
+
+    try {
+      // Create updated request model with new data
+      final updatedRequest = widget.request.copyWith(
+        title: requestController.titleController.value.text,
+        description: requestController.descriptionController.value.text,
+        location: requestController.locationController.value.text,
+        requestedTime: requestController.selectedDateTime.value,
+        numberOfPeople: number,
+        hoursNeeded: hours,
+      );
+
+      // Call the proper update method
+      final success = await requestController.updateRequest(
+          widget.request.requestId, updatedRequest);
+
+      if (success) {
+        requestController.clearFields();
+        detailsController.refreshData();
+        Get.back();
+
+        // Show success dialog
+        _showSuccessConfirmation();
+      } else {
+        _showErrorConfirmation('Failed to update request');
+      }
+    } catch (error) {
+      _showErrorConfirmation(error.toString().replaceAll('Exception: ', ''));
+    }
+  }
+
+  /// Show success confirmation dialog with animation
+  void _showSuccessConfirmation() {
+    Get.dialog(
+      Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(40),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Animated checkmark
+              TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0.0, end: 1.0),
+                duration: const Duration(milliseconds: 600),
+                builder: (context, value, child) {
+                  return Transform.scale(
+                    scale: value,
+                    child: Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: const Color.fromRGBO(0, 140, 170, 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.check_circle,
+                        size: 50,
+                        color: Color.fromRGBO(0, 140, 170, 1),
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'Success!',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Request updated successfully',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.black54,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      barrierDismissible: false,
+    );
+
+    // Auto close after 2 seconds
+    Future.delayed(const Duration(seconds: 2), () {
+      Get.back(); // Close confirmation dialog
+    });
+  }
+
+  /// Show error confirmation dialog with animation
+  void _showErrorConfirmation(String errorMessage) {
+    Get.dialog(
+      Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(40),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Animated error icon
+              TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0.0, end: 1.0),
+                duration: const Duration(milliseconds: 600),
+                builder: (context, value, child) {
+                  return Transform.scale(
+                    scale: value,
+                    child: Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: const Color.fromRGBO(176, 48, 48, 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.cancel,
+                        size: 50,
+                        color: Color.fromRGBO(176, 48, 48, 1),
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'Update Failed',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                errorMessage,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 16,
+                  color: Colors.black54,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      barrierDismissible: false,
+    );
+
+    // Auto close after 2 seconds
+    Future.delayed(const Duration(seconds: 2), () {
+      Get.back(); // Close confirmation dialog
+    });
   }
 
   @override

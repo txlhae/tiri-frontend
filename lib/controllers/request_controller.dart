@@ -1215,11 +1215,11 @@ class RequestController extends GetxController {
   Future<bool> updateRequestStatus(String requestId, String newStatus) async {
     try {
       debugLog("🔄 updateRequestStatus: $requestId → $newStatus");
-      
+
       final updateData = {'status': newStatus};
-      final success = await requestService.updateRequest(requestId, updateData);
-      
-      if (success) {
+      final response = await requestService.updateRequest(requestId, updateData);
+
+      if (response != null) {
         debugLog("✅ updateRequestStatus: Status updated successfully");
         await loadRequests();
         return true;
@@ -1227,10 +1227,48 @@ class RequestController extends GetxController {
         debugLog("❌ updateRequestStatus: Failed to update status");
         return false;
       }
-      
+
     } catch (e) {
       debugLog("❌ updateRequestStatus error: $e");
       return false;
+    }
+  }
+
+  /// Update request with full request data
+  /// Uses proper Django field mapping from API documentation
+  Future<bool> updateRequest(String requestId, RequestModel request) async {
+    try {
+      debugLog("🔄 updateRequest: Updating request $requestId");
+      isLoading.value = true;
+
+      // Map Flutter RequestModel to Django API format
+      final updateData = {
+        'title': request.title,
+        'description': request.description,
+        'date_needed': request.requestedTime?.toUtc().toIso8601String(),
+        'address': request.location ?? '',
+        'city': request.location ?? '',
+        'volunteers_needed': request.numberOfPeople,
+        'estimated_hours': request.hoursNeeded,
+      };
+
+      debugLog("📋 Update payload: $updateData");
+
+      final response = await requestService.updateRequest(requestId, updateData);
+
+      if (response != null) {
+        debugLog("✅ updateRequest: Request updated successfully");
+        return true;
+      } else {
+        debugLog("❌ updateRequest: Failed to update request");
+        return false;
+      }
+
+    } catch (e) {
+      debugLog("❌ updateRequest error: $e");
+      return false;
+    } finally {
+      isLoading.value = false;
     }
   }
 
@@ -1665,22 +1703,6 @@ class RequestController extends GetxController {
     }
   }
 
-  Future<bool> controllerUpdateRequest(String requestId, dynamic data) async {
-    try {
-      if (data is RequestModel) {
-        final statusData = {'status': data.status.toString().split('.').last};
-        return await updateRequestStatus(requestId, statusData['status']!);
-      } else if (data is Map<String, dynamic>) {
-        return await updateRequestStatus(requestId, data['status'] ?? 'pending');
-      } else {
-        debugLog("❌ controllerUpdateRequest: Invalid data type");
-        return false;
-      }
-    } catch (e) {
-      debugLog("❌ controllerUpdateRequest error: $e");
-      return false;
-    }
-  }
 
   void clearFields() {
     clearForm();

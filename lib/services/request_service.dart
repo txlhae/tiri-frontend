@@ -587,12 +587,13 @@ class RequestService extends GetxController {
   
   /// Update existing request
   /// Throws exception with specific error if fails
-  Future<bool> updateRequest(String requestId, Map<String, dynamic> requestData) async {
+  /// Returns the updated request data on success
+  Future<Map<String, dynamic>?> updateRequest(String requestId, Map<String, dynamic> requestData) async {
     try {
       final response = await _apiService.patch('/api/requests/$requestId/', data: requestData);
 
       if (response.statusCode == 200) {
-        return true;
+        return response.data as Map<String, dynamic>?;
       } else {
         final errorMessage = ErrorHandler.getErrorMessage(response, defaultMessage: 'Failed to update request');
         throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));

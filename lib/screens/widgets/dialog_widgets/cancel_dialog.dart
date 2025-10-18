@@ -6,7 +6,6 @@ import 'package:tiri/controllers/auth_controller.dart';
 import 'package:tiri/controllers/request_controller.dart';
 import 'package:tiri/models/notification_model.dart';
 import 'package:tiri/models/request_model.dart';
-import 'package:tiri/models/user_model.dart';
 import 'package:tiri/screens/widgets/custom_widgets/custom_button.dart';
 import 'package:tiri/screens/widgets/custom_widgets/custom_cancel.dart';
 import 'package:tiri/screens/widgets/custom_widgets/custom_form_field.dart';
@@ -108,38 +107,12 @@ class _CancelDialogState extends State<CancelDialog> {
                       if (isRequester) {
                         // For request owners: DELETE the request entirely
                         await requestController.deleteRequest(widget.request.requestId);
-                      } else {
-                        // For accepted volunteers: Update request to remove them
-                        // Update accepted users list
-                        List<UserModel> updatedAcceptedUsers =
-                            widget.request.acceptedUser;
-
-                        if (isAcceptedUser) {
-                          updatedAcceptedUsers = widget.request.acceptedUser
-                              .where((user) => user.userId != currentUserId)
-                              .toList();
-                        }
-
-                        // Update request status
-                        final newStatus = RequestStatus.values.firstWhere((e) => e.name == requestController.determineRequestStatus(widget.request), orElse: () => RequestStatus.pending);
-
-                        // Build updated request model
-                        RequestModel requestUpdate = RequestModel(
-                          requestId: widget.request.requestId,
-                          userId: widget.request.userId,
-                          title: widget.request.title,
-                          description: widget.request.description,
-                          location: widget.request.location,
-                          timestamp: widget.request.timestamp,
-                          requestedTime: widget.request.requestedTime,
-                          status: newStatus,
-                          acceptedUser: updatedAcceptedUsers,
-                          numberOfPeople: widget.request.numberOfPeople,
-                          hoursNeeded: widget.request.hoursNeeded
+                      } else if (isAcceptedUser) {
+                        // For accepted volunteers: Cancel their volunteer request
+                        await requestController.cancelVolunteerRequest(
+                          widget.request.requestId,
+                          reason: reasonController.text.trim(),
                         );
-
-                        await requestController.controllerUpdateRequest(
-                            widget.request.requestId, requestUpdate);
                       }
 
                       // Notifications

@@ -472,11 +472,11 @@ class AuthService {
 
       // Clear all local data
       await _clearAllUserData();
-      
+
       return AuthResult.success(
         message: 'Logout successful',
       );
-      
+
     } catch (e) {
       // Error handled silently
       // Even if logout fails, clear local data
@@ -484,6 +484,82 @@ class AuthService {
 
       return AuthResult.success(
         message: 'Logout completed',
+      );
+    }
+  }
+
+  /// Delete user account permanently
+  ///
+  /// This performs a hard delete of the user account and all associated data.
+  /// Requires email and password verification for security.
+  ///
+  /// The backend automatically handles deletion of:
+  /// - User profile and data
+  /// - FCM push notification tokens
+  /// - Service requests, chat messages, feedback
+  /// - All related records via cascade delete
+  ///
+  /// Parameters:
+  /// - [email]: User's email address (must match authenticated user)
+  /// - [password]: User's current password for confirmation
+  ///
+  /// Returns: AuthResult with deletion status
+  Future<AuthResult> deleteAccount({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      // Single API call - backend handles all deletions including FCM tokens
+      final response = await _apiService.post(
+        '/api/auth/delete-account/',
+        data: {
+          'email': email,
+          'password': password,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+
+        // Backend has deleted everything - just clear local data
+        await _clearAllUserData();
+
+        return AuthResult.success(
+          message: data['message'] ?? 'Your account has been permanently deleted.',
+        );
+      } else {
+        return AuthResult.failure(
+          message: 'Failed to delete account. Please try again.',
+        );
+      }
+
+    } catch (e) {
+      String errorMessage = 'An error occurred while deleting your account.';
+
+      if (e is dio.DioException) {
+        if (e.response?.statusCode == 400) {
+          final errorData = e.response?.data;
+          if (errorData is Map<String, dynamic>) {
+            if (errorData['email'] != null) {
+              errorMessage = (errorData['email'] as List).first.toString();
+            } else if (errorData['password'] != null) {
+              errorMessage = (errorData['password'] as List).first.toString();
+            } else if (errorData['error'] != null) {
+              errorMessage = errorData['error'].toString();
+            }
+          }
+        } else if (e.response?.statusCode == 401) {
+          errorMessage = 'Authentication failed. Please check your credentials.';
+        } else if (e.response?.statusCode == 500) {
+          final errorData = e.response?.data;
+          if (errorData is Map<String, dynamic> && errorData['error'] != null) {
+            errorMessage = errorData['error'].toString();
+          }
+        }
+      }
+
+      return AuthResult.failure(
+        message: errorMessage,
       );
     }
   }

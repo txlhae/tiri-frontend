@@ -977,29 +977,55 @@ class AuthController extends GetxController {
     try {
       isLoading.value = true;
 
-      // TODO: Implement Django API call to delete account
-
-      // 🚨 NEW: Use centralized cleanup service
-      currentUserStore.value = null;
-      isLoggedIn.value = false;
-      await StorageCleanupService.performLogoutCleanup();
-
-      Get.offAllNamed(Routes.loginPage);
-      Get.snackbar(
-        'Account Deleted',
-        'Your account has been successfully deleted',
-        snackPosition: SnackPosition.TOP,
-        backgroundColor: cancel,
-        colorText: Colors.white,
+      // Call the AuthService to delete the account via API
+      final result = await _authService.deleteAccount(
+        email: email,
+        password: password,
       );
+
+      if (result.isSuccess) {
+        // Clear local state
+        currentUserStore.value = null;
+        isLoggedIn.value = false;
+
+        // Use centralized cleanup service
+        await StorageCleanupService.performLogoutCleanup();
+
+        // Close the dialog first
+        Get.back();
+
+        // Navigate to login page
+        Get.offAllNamed(Routes.loginPage);
+
+        // Show success message
+        Get.snackbar(
+          'Account Deleted',
+          result.message,
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: cancel,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 4),
+        );
+      } else {
+        // Show error message
+        Get.snackbar(
+          'Delete Failed',
+          result.message,
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: cancel,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 4),
+        );
+      }
 
     } catch (e) {
       Get.snackbar(
         'Delete Failed',
-        'Failed to delete account',
+        'An unexpected error occurred while deleting your account',
         snackPosition: SnackPosition.TOP,
         backgroundColor: cancel,
         colorText: Colors.white,
+        duration: const Duration(seconds: 4),
       );
     } finally {
       isLoading.value = false;
