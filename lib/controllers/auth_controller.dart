@@ -922,30 +922,51 @@ class AuthController extends GetxController {
     }
   }
 
-  /// Edit user profile
-  Future<void> editUser(UserModel user, String newValue) async {
+  /// Edit user profile with multipart form data
+  ///
+  /// Parameters:
+  /// - [user]: Current user model
+  /// - [profileImagePath]: Local path to picked image file (optional, pass empty string if no image)
+  Future<void> editUser(UserModel user, String profileImagePath) async {
     try {
       isLoading.value = true;
-      
-      // TODO: Implement Django API call to update user
-      // For now, just log the action
-      
-      Get.snackbar(
-        'Profile Updated',
-        'Profile updated successfully',
-        snackPosition: SnackPosition.TOP,
-        backgroundColor: move,
-        colorText: Colors.white,
+
+      // Get the text field values from controllers
+      final userName = userNameController.value.text.trim();
+      final country = countryController.value.text.trim();
+      final phoneNumber = phoneNumberController.value.text.trim();
+
+      // Treat the entered name as the first name for profile updates
+      final String? firstName =
+          userName.isNotEmpty ? userName : null;
+
+      // Call the AuthService method with multipart form data
+      final updatedUser = await _authService.updateProfileWithImage(
+        firstName: firstName,
+        lastName: null,
+        country: country.isNotEmpty ? country : null,
+        phoneNumber: phoneNumber.isNotEmpty ? phoneNumber : null,
+        profileImagePath: profileImagePath.isNotEmpty ? profileImagePath : null,
       );
-      
+
+      if (updatedUser != null) {
+        // Update the current user store
+        currentUserStore.value = updatedUser;
+
+        // Save to storage
+        await _saveUserToStorage(updatedUser);
+
+        // Force reactive update
+        currentUserStore.refresh();
+
+        // Success - dialog will be shown by the edit_dialog widget
+      } else {
+        throw Exception('Failed to update profile');
+      }
+
     } catch (e) {
-      Get.snackbar(
-        'Update Failed',
-        'Failed to update profile',
-        snackPosition: SnackPosition.TOP,
-        backgroundColor: cancel,
-        colorText: Colors.white,
-      );
+      // Error will be shown by the edit_dialog widget
+      rethrow;
     } finally {
       isLoading.value = false;
     }

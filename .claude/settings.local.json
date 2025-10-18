@@ -72,7 +72,8 @@
       "Bash(/Users/berlinb407/flutter/bin/flutter analyze --no-fatal-infos lib/screens/request_details.dart lib/models/user_model.dart)",
       "Bash(/Users/berlinb407/flutter/bin/dart run build_runner build --delete-conflicting-outputs)",
       "Bash(/Users/berlinb407/flutter/bin/flutter analyze --no-fatal-infos lib/models/user_model.dart lib/screens/request_details.dart)",
-      "Bash(~/flutter/bin/flutter analyze:*)"
+      "Bash(~/flutter/bin/flutter analyze:*)",
+      "Bash(timeout 30 ~/flutter/bin/flutter analyze:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",

@@ -166,8 +166,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 GestureDetector(
                                   behavior: HitTestBehavior.opaque,
                                   onTap: () async {
-                                    Get.dialog(EditDialog(
+                                    await Get.dialog(EditDialog(
                                         user: authController.currentUserStore.value!));
+                                    // Reload user profile after edit dialog closes
+                                    await _loadUserProfile();
                                   },
                                   child: SvgPicture.asset(
                                     "assets/icons/edit_icon.svg",

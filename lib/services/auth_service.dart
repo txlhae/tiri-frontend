@@ -1,6 +1,7 @@
 ﻿// lib/services/auth_service.dart
 
 import 'dart:convert';
+import 'package:dio/dio.dart' as dio;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
 import '../config/api_config.dart';
@@ -1009,10 +1010,10 @@ class AuthService {
   }
 
   /// Update user profile
-  /// 
+  ///
   /// Parameters:
   /// - [updates]: Map of fields to update
-  /// 
+  ///
   /// Returns: Updated UserModel or null if failed
   Future<UserModel?> updateProfile(Map<String, dynamic> updates) async {
     try {
@@ -1029,22 +1030,101 @@ class AuthService {
       if (response.statusCode == 200) {
         final data = response.data;
         final userData = data['data'] ?? data;
-        
+
         final user = UserModel.fromJson(_mapUserSnakeToCamel(userData));
-        
+
         // Update local user data
         await _saveUserToStorage(user);
         _currentUser = user;
-        
-        
+
+
         return user;
       }
-      
+
       return null;
-      
+
     } catch (e) {
       // Error handled silently
       return null;
+    }
+  }
+
+  /// Update user profile with multipart form data (for image uploads)
+  ///
+  /// Parameters:
+  /// - [firstName]: User's first name (optional)
+  /// - [lastName]: User's last name (optional)
+  /// - [country]: User's country (optional)
+  /// - [phoneNumber]: User's phone number (optional)
+  /// - [profileImagePath]: Local path to profile image file (optional)
+  ///
+  /// Returns: Updated UserModel or null if failed
+  Future<UserModel?> updateProfileWithImage({
+    String? firstName,
+    String? lastName,
+    String? country,
+    String? phoneNumber,
+    String? profileImagePath,
+  }) async {
+    try {
+      // This requires full authentication (verified + approved)
+      if (!isAuthenticated) {
+        throw Exception('User not authenticated');
+      }
+
+      // Create FormData for multipart request
+      final formData = dio.FormData();
+
+      // Add text fields only if provided
+      if (firstName != null && firstName.isNotEmpty) {
+        formData.fields.add(MapEntry('first_name', firstName));
+      }
+      if (lastName != null && lastName.isNotEmpty) {
+        formData.fields.add(MapEntry('last_name', lastName));
+      }
+      if (country != null && country.isNotEmpty) {
+        formData.fields.add(MapEntry('country', country));
+      }
+      if (phoneNumber != null && phoneNumber.isNotEmpty) {
+        formData.fields.add(MapEntry('phone_number', phoneNumber));
+      }
+
+      // Add profile image if provided
+      if (profileImagePath != null && profileImagePath.isNotEmpty) {
+        final fileName = profileImagePath.split('/').last;
+        formData.files.add(MapEntry(
+          'profile_image',
+          await dio.MultipartFile.fromFile(
+            profileImagePath,
+            filename: fileName,
+          ),
+        ));
+      }
+
+      final response = await _apiService.patch(
+        ApiConfig.profileUpdate,
+        data: formData,
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        final userData = data['data'] ?? data;
+
+        final user = UserModel.fromJson(_mapUserSnakeToCamel(userData));
+
+        // Update local user data
+        await _saveUserToStorage(user);
+        _currentUser = user;
+
+
+        return user;
+      }
+
+      return null;
+
+    } catch (e) {
+      // Error handled silently
+      rethrow;
     }
   }
 

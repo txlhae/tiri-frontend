@@ -75,7 +75,7 @@ class ApiConfig {
 
   /// Profile endpoints
   static const String profileMe = '/api/profile/me/';
-  static const String profileUpdate = '/api/profile/update/';
+  static const String profileUpdate = '/api/profile/update_profile/';
 
   /// Request endpoints
   static const String requests = '/api/requests/';

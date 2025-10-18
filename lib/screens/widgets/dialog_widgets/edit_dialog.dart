@@ -179,30 +179,31 @@ class _EditDialogState extends State<EditDialog> {
                             child: CustomButton(
                               buttonText: "Edit",
                               onButtonPressed: () async {
-                                if (pickedImage != null) {
-                                  await imageController
-                                      .uploadImage(
-                                          widget.user.userId, pickedImage)
-                                      .then(
-                                    (value) async {
-                                      await authController
-                                          .editUser(widget.user, value)
-                                          .then(
-                                        (value) {
-                                          Get.back();
-                                        },
-                                      );
-                                    },
-                                  );
-                                } else {
-                                  await authController
-                                      .editUser(
-                                          widget.user, widget.user.imageUrl ?? "")
-                                      .then(
-                                    (value) {
-                                      Get.back();
-                                    },
-                                  );
+                                // Pass the local image path directly to editUser
+                                final imagePath = pickedImage?.path ?? '';
+
+                                try {
+                                  // Show loading state
+                                  authController.isloading.value = true;
+
+                                  await authController.editUser(widget.user, imagePath);
+
+                                  // Clear the picked image after successful update
+                                  imageController.pickedImage.value = null;
+
+                                  // Stop loading
+                                  authController.isloading.value = false;
+
+                                  // Close edit dialog and show success confirmation
+                                  Get.back();
+                                  _showSuccessConfirmation();
+                                } catch (e) {
+                                  // Stop loading
+                                  authController.isloading.value = false;
+
+                                  // Close edit dialog and show error confirmation
+                                  Get.back();
+                                  _showErrorConfirmation(e.toString());
                                 }
                               },
                             ),
@@ -215,5 +216,136 @@ class _EditDialogState extends State<EditDialog> {
               ),
             ),
     );
+  }
+
+  /// Show success confirmation dialog with animation
+  void _showSuccessConfirmation() {
+    Get.dialog(
+      Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(40),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Animated checkmark
+              TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0.0, end: 1.0),
+                duration: const Duration(milliseconds: 600),
+                builder: (context, value, child) {
+                  return Transform.scale(
+                    scale: value,
+                    child: Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: const Color.fromRGBO(0, 140, 170, 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.check_circle,
+                        size: 50,
+                        color: const Color.fromRGBO(0, 140, 170, 1),
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'Success!',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Profile updated successfully',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.black54,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      barrierDismissible: false,
+    );
+
+    // Auto close after 2 seconds and refresh profile
+    Future.delayed(const Duration(seconds: 2), () {
+      Get.back(); // Close confirmation dialog
+      // The profile screen will auto-refresh via the onTap await
+    });
+  }
+
+  /// Show error confirmation dialog with animation
+  void _showErrorConfirmation(String errorMessage) {
+    Get.dialog(
+      Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(40),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Animated cross/error icon
+              TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0.0, end: 1.0),
+                duration: const Duration(milliseconds: 600),
+                builder: (context, value, child) {
+                  return Transform.scale(
+                    scale: value,
+                    child: Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: const Color.fromRGBO(176, 48, 48, 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.cancel,
+                        size: 50,
+                        color: const Color.fromRGBO(176, 48, 48, 1),
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'Update Failed',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                errorMessage.replaceAll('Exception: ', ''),
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 16,
+                  color: Colors.black54,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      barrierDismissible: false,
+    );
+
+    // Auto close after 2 seconds
+    Future.delayed(const Duration(seconds: 2), () {
+      Get.back(); // Close confirmation dialog
+    });
   }
 }
