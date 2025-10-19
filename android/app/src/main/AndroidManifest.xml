@@ -5,6 +5,10 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <!-- For Android 13+ (API 33+) notification permissions -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- Location permissions -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     
     <application
         android:label="Tiri App"

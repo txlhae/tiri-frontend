@@ -82,5 +82,7 @@
 	<!-- Location Permission for Maps -->
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Tiri uses your location to show nearby users and services on the map.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Tiri uses your location to help you select your current location when creating requests.</string>
 </dict>
 </plist>
