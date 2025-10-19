@@ -21,8 +21,8 @@ migrate_working_dir/
 # Generated plugin files for all platforms
 **/generated_plugin_registrant.*
 **/GeneratedPluginRegistrant.*
-**/generated_plugins.cmake
-
+**/generated_plugins.cmake
+
 
 # The .vscode folder contains launch configuration and tasks you configure in
 # VS Code which you may wish to be included in version control, so this line

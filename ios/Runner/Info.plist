@@ -79,5 +79,8 @@
 	<string>Tiri needs permission to save QR codes to share them with others.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Tiri needs access to your photo library to share QR codes.</string>
+	<!-- Location Permission for Maps -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Tiri uses your location to show nearby users and services on the map.</string>
 </dict>
 </plist>

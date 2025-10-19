@@ -98,6 +98,7 @@ class _CommunityRequestsState extends State<CommunityRequests> {
                             padding: const EdgeInsets.symmetric(
                                 vertical: 8.0, horizontal: 16.0),
                             child: Container(
+                              clipBehavior: Clip.antiAlias,
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(20),
                                 color: const Color.fromRGBO(246, 248, 249, 1),

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="512"
+    android:viewportHeight="512">
+    <!-- Tiri logo silhouette for notifications - white on transparent -->
+    <!-- Simplified version of the app icon suitable for notification bar -->
+    <group
+        android:scaleX="1.0"
+        android:scaleY="1.0">
+        <!-- "tiri" text outline -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M120,140 L180,140 L180,200 L200,200 L200,450 L160,450 L160,200 L120,200 Z"/>
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M220,200 L260,200 L260,450 L220,450 Z"/>
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M280,200 L320,200 L320,300 Q320,340 340,360 L340,400 Q300,380 290,340 L290,450 L280,450 Z"/>
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M360,200 L400,200 L400,450 L360,450 Z"/>
+        <!-- Stopwatch icons -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M240,80 Q240,60 260,60 Q280,60 280,80 Q280,100 260,100 Q240,100 240,80 Z M250,85 L270,85 L270,95 L250,95 Z"/>
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M360,80 Q360,60 380,60 Q400,60 400,80 Q400,100 380,100 Q360,100 360,80 Z M370,85 L390,85 L390,95 L370,95 Z"/>
+    </group>
+</vector>
