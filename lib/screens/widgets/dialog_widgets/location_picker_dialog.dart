@@ -72,12 +72,39 @@ class _LocationPickerDialogState extends State<LocationPickerDialog> {
     }
 
     try {
-      // Fetch multiple location suggestions
-      final locations = await locationFromAddress(query);
+      List<Location> allLocations = [];
+
+      // Try multiple search variations to get more results
+      final searchVariations = [
+        query,
+        '$query, India',
+        '$query, Kerala',
+        '$query, Kerala, India',
+      ];
+
+      for (final searchQuery in searchVariations) {
+        try {
+          final locations = await locationFromAddress(searchQuery);
+          allLocations.addAll(locations);
+        } catch (e) {
+          // Continue with other variations
+        }
+      }
+
+      // Remove duplicates based on approximate location
+      final uniqueLocations = <Location>[];
+      for (final loc in allLocations) {
+        final isDuplicate = uniqueLocations.any((existing) =>
+            (existing.latitude - loc.latitude).abs() < 0.01 &&
+            (existing.longitude - loc.longitude).abs() < 0.01);
+        if (!isDuplicate) {
+          uniqueLocations.add(loc);
+        }
+      }
 
       setState(() {
-        _searchSuggestions = locations.take(5).toList(); // Show top 5 results
-        _showSuggestions = locations.isNotEmpty;
+        _searchSuggestions = uniqueLocations.take(5).toList(); // Show top 5 results
+        _showSuggestions = uniqueLocations.isNotEmpty;
       });
     } catch (e) {
       setState(() {
@@ -443,9 +470,15 @@ class _LocationPickerDialogState extends State<LocationPickerDialog> {
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 8,
+                            color: Colors.black.withOpacity(0.15),
+                            blurRadius: 12,
                             offset: const Offset(0, 4),
+                            spreadRadius: 2,
+                          ),
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.08),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
                           ),
                         ],
                       ),
