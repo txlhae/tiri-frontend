@@ -23,6 +23,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:tiri/controllers/auth_controller.dart';
+import 'package:tiri/controllers/location_controller.dart';
 import 'package:tiri/infrastructure/routes.dart';
 import 'package:tiri/models/category_model.dart';
 import 'package:tiri/models/feedback_model.dart';
@@ -248,6 +249,15 @@ class RequestController extends GetxController {
   RxList<RequestModel> requestList = <RequestModel>[].obs;
   RxList<RequestModel> myRequestList = <RequestModel>[].obs;
   final Map<String, Rx<UserModel?>> userCache = {};
+
+  // Pagination state
+  final RxInt currentCommunityPage = 1.obs;
+  final RxInt currentMyRequestsPage = 1.obs;
+  final RxBool hasCommunityMore = false.obs;
+  final RxBool hasMyRequestsMore = false.obs;
+  final RxBool isLoadingMore = false.obs;
+  final RxInt totalCommunityCount = 0.obs;
+  final RxInt totalMyRequestsCount = 0.obs;
   
   final selectedDate = Rxn<DateTime>();
   final selectedTime = Rxn<TimeOfDay>();
@@ -437,15 +447,47 @@ class RequestController extends GetxController {
   // 🚨 DEBUG: Enhanced request loading with comprehensive logging
   // =============================================================================
 
-  Future<void> loadRequests() async {
+  Future<void> loadRequests({bool refresh = true}) async {
     try {
       isLoading.value = true;
       debugLog("🔄 RequestController: Starting loadRequests()");
       debugStatus.value = "Fetching requests from Django API...";
 
-      // 🚨 Step 1: Fetch community requests
-      debugLog("📡 Step 1: Fetching community requests from Django...");
-      final communityRequestsFromApi = await requestService.fetchRequests();
+      // Reset pagination if refresh
+      if (refresh) {
+        currentCommunityPage.value = 1;
+        currentMyRequestsPage.value = 1;
+      }
+
+      // 🚨 Step 1: Fetch community requests with pagination and location
+      debugLog("📡 Step 1: Fetching community requests from Django (page ${currentCommunityPage.value})...");
+
+      // Get user's location if available
+      LocationController? locationController;
+      double? userLat;
+      double? userLng;
+      try {
+        if (Get.isRegistered<LocationController>()) {
+          locationController = Get.find<LocationController>();
+          userLat = locationController.latitude;
+          userLng = locationController.longitude;
+          if (userLat != null && userLng != null) {
+            debugLog("   - Using user location: lat=$userLat, lng=$userLng");
+          }
+        }
+      } catch (e) {
+        // LocationController not registered, continue without location
+      }
+
+      final communityResponse = await requestService.fetchRequests(
+        page: currentCommunityPage.value,
+        pageSize: 10,
+        userLat: userLat,
+        userLng: userLng,
+      );
+      final List<RequestModel> communityRequestsFromApi = communityResponse['results'] as List<RequestModel>;
+      hasCommunityMore.value = communityResponse['hasMore'] as bool;
+      totalCommunityCount.value = communityResponse['count'] as int;
       totalRequestsFromApi.value = communityRequestsFromApi.length;
       
       debugLog("   - Raw community requests from API: ${communityRequestsFromApi.length}");
@@ -458,11 +500,17 @@ class RequestController extends GetxController {
         debugLog("   - ⚠️ NO COMMUNITY REQUESTS RETURNED FROM API");
       }
       
-      // 🚨 Step 2: Fetch user's own requests
-      debugLog("📡 Step 2: Fetching user requests from Django...");
-      final userRequestsFromApi = await requestService.fetchMyRequests();
+      // 🚨 Step 2: Fetch user's own requests with pagination
+      debugLog("📡 Step 2: Fetching user requests from Django (page ${currentMyRequestsPage.value})...");
+      final myRequestsResponse = await requestService.fetchMyRequests(
+        page: currentMyRequestsPage.value,
+        pageSize: 10,
+      );
+      final List<RequestModel> userRequestsFromApi = myRequestsResponse['results'] as List<RequestModel>;
+      hasMyRequestsMore.value = myRequestsResponse['hasMore'] as bool;
+      totalMyRequestsCount.value = myRequestsResponse['count'] as int;
       totalMyRequestsFromApi.value = userRequestsFromApi.length;
-      
+
       debugLog("   - Raw user requests from API: ${userRequestsFromApi.length}");
       if (userRequestsFromApi.isNotEmpty) {
         debugLog("   - First user request: ${userRequestsFromApi.first.title}");
@@ -1174,9 +1222,13 @@ class RequestController extends GetxController {
         // ✅ REQUIRED: Location fields - Django expects separate latitude/longitude/address/city
         'latitude': selectedRequestLocation.value?.latitude ?? 0.0,  // From location picker
         'longitude': selectedRequestLocation.value?.longitude ?? 0.0, // From location picker
-        'address': selectedRequestLocation.value?.displayName ??
-                   '${selectedRequestLocation.value?.locality ?? selectedRequestLocation.value?.subLocality ?? ''}, ${selectedRequestLocation.value?.administrativeArea ?? ''}', // Display name as address
-        'city': selectedRequestLocation.value?.locality ?? selectedRequestLocation.value?.administrativeArea ?? '', // City from location
+        'address': isLocationOptional.value
+                   ? 'No Location'
+                   : (selectedRequestLocation.value?.displayName ??
+                      '${selectedRequestLocation.value?.locality ?? selectedRequestLocation.value?.subLocality ?? ''}, ${selectedRequestLocation.value?.administrativeArea ?? ''}'), // Display name as address
+        'city': isLocationOptional.value
+                ? 'No Location'
+                : (selectedRequestLocation.value?.locality ?? selectedRequestLocation.value?.administrativeArea ?? ''), // City from location
 
         // ✅ TIMEZONE FIX: Convert local datetime to UTC before sending to backend
         'date_needed': selectedDateTime.value?.toUtc().toIso8601String(), // Convert to UTC
@@ -1417,7 +1469,77 @@ class RequestController extends GetxController {
   // 🚨 REMOVED: updateRequestStatuses method - automatic status updates now handled by backend
 
   List<RequestModel> getFilteredRequests(List<RequestModel> allRequests) {
-    return allRequests;
+    // If no active filters, return all requests
+    if (!hasActiveFilters.value) {
+      return allRequests;
+    }
+
+    List<RequestModel> filtered = List.from(allRequests);
+
+    // Filter by category
+    if (filterCategory.value != null) {
+      filtered = filtered.where((request) =>
+        request.category?.id == filterCategory.value!.id
+      ).toList();
+    }
+
+    // Filter by date range
+    if (filterStartDate.value != null) {
+      filtered = filtered.where((request) {
+        final requestDate = request.requestedTime ?? request.timestamp;
+        return requestDate.isAfter(filterStartDate.value!) ||
+               requestDate.isAtSameMomentAs(filterStartDate.value!);
+      }).toList();
+    }
+
+    if (filterEndDate.value != null) {
+      filtered = filtered.where((request) {
+        final requestDate = request.requestedTime ?? request.timestamp;
+        return requestDate.isBefore(filterEndDate.value!.add(const Duration(days: 1)));
+      }).toList();
+    }
+
+    // Filter by status
+    if (filterStatuses.isNotEmpty) {
+      filtered = filtered.where((request) =>
+        filterStatuses.contains(request.status)
+      ).toList();
+    }
+
+    // Filter by number of volunteers
+    if (filterMinVolunteers.value > 0 || filterMaxVolunteers.value < 10) {
+      filtered = filtered.where((request) =>
+        request.numberOfPeople >= filterMinVolunteers.value &&
+        request.numberOfPeople <= filterMaxVolunteers.value
+      ).toList();
+    }
+
+    // Filter by hours needed
+    if (filterMinHours.value > 0 || filterMaxHours.value < 24) {
+      filtered = filtered.where((request) =>
+        request.hoursNeeded >= filterMinHours.value &&
+        request.hoursNeeded <= filterMaxHours.value
+      ).toList();
+    }
+
+    // Sort the filtered list
+    if (sortOrder.value == 'latest') {
+      // Latest first (newest to oldest)
+      filtered.sort((a, b) {
+        final dateA = a.requestedTime ?? a.timestamp;
+        final dateB = b.requestedTime ?? b.timestamp;
+        return dateB.compareTo(dateA); // Descending order
+      });
+    } else {
+      // Oldest first (oldest to newest)
+      filtered.sort((a, b) {
+        final dateA = a.requestedTime ?? a.timestamp;
+        final dateB = b.requestedTime ?? b.timestamp;
+        return dateA.compareTo(dateB); // Ascending order
+      });
+    }
+
+    return filtered;
   }
 
   bool validateFields() {
@@ -1512,7 +1634,89 @@ class RequestController extends GetxController {
 
   Future<void> refreshRequests() async {
     debugLog("🔄 refreshRequests called - automatic status updates now handled by backend");
-    await loadRequests();
+    await loadRequests(refresh: true);
+  }
+
+  // Load more community requests (pagination)
+  Future<void> loadMoreCommunityRequests() async {
+    if (isLoadingMore.value || !hasCommunityMore.value) return;
+
+    try {
+      isLoadingMore.value = true;
+      currentCommunityPage.value++;
+
+      debugLog("📄 Loading more community requests (page ${currentCommunityPage.value})...");
+
+      // Get user's location if available
+      double? userLat;
+      double? userLng;
+      try {
+        if (Get.isRegistered<LocationController>()) {
+          final locationController = Get.find<LocationController>();
+          userLat = locationController.latitude;
+          userLng = locationController.longitude;
+        }
+      } catch (e) {
+        // LocationController not registered, continue without location
+      }
+
+      final communityResponse = await requestService.fetchRequests(
+        page: currentCommunityPage.value,
+        pageSize: 10,
+        userLat: userLat,
+        userLng: userLng,
+      );
+
+      final List<RequestModel> moreRequests = communityResponse['results'] as List<RequestModel>;
+      hasCommunityMore.value = communityResponse['hasMore'] as bool;
+      totalCommunityCount.value = communityResponse['count'] as int;
+
+      // Add to raw community requests list (for filtering)
+      communityRequests.addAll(moreRequests);
+
+      // Apply filters and add to display list
+      final filteredMore = getFilteredRequests(moreRequests);
+      requestList.addAll(filteredMore);
+
+      debugLog("✅ Loaded ${moreRequests.length} more community requests (${filteredMore.length} after filtering)");
+    } catch (e) {
+      debugLog("❌ Error loading more community requests: $e");
+    } finally {
+      isLoadingMore.value = false;
+    }
+  }
+
+  // Load more my requests (pagination)
+  Future<void> loadMoreMyRequests() async {
+    if (isLoadingMore.value || !hasMyRequestsMore.value) return;
+
+    try {
+      isLoadingMore.value = true;
+      currentMyRequestsPage.value++;
+
+      debugLog("📄 Loading more my requests (page ${currentMyRequestsPage.value})...");
+
+      final myRequestsResponse = await requestService.fetchMyRequests(
+        page: currentMyRequestsPage.value,
+        pageSize: 10,
+      );
+
+      final List<RequestModel> moreRequests = myRequestsResponse['results'] as List<RequestModel>;
+      hasMyRequestsMore.value = myRequestsResponse['hasMore'] as bool;
+      totalMyRequestsCount.value = myRequestsResponse['count'] as int;
+
+      // Add to raw my posts list
+      myPostRequests.addAll(moreRequests);
+
+      // Add to display list
+      myRequestList.addAll(moreRequests);
+
+      debugLog("✅ Loaded ${moreRequests.length} more my requests");
+    } catch (e) {
+      debugLog("❌ Error loading more my requests: $e");
+    } finally {
+      isLoadingMore.value = false;
+    }
   }
 
   void filterByLocation(String location) {
@@ -2308,12 +2512,13 @@ class RequestController extends GetxController {
     sortOrder.value = 'latest';
     hasActiveFilters.value = false;
 
-    // Reload requests without filters
-    loadRequests();
+    // Re-apply filters (which will now show all since hasActiveFilters is false)
+    final unfiltered = getFilteredRequests(communityRequests);
+    requestList.assignAll(unfiltered);
 
     Get.snackbar(
       'Filters Cleared',
-      'All filters have been removed',
+      'Showing all ${unfiltered.length} loaded requests',
       snackPosition: SnackPosition.BOTTOM,
       backgroundColor: Colors.green.shade600,
       colorText: Colors.white,
@@ -2323,71 +2528,8 @@ class RequestController extends GetxController {
   }
 
   /// Apply filters to the request list
+  /// This method updates the filter flags and re-applies filters to the existing paginated data
   void applyFilters() {
-    List<RequestModel> filtered = List.from(communityRequests);
-
-    // Filter by category
-    if (filterCategory.value != null) {
-      filtered = filtered.where((request) =>
-        request.category?.id == filterCategory.value!.id
-      ).toList();
-    }
-
-    // Filter by date range
-    if (filterStartDate.value != null) {
-      filtered = filtered.where((request) {
-        final requestDate = request.requestedTime ?? request.timestamp;
-        return requestDate.isAfter(filterStartDate.value!) ||
-               requestDate.isAtSameMomentAs(filterStartDate.value!);
-      }).toList();
-    }
-
-    if (filterEndDate.value != null) {
-      filtered = filtered.where((request) {
-        final requestDate = request.requestedTime ?? request.timestamp;
-        return requestDate.isBefore(filterEndDate.value!.add(const Duration(days: 1)));
-      }).toList();
-    }
-
-    // Filter by status
-    if (filterStatuses.isNotEmpty) {
-      filtered = filtered.where((request) =>
-        filterStatuses.contains(request.status)
-      ).toList();
-    }
-
-    // Filter by number of volunteers
-    filtered = filtered.where((request) =>
-      request.numberOfPeople >= filterMinVolunteers.value &&
-      request.numberOfPeople <= filterMaxVolunteers.value
-    ).toList();
-
-    // Filter by hours needed
-    filtered = filtered.where((request) =>
-      request.hoursNeeded >= filterMinHours.value &&
-      request.hoursNeeded <= filterMaxHours.value
-    ).toList();
-
-    // Sort the filtered list
-    if (sortOrder.value == 'latest') {
-      // Latest first (newest to oldest)
-      filtered.sort((a, b) {
-        final dateA = a.requestedTime ?? a.timestamp;
-        final dateB = b.requestedTime ?? b.timestamp;
-        return dateB.compareTo(dateA); // Descending order
-      });
-    } else {
-      // Oldest first (oldest to newest)
-      filtered.sort((a, b) {
-        final dateA = a.requestedTime ?? a.timestamp;
-        final dateB = b.requestedTime ?? b.timestamp;
-        return dateA.compareTo(dateB); // Ascending order
-      });
-    }
-
-    // Update the request list
-    requestList.assignAll(filtered);
-
     // Update hasActiveFilters flag
     hasActiveFilters.value = filterCategory.value != null ||
                              filterStartDate.value != null ||
@@ -2399,9 +2541,13 @@ class RequestController extends GetxController {
                              filterMaxHours.value < 24 ||
                              sortOrder.value != 'latest';
 
+    // Re-apply filters to existing community requests (will be used in loadRequests)
+    final filtered = getFilteredRequests(communityRequests);
+    requestList.assignAll(filtered);
+
     Get.snackbar(
       'Filters Applied',
-      'Found ${filtered.length} matching requests',
+      'Showing ${filtered.length} matching requests from loaded data',
       snackPosition: SnackPosition.BOTTOM,
       backgroundColor: const Color.fromRGBO(0, 140, 170, 1),
       colorText: Colors.white,

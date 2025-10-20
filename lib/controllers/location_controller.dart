@@ -2,10 +2,14 @@ import 'dart:convert';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tiri/models/location_model.dart';
+import 'package:tiri/services/request_service.dart';
 
 class LocationController extends GetxController {
   // Observable selected location
   final Rx<LocationModel?> selectedLocation = Rx<LocationModel?>(null);
+
+  // Get RequestService instance
+  RequestService get _requestService => Get.find<RequestService>();
 
   // SharedPreferences key for storing location
   static const String _locationKey = 'user_selected_location';
@@ -46,6 +50,21 @@ class LocationController extends GetxController {
   Future<void> setLocation(LocationModel location) async {
     selectedLocation.value = location;
     await _saveLocationToStorage(location);
+
+    // Update location on backend for nearby service request notifications
+    try {
+      await _requestService.updateUserLocation(
+        latitude: location.latitude,
+        longitude: location.longitude,
+        address: location.fullAddress,
+        city: location.locality,
+        state: location.administrativeArea,
+        postalCode: location.postalCode,
+      );
+    } catch (e) {
+      // Silently handle error - location is still saved locally
+      // User can still use the app even if backend update fails
+    }
   }
 
   // Clear selected location and remove from storage

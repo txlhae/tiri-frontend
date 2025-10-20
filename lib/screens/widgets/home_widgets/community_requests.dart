@@ -14,6 +14,32 @@ class CommunityRequests extends StatefulWidget {
 }
 
 class _CommunityRequestsState extends State<CommunityRequests> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    final requestController = Get.find<RequestController>();
+
+    // Load more when scrolled to 80% of the list
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent * 0.8) {
+      if (requestController.hasCommunityMore.value &&
+          !requestController.isLoadingMore.value) {
+        requestController.loadMoreCommunityRequests();
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,18 +63,19 @@ class _CommunityRequestsState extends State<CommunityRequests> {
             final filteredRequests = allRequests
                 .where((request) =>
                     currentUser != null &&
-                    request.userId != currentUser.userId && 
+                    request.userId != currentUser.userId &&
                     !request.acceptedUser
                         .any((user) => user.userId == currentUser.userId))
                 .toList();
 
             return RefreshIndicator(
               onRefresh: () async {
-                requestController.communityRequests.clear(); 
-                await requestController.loadRequests(); 
+                requestController.communityRequests.clear();
+                await requestController.loadRequests();
               },
               child: filteredRequests.isEmpty
                   ? ListView(
+                      controller: _scrollController,
                       physics: const AlwaysScrollableScrollPhysics(),
                       children: [
                         Container(
@@ -81,10 +108,24 @@ class _CommunityRequestsState extends State<CommunityRequests> {
                       ],
                     )
                   : ListView.builder(
+                      controller: _scrollController,
                       padding: EdgeInsets.zero,
                       physics: const AlwaysScrollableScrollPhysics(),
-                      itemCount: filteredRequests.length,
+                      itemCount: filteredRequests.length + (requestController.hasCommunityMore.value || requestController.isLoadingMore.value ? 1 : 0),
                       itemBuilder: (context, index) {
+                        // Show loading indicator at the end when loading more
+                        if (index == filteredRequests.length) {
+                          return Obx(() => requestController.isLoadingMore.value
+                              ? const Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 16.0),
+                                  child: Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                )
+                              : const SizedBox.shrink(),
+                          );
+                        }
+
                         var request = filteredRequests[index];
 
                         return GestureDetector(

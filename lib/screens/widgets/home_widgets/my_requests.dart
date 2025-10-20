@@ -8,8 +8,40 @@ import 'package:tiri/models/request_model.dart';
 import 'package:tiri/screens/widgets/dialog_widgets/cancel_dialog.dart';
 import 'package:tiri/screens/widgets/request_widgets/status_row.dart';
 
-class MyRequests extends StatelessWidget {
+class MyRequests extends StatefulWidget {
   const MyRequests({super.key});
+
+  @override
+  State<MyRequests> createState() => _MyRequestsState();
+}
+
+class _MyRequestsState extends State<MyRequests> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    final requestController = Get.find<RequestController>();
+
+    // Load more when scrolled to 80% of the list
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent * 0.8) {
+      if (requestController.hasMyRequestsMore.value &&
+          !requestController.isLoadingMore.value) {
+        requestController.loadMoreMyRequests();
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,6 +72,7 @@ class MyRequests extends StatelessWidget {
             await requestController.loadRequests();
           },
           child: ListView(
+            controller: _scrollController,
             physics: const AlwaysScrollableScrollPhysics(),
             children: const [
               SizedBox(height: 200),
@@ -59,10 +92,24 @@ class MyRequests extends StatelessWidget {
           await requestController.loadRequests();
         },
         child: ListView.builder(
+          controller: _scrollController,
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.only(bottom: 60),
-          itemCount: myRequests.length,
+          itemCount: myRequests.length + (requestController.hasMyRequestsMore.value || requestController.isLoadingMore.value ? 1 : 0),
           itemBuilder: (context, index) {
+          // Show loading indicator at the end when loading more
+          if (index == myRequests.length) {
+            return Obx(() => requestController.isLoadingMore.value
+                ? const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16.0),
+                    child: Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                  )
+                : const SizedBox.shrink(),
+            );
+          }
+
           final request = myRequests[index];
 
           return GestureDetector(

@@ -26,24 +26,68 @@ import 'package:tiri/services/error_handler.dart';
 /// - Real-time data from Django backend
 /// - Django-to-Flutter JSON transformation
 class RequestService extends GetxController {
+  /// Update user location for nearby service request notifications
+  /// POST /api/profile/update-location/
+  Future<Map<String, dynamic>?> updateUserLocation({
+    required double latitude,
+    required double longitude,
+    String? address,
+    String? city,
+    String? state,
+    String? postalCode,
+  }) async {
+    try {
+      // Check if API service is authenticated before making request
+      if (!_apiService.isAuthenticated) {
+        throw Exception('Authentication required. Please log in again.');
+      }
+
+      final locationData = {
+        'latitude': latitude,
+        'longitude': longitude,
+        if (address != null && address.isNotEmpty) 'address': address,
+        if (city != null && city.isNotEmpty) 'city': city,
+        if (state != null && state.isNotEmpty) 'state': state,
+        if (postalCode != null && postalCode.isNotEmpty) 'postal_code': postalCode,
+      };
+
+      final response = await _apiService.post(
+        '/api/profile/update-location/',
+        data: locationData,
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return response.data as Map<String, dynamic>?;
+      } else if (response.statusCode == 401) {
+        throw Exception('Authentication required. Please log in again.');
+      } else {
+        throw Exception('Failed to update location. Please try again.');
+      }
+    } catch (e) {
+      // Error handled silently
+      final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not update location');
+      throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
+    }
+  }
+
   /// Submit bulk feedback for multiple volunteers
   Future<Map<String, dynamic>?> submitBulkFeedback({
     required String requestId,
     required List<Map<String, dynamic>> feedbackList,
   }) async {
     try {
-      
+
       final requestData = {
         'request_id': requestId,
         'feedback_list': feedbackList,
       };
-      
-      
+
+
       final response = await _apiService.post(
         '/api/feedback/bulk_submit/',
         data: requestData,
       );
-      
+
       if (response.statusCode == 200 || response.statusCode == 201) {
         return response.data;
       } else {
@@ -420,34 +464,72 @@ class RequestService extends GetxController {
   // REQUEST OPERATIONS (Enhanced with Field Mapping)
   // =============================================================================
   
-  /// Fetch all community requests from Django backend
-  /// Throws exception if request fails, returns empty list if no requests found
-  Future<List<RequestModel>> fetchRequests() async {
+  /// Fetch all community requests from Django backend with pagination
+  /// Throws exception if request fails, returns empty result if no requests found
+  /// [page] - Page number (1-indexed)
+  /// [pageSize] - Number of items per page (default: 10)
+  /// [userLat] - Optional user latitude for location-based sorting
+  /// [userLng] - Optional user longitude for location-based sorting
+  Future<Map<String, dynamic>> fetchRequests({
+    int page = 1,
+    int pageSize = 10,
+    double? userLat,
+    double? userLng,
+  }) async {
     try {
       // Check if API service is authenticated before making request
       if (!_apiService.isAuthenticated) {
         throw Exception('Authentication required. Please log in again.');
       }
 
-      final response = await _apiService.get('/api/requests/');
+      // Build endpoint with location parameters if provided
+      String endpoint = '/api/requests/?view=community&page=$page&page_size=$pageSize';
+      if (userLat != null && userLng != null) {
+        endpoint += '&user_lat=$userLat&user_lng=$userLng';
+      }
+
+      final response = await _apiService.get(endpoint);
 
       if (response.statusCode == 200 && response.data != null) {
         final dynamic responseData = response.data;
-        final List<dynamic> requestsJson = responseData is Map ?
-          (responseData['results'] ?? responseData['data'] ?? []) :
-          (responseData is List ? responseData : []);
 
+        // Handle paginated response from Django REST Framework
+        if (responseData is Map) {
+          final List<dynamic> requestsJson = responseData['results'] ?? [];
 
-        // 🎯 APPLY FIELD MAPPING
-        final List<RequestModel> requests = requestsJson
-            .map((djangoJson) {
-              final flutterJson = _mapDjangoToFlutter(djangoJson as Map<String, dynamic>);
-              return RequestModelExtension.fromJsonWithRequester(flutterJson);
-            })
-            .toList();
+          // 🎯 APPLY FIELD MAPPING
+          final List<RequestModel> requests = requestsJson
+              .map((djangoJson) {
+                final flutterJson = _mapDjangoToFlutter(djangoJson as Map<String, dynamic>);
+                return RequestModelExtension.fromJsonWithRequester(flutterJson);
+              })
+              .toList();
 
+          return {
+            'results': requests,
+            'count': responseData['count'] ?? 0,
+            'next': responseData['next'],
+            'previous': responseData['previous'],
+            'hasMore': responseData['next'] != null,
+          };
+        } else {
+          // Fallback for non-paginated response
+          final List<dynamic> requestsJson = responseData is List ? responseData : [];
+          final List<RequestModel> requests = requestsJson
+              .map((djangoJson) {
+                final flutterJson = _mapDjangoToFlutter(djangoJson as Map<String, dynamic>);
+                return RequestModelExtension.fromJsonWithRequester(flutterJson);
+              })
+              .toList();
 
-        return requests;  // Empty list is valid - means no requests available
+          return {
+            'results': requests,
+            'count': requests.length,
+            'next': null,
+            'previous': null,
+            'hasMore': false,
+          };
+        }
       } else {
         final errorMessage = ErrorHandler.getErrorMessage(response, defaultMessage: 'Failed to load requests');
         throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
@@ -462,33 +544,59 @@ class RequestService extends GetxController {
     }
   }
   
-  /// Fetch current user's requests
-  /// Throws exception if request fails, returns empty list if user has no requests
-  Future<List<RequestModel>> fetchMyRequests() async {
+  /// Fetch current user's requests with pagination
+  /// Throws exception if request fails, returns empty result if user has no requests
+  /// [page] - Page number (1-indexed)
+  /// [pageSize] - Number of items per page (default: 10)
+  Future<Map<String, dynamic>> fetchMyRequests({int page = 1, int pageSize = 10}) async {
     try {
       // Check if API service is authenticated before making request
       if (!_apiService.isAuthenticated) {
         throw Exception('Authentication required. Please log in again.');
       }
 
-      final response = await _apiService.get('/api/requests/?view=my_requests');
+      final response = await _apiService.get('/api/requests/?view=my_requests&page=$page&page_size=$pageSize');
 
       if (response.statusCode == 200 && response.data != null) {
         final dynamic responseData = response.data;
-        final List<dynamic> requestsJson = responseData is Map ?
-          (responseData['results'] ?? responseData['data'] ?? []) :
-          (responseData is List ? responseData : []);
 
+        // Handle paginated response from Django REST Framework
+        if (responseData is Map) {
+          final List<dynamic> requestsJson = responseData['results'] ?? [];
 
-        // 🎯 APPLY FIELD MAPPING
-        final List<RequestModel> requests = requestsJson
-            .map((djangoJson) {
-              final flutterJson = _mapDjangoToFlutter(djangoJson as Map<String, dynamic>);
-              return RequestModelExtension.fromJsonWithRequester(flutterJson);
-            })
-            .toList();
+          // 🎯 APPLY FIELD MAPPING
+          final List<RequestModel> requests = requestsJson
+              .map((djangoJson) {
+                final flutterJson = _mapDjangoToFlutter(djangoJson as Map<String, dynamic>);
+                return RequestModelExtension.fromJsonWithRequester(flutterJson);
+              })
+              .toList();
 
-        return requests;  // Empty list is valid - means user has no requests
+          return {
+            'results': requests,
+            'count': responseData['count'] ?? 0,
+            'next': responseData['next'],
+            'previous': responseData['previous'],
+            'hasMore': responseData['next'] != null,
+          };
+        } else {
+          // Fallback for non-paginated response
+          final List<dynamic> requestsJson = responseData is List ? responseData : [];
+          final List<RequestModel> requests = requestsJson
+              .map((djangoJson) {
+                final flutterJson = _mapDjangoToFlutter(djangoJson as Map<String, dynamic>);
+                return RequestModelExtension.fromJsonWithRequester(flutterJson);
+              })
+              .toList();
+
+          return {
+            'results': requests,
+            'count': requests.length,
+            'next': null,
+            'previous': null,
+            'hasMore': false,
+          };
+        }
       } else {
         final errorMessage = ErrorHandler.getErrorMessage(response, defaultMessage: 'Failed to load your requests');
         throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
