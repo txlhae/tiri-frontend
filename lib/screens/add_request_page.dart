@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:tiri/controllers/location_controller.dart';
 import 'package:tiri/controllers/request_controller.dart';
 import 'package:tiri/models/category_model.dart';
 import 'package:tiri/screens/widgets/custom_widgets/custom_back_button.dart';
 import 'package:tiri/screens/widgets/custom_widgets/custom_button.dart';
 import 'package:tiri/screens/widgets/custom_widgets/custom_form_field.dart';
+import 'package:tiri/screens/widgets/dialog_widgets/location_picker_dialog.dart';
 
 class AddRequestPage extends StatelessWidget {
   const AddRequestPage({super.key});
@@ -111,12 +113,13 @@ class AddRequestPage extends StatelessWidget {
                               width: double.infinity,
                               padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF9F9F9),
+                                color: Colors.white,
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(
-                                  color: controller.categoryError.value != null 
-                                      ? Colors.red 
-                                      : Colors.grey.shade300,
+                                  color: controller.categoryError.value != null
+                                      ? Colors.red
+                                      : Colors.black,
+                                  width: 0.5,
                                 ),
                               ),
                               child: controller.isLoadingCategories.value
@@ -137,76 +140,39 @@ class AddRequestPage extends StatelessWidget {
                                   : DropdownButtonHideUnderline(
                                       child: DropdownButton<CategoryModel>(
                                         value: controller.selectedCategory.value,
-                                        hint: Text(
-                                          controller.categories.isEmpty 
-                                              ? "No categories available - Add one below"
-                                              : "Select Category",
+                                        hint: const Text(
+                                          "Select Category",
                                           style: TextStyle(
-                                            color: controller.categories.isEmpty ? Colors.orange : Colors.grey,
+                                            color: Colors.grey,
                                             fontSize: 16,
                                           ),
                                         ),
                                         isExpanded: true,
                                         icon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
-                                        items: [
-                                          // Regular category items
-                                          ...controller.categories.map((category) {
-                                            return DropdownMenuItem<CategoryModel>(
-                                              value: category,
-                                              child: Row(
-                                                children: [
-                                                  Icon(
-                                                    category.icon,
-                                                    color: category.color,
-                                                    size: 20,
-                                                  ),
-                                                  const SizedBox(width: 10),
-                                                  Expanded(
-                                                    child: Text(
-                                                      category.displayText,
-                                                      style: const TextStyle(fontSize: 16),
-                                                      overflow: TextOverflow.ellipsis,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            );
-                                          }),
-                                          // Add separator if categories exist
-                                          if (controller.categories.isNotEmpty)
-                                            const DropdownMenuItem<CategoryModel>(
-                                              enabled: false,
-                                              value: null,
-                                              child: Divider(),
-                                            ),
-                                          // Add Category option
-                                          const DropdownMenuItem<CategoryModel>(
-                                            value: null,
+                                        items: controller.categories.map((category) {
+                                          return DropdownMenuItem<CategoryModel>(
+                                            value: category,
                                             child: Row(
                                               children: [
                                                 Icon(
-                                                  Icons.add,
-                                                  color: Colors.blue,
+                                                  category.icon,
+                                                  color: category.color,
                                                   size: 20,
                                                 ),
-                                                SizedBox(width: 10),
-                                                Text(
-                                                  'Add New Category',
-                                                  style: TextStyle(
-                                                    fontSize: 16,
-                                                    color: Colors.blue,
-                                                    fontWeight: FontWeight.w500,
+                                                const SizedBox(width: 10),
+                                                Expanded(
+                                                  child: Text(
+                                                    category.displayText,
+                                                    style: const TextStyle(fontSize: 16),
+                                                    overflow: TextOverflow.ellipsis,
                                                   ),
                                                 ),
                                               ],
                                             ),
-                                          ),
-                                        ],
+                                          );
+                                        }).toList(),
                                         onChanged: (CategoryModel? newValue) {
-                                          if (newValue == null) {
-                                            // User selected "Add New Category"
-                                            controller.showAddCategoryDialog(context);
-                                          } else {
+                                          if (newValue != null) {
                                             controller.selectedCategory.value = newValue;
                                             controller.categoryError.value = null; // Clear error on selection
                                           }
@@ -220,15 +186,6 @@ class AddRequestPage extends StatelessWidget {
                                 child: Text(
                                   controller.categoryError.value!,
                                   style: const TextStyle(color: Colors.red, fontSize: 12),
-                                ),
-                              ),
-                            // Show helpful text when no categories are loaded
-                            if (controller.categories.isEmpty && !controller.isLoadingCategories.value)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 8.0, left: 15.0),
-                                child: Text(
-                                  "Tap 'Add New Category' to create your first category",
-                                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
                                 ),
                               ),
                           ],
@@ -270,19 +227,136 @@ class AddRequestPage extends StatelessWidget {
                     const SizedBox(
                       height: 20,
                     ),
-                    Obx(() => Column(
-                          children: [
-                            CustomFormField(
-                              hintText: "Location",
-                              haveObscure: false,
-                              textController:
-                                  controller.locationController.value,
+                    // Location Selection
+                    Obx(() {
+                      final locationController = Get.isRegistered<LocationController>()
+                          ? Get.find<LocationController>()
+                          : Get.put(LocationController(), permanent: true);
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Location button with skip option
+                          Row(
+                            children: [
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: controller.isLocationOptional.value
+                                      ? null
+                                      : () {
+                                          showDialog(
+                                            context: context,
+                                            builder: (context) => LocationPickerDialog(
+                                              initialLocation: controller.selectedRequestLocation.value,
+                                              onLocationSelected: (location) {
+                                                controller.selectedRequestLocation.value = location;
+                                                controller.locationError.value = null;
+                                              },
+                                            ),
+                                          );
+                                        },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 16),
+                                    decoration: BoxDecoration(
+                                      color: controller.isLocationOptional.value
+                                          ? Colors.grey.shade300
+                                          : Colors.white,
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(
+                                        color: controller.locationError.value != null
+                                            ? Colors.red
+                                            : Colors.black,
+                                        width: 0.5,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons.location_on,
+                                          color: controller.isLocationOptional.value
+                                              ? Colors.grey.shade400
+                                              : (controller.selectedRequestLocation.value != null
+                                                  ? const Color.fromRGBO(0, 140, 170, 1)
+                                                  : Colors.grey),
+                                          size: 20,
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: Text(
+                                            controller.isLocationOptional.value
+                                                ? 'Location not required'
+                                                : (controller.selectedRequestLocation.value != null
+                                                    ? (controller.selectedRequestLocation.value!.displayName ??
+                                                       '${controller.selectedRequestLocation.value!.locality ?? controller.selectedRequestLocation.value!.subLocality ?? ''}, ${controller.selectedRequestLocation.value!.administrativeArea ?? ''}')
+                                                    : 'Select Location'),
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              color: controller.isLocationOptional.value
+                                                  ? Colors.grey.shade500
+                                                  : (controller.selectedRequestLocation.value != null
+                                                      ? Colors.black87
+                                                      : Colors.grey.shade600),
+                                            ),
+                                          ),
+                                        ),
+                                        if (!controller.isLocationOptional.value)
+                                          const Icon(
+                                            Icons.arrow_forward_ios,
+                                            size: 16,
+                                            color: Colors.grey,
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              // Skip location button
+                              GestureDetector(
+                                onTap: () {
+                                  controller.isLocationOptional.value = !controller.isLocationOptional.value;
+                                  if (controller.isLocationOptional.value) {
+                                    controller.locationError.value = null;
+                                    controller.selectedRequestLocation.value = null;
+                                  }
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: controller.isLocationOptional.value
+                                        ? Colors.red.shade50
+                                        : Colors.grey.shade100,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: controller.isLocationOptional.value
+                                          ? Colors.red.shade300
+                                          : Colors.grey.shade300,
+                                    ),
+                                  ),
+                                  child: Icon(
+                                    controller.isLocationOptional.value
+                                        ? Icons.close
+                                        : Icons.location_off,
+                                    color: controller.isLocationOptional.value
+                                        ? Colors.red.shade700
+                                        : Colors.grey.shade600,
+                                    size: 20,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (controller.locationError.value != null && !controller.isLocationOptional.value)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8.0, left: 15.0),
+                              child: Text(
+                                controller.locationError.value!,
+                                style: const TextStyle(color: Colors.red, fontSize: 12),
+                              ),
                             ),
-                            if (controller.locationError.value != null)
-                              Text(controller.locationError.value!,
-                                  style: const TextStyle(color: Colors.red)),
-                          ],
-                        )),
+                        ],
+                      );
+                    }),
                     const SizedBox(height: 20),
                     Obx(() => Column(
                       children: [

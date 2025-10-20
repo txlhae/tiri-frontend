@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:tiri/controllers/location_controller.dart';
 import 'package:tiri/models/location_model.dart';
 import 'package:tiri/screens/widgets/dialog_widgets/location_picker_dialog.dart';
 
@@ -13,17 +14,28 @@ class LocationPage extends StatefulWidget {
 }
 
 class _LocationPageState extends State<LocationPage> {
-  LocationModel? _selectedLocation;
+  // Get or create LocationController instance (singleton)
+  late final LocationController locationController;
+
+  @override
+  void initState() {
+    super.initState();
+    // Use Get.put with permanent: true to keep it alive, or Get.find if already exists
+    if (Get.isRegistered<LocationController>()) {
+      locationController = Get.find<LocationController>();
+    } else {
+      locationController = Get.put(LocationController(), permanent: true);
+    }
+  }
 
   void _openLocationPicker() {
     showDialog(
       context: context,
       builder: (context) => LocationPickerDialog(
-        initialLocation: _selectedLocation,
+        initialLocation: locationController.selectedLocation.value,
         onLocationSelected: (location) {
-          setState(() {
-            _selectedLocation = location;
-          });
+          // Store location in state management
+          locationController.setLocation(location);
 
           // Show success message
           Get.snackbar(
@@ -59,11 +71,13 @@ class _LocationPageState extends State<LocationPage> {
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Selected Location Display
-              if (_selectedLocation != null) ...[
+          child: Obx(() {
+            final selectedLocation = locationController.selectedLocation.value;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Selected Location Display
+                if (selectedLocation != null) ...[
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
@@ -125,7 +139,7 @@ class _LocationPageState extends State<LocationPage> {
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
-                                    _selectedLocation!.friendlyDisplayName,
+                                    selectedLocation.friendlyDisplayName,
                                     style: const TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
@@ -138,20 +152,20 @@ class _LocationPageState extends State<LocationPage> {
                             const SizedBox(height: 12),
                             _buildLocationDetail(
                               'Latitude',
-                              _selectedLocation!.latitude
+                              selectedLocation.latitude
                                   .toStringAsFixed(6),
                             ),
                             const SizedBox(height: 8),
                             _buildLocationDetail(
                               'Longitude',
-                              _selectedLocation!.longitude
+                              selectedLocation.longitude
                                   .toStringAsFixed(6),
                             ),
-                            if (_selectedLocation!.fullAddress != null) ...[
+                            if (selectedLocation.fullAddress != null) ...[
                               const SizedBox(height: 8),
                               _buildLocationDetail(
                                 'Full Address',
-                                _selectedLocation!.fullAddress!,
+                                selectedLocation.fullAddress!,
                               ),
                             ],
                           ],
@@ -204,31 +218,32 @@ class _LocationPageState extends State<LocationPage> {
                 const SizedBox(height: 16),
               ],
 
-              // Select Location Button
-              ElevatedButton.icon(
-                onPressed: _openLocationPicker,
-                icon: const Icon(Icons.add_location, size: 24),
-                label: Text(
-                  _selectedLocation != null
-                      ? 'Change Location'
-                      : 'Select Location',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                // Select Location Button
+                ElevatedButton.icon(
+                  onPressed: _openLocationPicker,
+                  icon: const Icon(Icons.add_location, size: 24),
+                  label: Text(
+                    selectedLocation != null
+                        ? 'Change Location'
+                        : 'Select Location',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color.fromRGBO(0, 140, 170, 1),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 4,
                   ),
                 ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color.fromRGBO(0, 140, 170, 1),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 4,
-                ),
-              ),
-            ],
-          ),
+              ],
+            );
+          }),
         ),
       ),
     );

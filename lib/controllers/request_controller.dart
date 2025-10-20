@@ -26,6 +26,7 @@ import 'package:tiri/controllers/auth_controller.dart';
 import 'package:tiri/infrastructure/routes.dart';
 import 'package:tiri/models/category_model.dart';
 import 'package:tiri/models/feedback_model.dart';
+import 'package:tiri/models/location_model.dart';
 import 'package:tiri/models/request_model.dart';
 import 'package:tiri/models/user_model.dart';
 import 'package:tiri/services/api_service.dart';
@@ -239,6 +240,11 @@ class RequestController extends GetxController {
   final titleController = TextEditingController().obs;
   final descriptionController = TextEditingController().obs;
   final locationController = TextEditingController().obs;
+
+  // Location picker fields
+  final Rxn<LocationModel> selectedRequestLocation = Rxn<LocationModel>();
+  final RxBool isLocationOptional = false.obs;
+
   RxList<RequestModel> requestList = <RequestModel>[].obs;
   RxList<RequestModel> myRequestList = <RequestModel>[].obs;
   final Map<String, Rx<UserModel?>> userCache = {};
@@ -1138,10 +1144,11 @@ class RequestController extends GetxController {
         'category': selectedCategory.value?.id ?? 5, // ✅ FIXED: Use actual selected category or default to valid backend ID 5
 
         // ✅ REQUIRED: Location fields - Django expects separate latitude/longitude/address/city
-        'latitude': 0.0,  // Default coordinates (can be enhanced with GPS later)
-        'longitude': 0.0, // Default coordinates (can be enhanced with GPS later)
-        'address': locationController.value.text.trim(), // ✅ FIXED: was 'location'
-        'city': locationController.value.text.trim(), // ✅ FINAL FIX: Required city field (not nullable)
+        'latitude': selectedRequestLocation.value?.latitude ?? 0.0,  // From location picker
+        'longitude': selectedRequestLocation.value?.longitude ?? 0.0, // From location picker
+        'address': selectedRequestLocation.value?.displayName ??
+                   '${selectedRequestLocation.value?.locality ?? selectedRequestLocation.value?.subLocality ?? ''}, ${selectedRequestLocation.value?.administrativeArea ?? ''}', // Display name as address
+        'city': selectedRequestLocation.value?.locality ?? selectedRequestLocation.value?.administrativeArea ?? '', // City from location
 
         // ✅ TIMEZONE FIX: Convert local datetime to UTC before sending to backend
         'date_needed': selectedDateTime.value?.toUtc().toIso8601String(), // Convert to UTC
@@ -1391,8 +1398,15 @@ class RequestController extends GetxController {
     descriptionError.value = descriptionController.value.text.isEmpty
         ? "Description is required"
         : null;
-    locationError.value =
-        locationController.value.text.isEmpty ? "Location is required" : null;
+
+    // Location validation - only required if not marked as optional
+    if (!isLocationOptional.value) {
+      locationError.value =
+          selectedRequestLocation.value == null ? "Please select a location" : null;
+    } else {
+      locationError.value = null;
+    }
+
     dateTimeError.value =
         selectedDateTime.value == null ? "Please select a date and time" : null;
 
@@ -1425,14 +1439,18 @@ class RequestController extends GetxController {
     selectedTime.value = null;
     selectedDateController.value.clear();
     selectedTimeController.value.clear();
-    
+
+    // Clear location picker fields
+    selectedRequestLocation.value = null;
+    isLocationOptional.value = false;
+
     // ✅ NEW: Reset category selection to first category (default)
     if (categories.isNotEmpty) {
       selectedCategory.value = categories.first;
     } else {
       selectedCategory.value = null;
     }
-    
+
     titleError.value = null;
     descriptionError.value = null;
     locationError.value = null;
