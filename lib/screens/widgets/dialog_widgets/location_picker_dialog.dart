@@ -133,6 +133,10 @@ class _LocationPickerDialogState extends State<LocationPickerDialog> {
     setState(() {
       _isSearching = false;
     });
+
+    // Auto-confirm after selecting from dropdown
+    await Future.delayed(const Duration(milliseconds: 300));
+    _handleConfirmLocation();
   }
 
   void _updateMarker() {
