@@ -326,7 +326,9 @@ class _LocationPickerDialogState extends State<LocationPickerDialog> {
         await _onPositionChanged(newPosition);
 
         // Unfocus the search field
-        FocusScope.of(context).unfocus();
+        if (mounted) {
+          FocusScope.of(context).unfocus();
+        }
       } else {
         setState(() {
           _errorMessage = 'Location not found';
@@ -357,7 +359,9 @@ class _LocationPickerDialogState extends State<LocationPickerDialog> {
 
       if (_selectedLocation != null) {
         widget.onLocationSelected(_selectedLocation!);
-        Navigator.of(context).pop();
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
       } else {
         Get.snackbar(
           'Error',
@@ -725,7 +729,7 @@ class _LocationPickerDialogState extends State<LocationPickerDialog> {
                 child: Material(
                   elevation: 100, // Very high elevation to ensure it's on top
                   borderRadius: BorderRadius.circular(12),
-                  shadowColor: Colors.black.withOpacity(0.5),
+                  shadowColor: Colors.black.withValues(alpha: 0.5),
                   child: Container(
                     decoration: BoxDecoration(
                       color: Colors.white,

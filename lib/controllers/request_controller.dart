@@ -2445,52 +2445,66 @@ class RequestController extends GetxController {
           ),
           child: Column(
             children: [
-              RadioListTile<String>(
-                title: Row(
-                  children: [
-                    const Icon(Icons.arrow_downward, size: 18, color: Color.fromRGBO(0, 140, 170, 1)),
-                    const SizedBox(width: 8),
-                    const Text('Latest First'),
-                    const SizedBox(width: 8),
-                    Text(
-                      '(Newest to Oldest)',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
-                ),
-                value: 'latest',
-                groupValue: sortOrder.value,
-                activeColor: const Color.fromRGBO(0, 140, 170, 1),
-                onChanged: (value) {
-                  sortOrder.value = value!;
+              InkWell(
+                onTap: () {
+                  sortOrder.value = 'latest';
                 },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Row(
+                    children: [
+                      Icon(
+                        sortOrder.value == 'latest'
+                          ? Icons.radio_button_checked
+                          : Icons.radio_button_unchecked,
+                        color: const Color.fromRGBO(0, 140, 170, 1),
+                      ),
+                      const SizedBox(width: 16),
+                      const Icon(Icons.arrow_downward, size: 18, color: Color.fromRGBO(0, 140, 170, 1)),
+                      const SizedBox(width: 8),
+                      const Text('Latest First'),
+                      const SizedBox(width: 8),
+                      Text(
+                        '(Newest to Oldest)',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
               Divider(height: 1, color: Colors.grey.shade300),
-              RadioListTile<String>(
-                title: Row(
-                  children: [
-                    const Icon(Icons.arrow_upward, size: 18, color: Color.fromRGBO(0, 140, 170, 1)),
-                    const SizedBox(width: 8),
-                    const Text('Oldest First'),
-                    const SizedBox(width: 8),
-                    Text(
-                      '(Oldest to Newest)',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
-                ),
-                value: 'oldest',
-                groupValue: sortOrder.value,
-                activeColor: const Color.fromRGBO(0, 140, 170, 1),
-                onChanged: (value) {
-                  sortOrder.value = value!;
+              InkWell(
+                onTap: () {
+                  sortOrder.value = 'oldest';
                 },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Row(
+                    children: [
+                      Icon(
+                        sortOrder.value == 'oldest'
+                          ? Icons.radio_button_checked
+                          : Icons.radio_button_unchecked,
+                        color: const Color.fromRGBO(0, 140, 170, 1),
+                      ),
+                      const SizedBox(width: 16),
+                      const Icon(Icons.arrow_upward, size: 18, color: Color.fromRGBO(0, 140, 170, 1)),
+                      const SizedBox(width: 8),
+                      const Text('Oldest First'),
+                      const SizedBox(width: 8),
+                      Text(
+                        '(Oldest to Newest)',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
