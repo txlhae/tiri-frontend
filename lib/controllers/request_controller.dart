@@ -277,6 +277,31 @@ class RequestController extends GetxController {
   final hoursNeededWarning = ''.obs;
   final isFeedbackReady = false.obs;
 
+  // =============================================================================
+  // FILTER STATE VARIABLES
+  // =============================================================================
+
+  // Filter: Category
+  final Rxn<CategoryModel> filterCategory = Rxn<CategoryModel>();
+
+  // Filter: Date Range
+  final Rxn<DateTime> filterStartDate = Rxn<DateTime>();
+  final Rxn<DateTime> filterEndDate = Rxn<DateTime>();
+
+  // Filter: Status
+  final RxList<RequestStatus> filterStatuses = <RequestStatus>[].obs;
+
+  // Filter: Number of volunteers
+  final RxInt filterMinVolunteers = 0.obs;
+  final RxInt filterMaxVolunteers = 10.obs;
+
+  // Filter: Hours needed
+  final RxInt filterMinHours = 0.obs;
+  final RxInt filterMaxHours = 24.obs;
+
+  // Track if any filters are active
+  final RxBool hasActiveFilters = false.obs;
+
   var reviewControllers = <TextEditingController>[].obs;
   var hourControllers = <TextEditingController>[].obs;
   var selectedRatings = <RxDouble>[].obs;
@@ -1752,6 +1777,536 @@ class RequestController extends GetxController {
 
   void showFilterDialog(BuildContext context) {
     debugLog("🔍 showFilterDialog called");
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _buildFilterBottomSheet(context),
+    );
+  }
+
+  /// Build the filter bottom sheet UI
+  Widget _buildFilterBottomSheet(BuildContext context) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.85,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+        ),
+      ),
+      child: Column(
+        children: [
+          // Header
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color.fromRGBO(0, 140, 170, 1),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Filter Requests',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+          ),
+
+          // Filter Content
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Category Filter
+                  _buildCategoryFilter(),
+                  const SizedBox(height: 20),
+
+                  // Date Range Filter
+                  _buildDateRangeFilter(context),
+                  const SizedBox(height: 20),
+
+                  // Status Filter
+                  _buildStatusFilter(),
+                  const SizedBox(height: 20),
+
+                  // Volunteers Filter
+                  _buildVolunteersFilter(),
+                  const SizedBox(height: 20),
+
+                  // Hours Filter
+                  _buildHoursFilter(),
+                  const SizedBox(height: 20),
+                ],
+              ),
+            ),
+          ),
+
+          // Action Buttons
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.shade300,
+                  offset: const Offset(0, -2),
+                  blurRadius: 4,
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () {
+                      clearFilters();
+                    },
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      side: const BorderSide(color: Color.fromRGBO(0, 140, 170, 1)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text(
+                      'Clear All',
+                      style: TextStyle(
+                        color: Color.fromRGBO(0, 140, 170, 1),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      applyFilters();
+                      Navigator.pop(context);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color.fromRGBO(0, 140, 170, 1),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text(
+                      'Apply Filters',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Build category filter section
+  Widget _buildCategoryFilter() {
+    return Obx(() => Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Category',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            // "All Categories" chip
+            FilterChip(
+              label: const Text('All Categories'),
+              selected: filterCategory.value == null,
+              onSelected: (selected) {
+                if (selected) {
+                  filterCategory.value = null;
+                }
+              },
+              selectedColor: const Color.fromRGBO(0, 140, 170, 0.2),
+              checkmarkColor: const Color.fromRGBO(0, 140, 170, 1),
+            ),
+            // Individual category chips
+            ...categories.map((category) => FilterChip(
+              label: Text(category.displayText),
+              selected: filterCategory.value?.id == category.id,
+              onSelected: (selected) {
+                filterCategory.value = selected ? category : null;
+              },
+              selectedColor: const Color.fromRGBO(0, 140, 170, 0.2),
+              checkmarkColor: const Color.fromRGBO(0, 140, 170, 1),
+            )),
+          ],
+        ),
+      ],
+    ));
+  }
+
+  /// Build date range filter section
+  Widget _buildDateRangeFilter(BuildContext context) {
+    return Obx(() => Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Date Range',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: InkWell(
+                onTap: () async {
+                  final date = await showDatePicker(
+                    context: context,
+                    initialDate: filterStartDate.value ?? DateTime.now(),
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2030),
+                  );
+                  if (date != null) {
+                    filterStartDate.value = date;
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey.shade300),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.calendar_today, size: 18, color: Color.fromRGBO(0, 140, 170, 1)),
+                      const SizedBox(width: 8),
+                      Text(
+                        filterStartDate.value != null
+                            ? DateFormat('MMM dd, yyyy').format(filterStartDate.value!)
+                            : 'Start Date',
+                        style: TextStyle(
+                          color: filterStartDate.value != null ? Colors.black87 : Colors.grey,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8),
+              child: Icon(Icons.arrow_forward, size: 18),
+            ),
+            Expanded(
+              child: InkWell(
+                onTap: () async {
+                  final date = await showDatePicker(
+                    context: context,
+                    initialDate: filterEndDate.value ?? DateTime.now(),
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2030),
+                  );
+                  if (date != null) {
+                    filterEndDate.value = date;
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey.shade300),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.calendar_today, size: 18, color: Color.fromRGBO(0, 140, 170, 1)),
+                      const SizedBox(width: 8),
+                      Text(
+                        filterEndDate.value != null
+                            ? DateFormat('MMM dd, yyyy').format(filterEndDate.value!)
+                            : 'End Date',
+                        style: TextStyle(
+                          color: filterEndDate.value != null ? Colors.black87 : Colors.grey,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        if (filterStartDate.value != null || filterEndDate.value != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: TextButton.icon(
+              onPressed: () {
+                filterStartDate.value = null;
+                filterEndDate.value = null;
+              },
+              icon: const Icon(Icons.clear, size: 16),
+              label: const Text('Clear dates'),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.red.shade600,
+              ),
+            ),
+          ),
+      ],
+    ));
+  }
+
+  /// Build status filter section
+  Widget _buildStatusFilter() {
+    return Obx(() => Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Status',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: RequestStatus.values.map((status) {
+            final isSelected = filterStatuses.contains(status);
+            final statusName = status.name.replaceAll('_', ' ').toUpperCase();
+
+            return FilterChip(
+              label: Text(statusName),
+              selected: isSelected,
+              onSelected: (selected) {
+                if (selected) {
+                  filterStatuses.add(status);
+                } else {
+                  filterStatuses.remove(status);
+                }
+              },
+              selectedColor: const Color.fromRGBO(0, 140, 170, 0.2),
+              checkmarkColor: const Color.fromRGBO(0, 140, 170, 1),
+            );
+          }).toList(),
+        ),
+      ],
+    ));
+  }
+
+  /// Build volunteers filter section
+  Widget _buildVolunteersFilter() {
+    return Obx(() => Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Number of Volunteers Needed',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          '${filterMinVolunteers.value} - ${filterMaxVolunteers.value}${filterMaxVolunteers.value >= 10 ? '+' : ''} volunteers',
+          style: TextStyle(
+            color: Colors.grey.shade600,
+            fontSize: 14,
+          ),
+        ),
+        RangeSlider(
+          values: RangeValues(
+            filterMinVolunteers.value.toDouble(),
+            filterMaxVolunteers.value.toDouble(),
+          ),
+          min: 0,
+          max: 10,
+          divisions: 10,
+          activeColor: const Color.fromRGBO(0, 140, 170, 1),
+          inactiveColor: const Color.fromRGBO(0, 140, 170, 0.2),
+          labels: RangeLabels(
+            filterMinVolunteers.value.toString(),
+            filterMaxVolunteers.value >= 10 ? '10+' : filterMaxVolunteers.value.toString(),
+          ),
+          onChanged: (values) {
+            filterMinVolunteers.value = values.start.round();
+            filterMaxVolunteers.value = values.end.round();
+          },
+        ),
+      ],
+    ));
+  }
+
+  /// Build hours filter section
+  Widget _buildHoursFilter() {
+    return Obx(() => Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Hours Needed',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          '${filterMinHours.value} - ${filterMaxHours.value}${filterMaxHours.value >= 24 ? '+' : ''} hours',
+          style: TextStyle(
+            color: Colors.grey.shade600,
+            fontSize: 14,
+          ),
+        ),
+        RangeSlider(
+          values: RangeValues(
+            filterMinHours.value.toDouble(),
+            filterMaxHours.value.toDouble(),
+          ),
+          min: 0,
+          max: 24,
+          divisions: 24,
+          activeColor: const Color.fromRGBO(0, 140, 170, 1),
+          inactiveColor: const Color.fromRGBO(0, 140, 170, 0.2),
+          labels: RangeLabels(
+            filterMinHours.value.toString(),
+            filterMaxHours.value >= 24 ? '24+' : filterMaxHours.value.toString(),
+          ),
+          onChanged: (values) {
+            filterMinHours.value = values.start.round();
+            filterMaxHours.value = values.end.round();
+          },
+        ),
+      ],
+    ));
+  }
+
+  /// Clear all filters
+  void clearFilters() {
+    filterCategory.value = null;
+    filterStartDate.value = null;
+    filterEndDate.value = null;
+    filterStatuses.clear();
+    filterMinVolunteers.value = 0;
+    filterMaxVolunteers.value = 10;
+    filterMinHours.value = 0;
+    filterMaxHours.value = 24;
+    hasActiveFilters.value = false;
+
+    // Reload requests without filters
+    loadRequests();
+
+    Get.snackbar(
+      'Filters Cleared',
+      'All filters have been removed',
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: Colors.green.shade600,
+      colorText: Colors.white,
+      margin: const EdgeInsets.all(16),
+      duration: const Duration(seconds: 2),
+    );
+  }
+
+  /// Apply filters to the request list
+  void applyFilters() {
+    List<RequestModel> filtered = List.from(communityRequests);
+
+    // Filter by category
+    if (filterCategory.value != null) {
+      filtered = filtered.where((request) =>
+        request.category?.id == filterCategory.value!.id
+      ).toList();
+    }
+
+    // Filter by date range
+    if (filterStartDate.value != null) {
+      filtered = filtered.where((request) {
+        final requestDate = request.requestedTime ?? request.timestamp;
+        return requestDate.isAfter(filterStartDate.value!) ||
+               requestDate.isAtSameMomentAs(filterStartDate.value!);
+      }).toList();
+    }
+
+    if (filterEndDate.value != null) {
+      filtered = filtered.where((request) {
+        final requestDate = request.requestedTime ?? request.timestamp;
+        return requestDate.isBefore(filterEndDate.value!.add(const Duration(days: 1)));
+      }).toList();
+    }
+
+    // Filter by status
+    if (filterStatuses.isNotEmpty) {
+      filtered = filtered.where((request) =>
+        filterStatuses.contains(request.status)
+      ).toList();
+    }
+
+    // Filter by number of volunteers
+    filtered = filtered.where((request) =>
+      request.numberOfPeople >= filterMinVolunteers.value &&
+      request.numberOfPeople <= filterMaxVolunteers.value
+    ).toList();
+
+    // Filter by hours needed
+    filtered = filtered.where((request) =>
+      request.hoursNeeded >= filterMinHours.value &&
+      request.hoursNeeded <= filterMaxHours.value
+    ).toList();
+
+    // Update the request list
+    requestList.assignAll(filtered);
+
+    // Update hasActiveFilters flag
+    hasActiveFilters.value = filterCategory.value != null ||
+                             filterStartDate.value != null ||
+                             filterEndDate.value != null ||
+                             filterStatuses.isNotEmpty ||
+                             filterMinVolunteers.value > 0 ||
+                             filterMaxVolunteers.value < 10 ||
+                             filterMinHours.value > 0 ||
+                             filterMaxHours.value < 24;
+
+    Get.snackbar(
+      'Filters Applied',
+      'Found ${filtered.length} matching requests',
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: const Color.fromRGBO(0, 140, 170, 1),
+      colorText: Colors.white,
+      margin: const EdgeInsets.all(16),
+      duration: const Duration(seconds: 2),
+    );
   }
 
   /// Fetch profile feedback from Django API
