@@ -13,6 +13,8 @@ _$RequestModelImpl _$$RequestModelImplFromJson(Map<String, dynamic> json) =>
       title: json['title'] as String,
       description: json['description'] as String,
       location: json['location'] as String?,
+      latitude: (json['latitude'] as num?)?.toDouble() ?? 0.0,
+      longitude: (json['longitude'] as num?)?.toDouble() ?? 0.0,
       timestamp: _dateTimeFromJson(json['timestamp'] as String),
       requestedTime:
           _nullableDateTimeFromJson(json['requestedTime'] as String?),
@@ -32,6 +34,8 @@ Map<String, dynamic> _$$RequestModelImplToJson(_$RequestModelImpl instance) =>
       'title': instance.title,
       'description': instance.description,
       'location': instance.location,
+      'latitude': instance.latitude,
+      'longitude': instance.longitude,
       'timestamp': instance.timestamp.toIso8601String(),
       'requestedTime': instance.requestedTime?.toIso8601String(),
       'status': _$RequestStatusEnumMap[instance.status]!,

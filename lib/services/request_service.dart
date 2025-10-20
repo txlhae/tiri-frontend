@@ -166,6 +166,8 @@ class RequestService extends GetxController {
         'title': djangoJson['title'] ?? '',
         'description': djangoJson['description'] ?? '',
         'location': _buildLocationString(djangoJson),
+        'latitude': djangoJson['latitude'] ?? 0.0,
+        'longitude': djangoJson['longitude'] ?? 0.0,
 
         // DateTime fields (handle Django format)
         'timestamp': _parseDjangoDateTime(djangoJson['created_at'] ?? djangoJson['timestamp']),

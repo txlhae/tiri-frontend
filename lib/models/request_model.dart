@@ -117,6 +117,8 @@ class RequestModel with _$RequestModel {
   required String title,
   required String description,
   String? location, // Made nullable - can be null from backend
+  @Default(0.0) double latitude, // Location coordinates
+  @Default(0.0) double longitude, // Location coordinates
   // ignore: invalid_annotation_target
   @JsonKey(fromJson: _dateTimeFromJson) required DateTime timestamp,
   // ignore: invalid_annotation_target

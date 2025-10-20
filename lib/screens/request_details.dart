@@ -17,6 +17,7 @@ import 'package:tiri/screens/widgets/request_widgets/details_card.dart';
 import 'package:tiri/screens/widgets/request_widgets/details_row.dart';
 import 'package:tiri/screens/widgets/request_widgets/status_row.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class RequestDetails extends StatefulWidget {
   const RequestDetails({super.key});
@@ -356,12 +357,6 @@ class _RequestDetailsState extends State<RequestDetails> {
               ),
               const SizedBox(height: 16),
               DetailsRow(
-                icon: Icons.person,
-                label: "Referred by",
-                value: request.requester?.referralUserId != null ? "Referred User" : "N/A",
-              ),
-              const SizedBox(height: 16),
-              DetailsRow(
                 icon: Icons.location_on,
                 label: "Location",
                 value: request.location ?? 'Location not specified',
@@ -401,6 +396,11 @@ class _RequestDetailsState extends State<RequestDetails> {
           ),
         ),
         const SizedBox(height: 20),
+
+        // Clickable location map widget
+        if (request.latitude != 0.0 && request.longitude != 0.0)
+          _buildLocationMapWidget(request),
+
         // Show feedback section if request is completed
         if (request.status == RequestStatus.complete && request.feedback != null)
           _buildFeedbackSection(request),
@@ -2685,6 +2685,136 @@ class _RequestDetailsState extends State<RequestDetails> {
         ],
       ),
     );
+  }
+
+  /// Build clickable location map widget
+  Widget _buildLocationMapWidget(RequestModel request) {
+    return Column(
+      children: [
+        Container(
+          width: double.infinity,
+          margin: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 6.0),
+          decoration: BoxDecoration(
+            color: const Color.fromRGBO(251, 252, 254, 1),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: const [
+              BoxShadow(
+                color: Colors.grey,
+                offset: Offset(1.0, 1.0),
+                blurRadius: 6.0,
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => _openLocationInMaps(request.latitude, request.longitude, request.location),
+              borderRadius: BorderRadius.circular(16),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color.fromRGBO(0, 140, 170, 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.map,
+                        color: Color.fromRGBO(0, 140, 170, 1),
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            "View on Map",
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            request.location ?? 'Tap to open location',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey.shade600,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      Icons.arrow_forward_ios,
+                      size: 16,
+                      color: Colors.grey.shade400,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+      ],
+    );
+  }
+
+  /// Open location in Google Maps or Apple Maps
+  Future<void> _openLocationInMaps(double latitude, double longitude, String? locationName) async {
+    // Check if coordinates are valid
+    if (latitude == 0.0 && longitude == 0.0) {
+      Get.snackbar(
+        'Location Unavailable',
+        'GPS coordinates are not available for this location',
+        backgroundColor: Colors.orange.shade600,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+      );
+      return;
+    }
+
+    try {
+      // Create Google Maps URL
+      final googleMapsUrl = Uri.parse(
+        'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude'
+      );
+
+      // Try to launch the URL
+      if (await canLaunchUrl(googleMapsUrl)) {
+        await launchUrl(
+          googleMapsUrl,
+          mode: LaunchMode.externalApplication,
+        );
+      } else {
+        Get.snackbar(
+          'Error',
+          'Could not open maps application',
+          backgroundColor: Colors.red.shade600,
+          colorText: Colors.white,
+          snackPosition: SnackPosition.BOTTOM,
+          margin: const EdgeInsets.all(16),
+        );
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Failed to open location: $e',
+        backgroundColor: Colors.red.shade600,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+        margin: const EdgeInsets.all(16),
+      );
+    }
   }
 }
 

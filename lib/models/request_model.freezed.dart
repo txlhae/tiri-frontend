@@ -26,6 +26,10 @@ mixin _$RequestModel {
   String get description => throw _privateConstructorUsedError;
   String? get location =>
       throw _privateConstructorUsedError; // Made nullable - can be null from backend
+  double get latitude =>
+      throw _privateConstructorUsedError; // Location coordinates
+  double get longitude =>
+      throw _privateConstructorUsedError; // Location coordinates
 // ignore: invalid_annotation_target
   @JsonKey(fromJson: _dateTimeFromJson)
   DateTime get timestamp =>
@@ -70,6 +74,8 @@ abstract class $RequestModelCopyWith<$Res> {
       String title,
       String description,
       String? location,
+      double latitude,
+      double longitude,
       @JsonKey(fromJson: _dateTimeFromJson) DateTime timestamp,
       @JsonKey(fromJson: _nullableDateTimeFromJson) DateTime? requestedTime,
       RequestStatus status,
@@ -101,6 +107,8 @@ class _$RequestModelCopyWithImpl<$Res, $Val extends RequestModel>
     Object? title = null,
     Object? description = null,
     Object? location = freezed,
+    Object? latitude = null,
+    Object? longitude = null,
     Object? timestamp = null,
     Object? requestedTime = freezed,
     Object? status = null,
@@ -131,6 +139,14 @@ class _$RequestModelCopyWithImpl<$Res, $Val extends RequestModel>
           ? _value.location
           : location // ignore: cast_nullable_to_non_nullable
               as String?,
+      latitude: null == latitude
+          ? _value.latitude
+          : latitude // ignore: cast_nullable_to_non_nullable
+              as double,
+      longitude: null == longitude
+          ? _value.longitude
+          : longitude // ignore: cast_nullable_to_non_nullable
+              as double,
       timestamp: null == timestamp
           ? _value.timestamp
           : timestamp // ignore: cast_nullable_to_non_nullable
@@ -181,6 +197,8 @@ abstract class _$$RequestModelImplCopyWith<$Res>
       String title,
       String description,
       String? location,
+      double latitude,
+      double longitude,
       @JsonKey(fromJson: _dateTimeFromJson) DateTime timestamp,
       @JsonKey(fromJson: _nullableDateTimeFromJson) DateTime? requestedTime,
       RequestStatus status,
@@ -210,6 +228,8 @@ class __$$RequestModelImplCopyWithImpl<$Res>
     Object? title = null,
     Object? description = null,
     Object? location = freezed,
+    Object? latitude = null,
+    Object? longitude = null,
     Object? timestamp = null,
     Object? requestedTime = freezed,
     Object? status = null,
@@ -240,6 +260,14 @@ class __$$RequestModelImplCopyWithImpl<$Res>
           ? _value.location
           : location // ignore: cast_nullable_to_non_nullable
               as String?,
+      latitude: null == latitude
+          ? _value.latitude
+          : latitude // ignore: cast_nullable_to_non_nullable
+              as double,
+      longitude: null == longitude
+          ? _value.longitude
+          : longitude // ignore: cast_nullable_to_non_nullable
+              as double,
       timestamp: null == timestamp
           ? _value.timestamp
           : timestamp // ignore: cast_nullable_to_non_nullable
@@ -285,6 +313,8 @@ class _$RequestModelImpl extends _RequestModel {
       required this.title,
       required this.description,
       this.location,
+      this.latitude = 0.0,
+      this.longitude = 0.0,
       @JsonKey(fromJson: _dateTimeFromJson) required this.timestamp,
       @JsonKey(fromJson: _nullableDateTimeFromJson) this.requestedTime,
       required this.status,
@@ -313,6 +343,14 @@ class _$RequestModelImpl extends _RequestModel {
   @override
   final String? location;
 // Made nullable - can be null from backend
+  @override
+  @JsonKey()
+  final double latitude;
+// Location coordinates
+  @override
+  @JsonKey()
+  final double longitude;
+// Location coordinates
 // ignore: invalid_annotation_target
   @override
   @JsonKey(fromJson: _dateTimeFromJson)
@@ -363,7 +401,7 @@ class _$RequestModelImpl extends _RequestModel {
 
   @override
   String toString() {
-    return 'RequestModel(requestId: $requestId, userId: $userId, title: $title, description: $description, location: $location, timestamp: $timestamp, requestedTime: $requestedTime, status: $status, acceptedUser: $acceptedUser, feedbackList: $feedbackList, numberOfPeople: $numberOfPeople, hoursNeeded: $hoursNeeded, category: $category)';
+    return 'RequestModel(requestId: $requestId, userId: $userId, title: $title, description: $description, location: $location, latitude: $latitude, longitude: $longitude, timestamp: $timestamp, requestedTime: $requestedTime, status: $status, acceptedUser: $acceptedUser, feedbackList: $feedbackList, numberOfPeople: $numberOfPeople, hoursNeeded: $hoursNeeded, category: $category)';
   }
 
   @override
@@ -379,6 +417,10 @@ class _$RequestModelImpl extends _RequestModel {
                 other.description == description) &&
             (identical(other.location, location) ||
                 other.location == location) &&
+            (identical(other.latitude, latitude) ||
+                other.latitude == latitude) &&
+            (identical(other.longitude, longitude) ||
+                other.longitude == longitude) &&
             (identical(other.timestamp, timestamp) ||
                 other.timestamp == timestamp) &&
             (identical(other.requestedTime, requestedTime) ||
@@ -405,6 +447,8 @@ class _$RequestModelImpl extends _RequestModel {
       title,
       description,
       location,
+      latitude,
+      longitude,
       timestamp,
       requestedTime,
       status,
@@ -437,6 +481,8 @@ abstract class _RequestModel extends RequestModel {
       required final String title,
       required final String description,
       final String? location,
+      final double latitude,
+      final double longitude,
       @JsonKey(fromJson: _dateTimeFromJson) required final DateTime timestamp,
       @JsonKey(fromJson: _nullableDateTimeFromJson)
       final DateTime? requestedTime,
@@ -464,6 +510,10 @@ abstract class _RequestModel extends RequestModel {
   String get description;
   @override
   String? get location; // Made nullable - can be null from backend
+  @override
+  double get latitude; // Location coordinates
+  @override
+  double get longitude; // Location coordinates
 // ignore: invalid_annotation_target
   @override
   @JsonKey(fromJson: _dateTimeFromJson)
