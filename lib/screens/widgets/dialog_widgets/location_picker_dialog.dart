@@ -35,6 +35,10 @@ class _LocationPickerDialogState extends State<LocationPickerDialog> {
   // Autocomplete suggestions
   List<Location> _searchSuggestions = [];
   bool _showSuggestions = false;
+  String _lastSearchQuery = '';
+
+  // Debounce timer for search
+  dynamic _debounceTimer;
 
   @override
   void initState() {
@@ -54,22 +58,48 @@ class _LocationPickerDialogState extends State<LocationPickerDialog> {
     _searchController.dispose();
     _searchFocusNode.dispose();
     _mapController?.dispose();
+    _debounceTimer?.cancel();
     super.dispose();
   }
 
-  // Fetch autocomplete suggestions as user types
-  Future<void> _fetchSuggestions(String query) async {
+  // Fetch autocomplete suggestions with debounce
+  void _onSearchChanged(String query) {
+    // Cancel previous timer
+    _debounceTimer?.cancel();
+
     if (query.trim().isEmpty) {
       setState(() {
         _searchSuggestions = [];
         _showSuggestions = false;
+        _lastSearchQuery = '';
       });
       return;
     }
 
     if (query.length < 3) {
-      return; // Wait for at least 3 characters
+      setState(() {
+        _showSuggestions = false;
+      });
+      return;
     }
+
+    // Debounce: wait 500ms before searching
+    _debounceTimer = Future.delayed(const Duration(milliseconds: 500), () {
+      _fetchSuggestions(query);
+    });
+  }
+
+  // Fetch autocomplete suggestions as user types
+  Future<void> _fetchSuggestions(String query) async {
+    // Avoid duplicate searches
+    if (query == _lastSearchQuery) {
+      return;
+    }
+
+    setState(() {
+      _lastSearchQuery = query;
+      _isSearching = true;
+    });
 
     try {
       List<Location> allLocations = [];
@@ -102,15 +132,21 @@ class _LocationPickerDialogState extends State<LocationPickerDialog> {
         }
       }
 
-      setState(() {
-        _searchSuggestions = uniqueLocations.take(5).toList(); // Show top 5 results
-        _showSuggestions = uniqueLocations.isNotEmpty;
-      });
+      if (mounted) {
+        setState(() {
+          _searchSuggestions = uniqueLocations.take(5).toList(); // Show top 5 results
+          _showSuggestions = uniqueLocations.isNotEmpty;
+          _isSearching = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _searchSuggestions = [];
-        _showSuggestions = false;
-      });
+      if (mounted) {
+        setState(() {
+          _searchSuggestions = [];
+          _showSuggestions = false;
+          _isSearching = false;
+        });
+      }
     }
   }
 
@@ -378,154 +414,166 @@ class _LocationPickerDialogState extends State<LocationPickerDialog> {
               ),
             ),
 
-            // Search Bar with Autocomplete
+            // Search Bar with Floating Autocomplete
             Padding(
               padding: const EdgeInsets.all(16),
-              child: Column(
+              child: Stack(
                 children: [
-                  Row(
+                  Column(
                     children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _searchController,
-                          focusNode: _searchFocusNode,
-                          decoration: InputDecoration(
-                            hintText: 'Search location...',
-                            hintStyle: TextStyle(
-                              color: Colors.grey.shade500,
-                              fontSize: 14,
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _searchController,
+                              focusNode: _searchFocusNode,
+                              decoration: InputDecoration(
+                                hintText: 'Search location...',
+                                hintStyle: TextStyle(
+                                  color: Colors.grey.shade500,
+                                  fontSize: 14,
+                                ),
+                                prefixIcon: Icon(
+                                  Icons.search,
+                                  color: Colors.grey.shade600,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(
+                                    color: Color.fromRGBO(0, 140, 170, 1),
+                                    width: 2,
+                                  ),
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 12,
+                                ),
+                              ),
+                              onChanged: (value) {
+                                _onSearchChanged(value);
+                              },
+                              onSubmitted: _searchLocation,
                             ),
-                            prefixIcon: Icon(
-                              Icons.search,
-                              color: Colors.grey.shade600,
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(
-                                color: Color.fromRGBO(0, 140, 170, 1),
-                                width: 2,
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton(
+                            onPressed: _isSearching
+                                ? null
+                                : () => _searchLocation(_searchController.text),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color.fromRGBO(0, 140, 170, 1),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
                               ),
                             ),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 12,
-                            ),
-                          ),
-                          onChanged: (value) {
-                            _fetchSuggestions(value);
-                          },
-                          onSubmitted: _searchLocation,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      ElevatedButton(
-                        onPressed: _isSearching
-                            ? null
-                            : () => _searchLocation(_searchController.text),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color.fromRGBO(0, 140, 170, 1),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: _isSearching
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Icon(Icons.search, size: 24),
-                      ),
-                    ],
-                  ),
-                  if (_errorMessage != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8.0),
-                      child: Text(
-                        _errorMessage!,
-                        style: const TextStyle(
-                          color: Colors.red,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-
-                  // Autocomplete Suggestions Dropdown
-                  if (_showSuggestions && _searchSuggestions.isNotEmpty)
-                    Container(
-                      margin: const EdgeInsets.only(top: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: const Color.fromRGBO(0, 140, 170, 1),
-                          width: 1,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.15),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                            spreadRadius: 2,
-                          ),
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.08),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
+                            child: _isSearching
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Icon(Icons.search, size: 24),
                           ),
                         ],
                       ),
-                      constraints: const BoxConstraints(
-                        maxHeight: 200,
-                      ),
-                      child: ListView.builder(
-                        shrinkWrap: true,
-                        itemCount: _searchSuggestions.length,
-                        itemBuilder: (context, index) {
-                          final suggestion = _searchSuggestions[index];
-                          return ListTile(
-                            dense: true,
-                            leading: const Icon(
-                              Icons.location_on,
-                              color: Color.fromRGBO(0, 140, 170, 1),
-                              size: 20,
+                      if (_errorMessage != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8.0),
+                          child: Text(
+                            _errorMessage!,
+                            style: const TextStyle(
+                              color: Colors.red,
+                              fontSize: 12,
                             ),
-                            title: FutureBuilder<List<Placemark>>(
-                              future: placemarkFromCoordinates(
-                                suggestion.latitude,
-                                suggestion.longitude,
+                          ),
+                        ),
+                    ],
+                  ),
+
+                  // Floating Autocomplete Suggestions Dropdown
+                  if (_showSuggestions && _searchSuggestions.isNotEmpty)
+                    Positioned(
+                      top: 52, // Position below the search bar
+                      left: 0,
+                      right: 48, // Leave space for search button
+                      child: Material(
+                        elevation: 8,
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: const Color.fromRGBO(0, 140, 170, 1),
+                              width: 1,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.15),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                                spreadRadius: 2,
                               ),
-                              builder: (context, snapshot) {
-                                if (snapshot.hasData && snapshot.data!.isNotEmpty) {
-                                  final place = snapshot.data!.first;
-                                  return Text(
-                                    '${place.locality ?? place.subLocality ?? 'Unknown'}, ${place.administrativeArea ?? ''}',
-                                    style: const TextStyle(fontSize: 14),
-                                  );
-                                }
-                                return Text(
-                                  '${suggestion.latitude.toStringAsFixed(4)}, ${suggestion.longitude.toStringAsFixed(4)}',
-                                  style: const TextStyle(fontSize: 14),
-                                );
-                              },
-                            ),
-                            onTap: () {
-                              _selectSuggestion(suggestion);
-                              _searchFocusNode.unfocus();
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.08),
+                                blurRadius: 6,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          constraints: const BoxConstraints(
+                            maxHeight: 200,
+                          ),
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: _searchSuggestions.length,
+                            itemBuilder: (context, index) {
+                              final suggestion = _searchSuggestions[index];
+                              return ListTile(
+                                dense: true,
+                                leading: const Icon(
+                                  Icons.location_on,
+                                  color: Color.fromRGBO(0, 140, 170, 1),
+                                  size: 20,
+                                ),
+                                title: FutureBuilder<List<Placemark>>(
+                                  future: placemarkFromCoordinates(
+                                    suggestion.latitude,
+                                    suggestion.longitude,
+                                  ),
+                                  builder: (context, snapshot) {
+                                    if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                                      final place = snapshot.data!.first;
+                                      return Text(
+                                        '${place.locality ?? place.subLocality ?? 'Unknown'}, ${place.administrativeArea ?? ''}',
+                                        style: const TextStyle(fontSize: 14),
+                                      );
+                                    }
+                                    return Text(
+                                      '${suggestion.latitude.toStringAsFixed(4)}, ${suggestion.longitude.toStringAsFixed(4)}',
+                                      style: const TextStyle(fontSize: 14),
+                                    );
+                                  },
+                                ),
+                                onTap: () {
+                                  _selectSuggestion(suggestion);
+                                  _searchFocusNode.unfocus();
+                                },
+                              );
                             },
-                          );
-                        },
+                          ),
+                        ),
                       ),
                     ),
                 ],
