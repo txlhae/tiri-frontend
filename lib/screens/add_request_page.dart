@@ -229,9 +229,10 @@ class AddRequestPage extends StatelessWidget {
                     ),
                     // Location Selection
                     Obx(() {
-                      final locationController = Get.isRegistered<LocationController>()
-                          ? Get.find<LocationController>()
-                          : Get.put(LocationController(), permanent: true);
+                      // Ensure LocationController is registered
+                      if (!Get.isRegistered<LocationController>()) {
+                        Get.put(LocationController(), permanent: true);
+                      }
 
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,

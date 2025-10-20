@@ -669,26 +669,17 @@ class RequestService extends GetxController {
     try{
       final response = await _apiService.post('/api/requests/', data: requestData);
 
-      print('🔍 CREATE REQUEST RESPONSE DEBUG:');
-      print('   Status Code: ${response.statusCode}');
-      print('   Response Data Type: ${response.data?.runtimeType}');
-      print('   Response Data: ${response.data}');
-
       if (response.statusCode == 201 || response.statusCode == 200) {
         // Return full response data for use in success dialog
         if (response.data != null && response.data is Map<String, dynamic>) {
-          print('   ✅ Response is a Map');
-          print('   Available keys: ${response.data.keys.toList()}');
           return response.data as Map<String, dynamic>;
         }
-        print('   ❌ Response is NOT a Map or is null');
         return null;
       } else {
         final errorMessage = ErrorHandler.getErrorMessage(response, defaultMessage: 'Failed to create request');
         throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
       }
     } catch (e) {
-      print('   💥 Exception: $e');
       // Error handled silently
       final errorMessage = ErrorHandler.getErrorMessage(e, defaultMessage: 'Could not create request');
       throw Exception(ErrorHandler.mapErrorToUserMessage(errorMessage));
