@@ -302,6 +302,9 @@ class RequestController extends GetxController {
   // Track if any filters are active
   final RxBool hasActiveFilters = false.obs;
 
+  // Sort order
+  final RxString sortOrder = 'latest'.obs; // 'latest' or 'oldest'
+
   var reviewControllers = <TextEditingController>[].obs;
   var hourControllers = <TextEditingController>[].obs;
   var selectedRatings = <RxDouble>[].obs;
@@ -1835,6 +1838,10 @@ class RequestController extends GetxController {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Sort Order - MOVED TO TOP
+                  _buildSortFilter(),
+                  const SizedBox(height: 20),
+
                   // Category Filter
                   _buildCategoryFilter(),
                   const SizedBox(height: 20),
@@ -2213,6 +2220,81 @@ class RequestController extends GetxController {
     ));
   }
 
+  /// Build sort order filter section
+  Widget _buildSortFilter() {
+    return Obx(() => Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Sort By',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey.shade300),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Column(
+            children: [
+              RadioListTile<String>(
+                title: Row(
+                  children: [
+                    const Icon(Icons.arrow_downward, size: 18, color: Color.fromRGBO(0, 140, 170, 1)),
+                    const SizedBox(width: 8),
+                    const Text('Latest First'),
+                    const SizedBox(width: 8),
+                    Text(
+                      '(Newest to Oldest)',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+                value: 'latest',
+                groupValue: sortOrder.value,
+                activeColor: const Color.fromRGBO(0, 140, 170, 1),
+                onChanged: (value) {
+                  sortOrder.value = value!;
+                },
+              ),
+              Divider(height: 1, color: Colors.grey.shade300),
+              RadioListTile<String>(
+                title: Row(
+                  children: [
+                    const Icon(Icons.arrow_upward, size: 18, color: Color.fromRGBO(0, 140, 170, 1)),
+                    const SizedBox(width: 8),
+                    const Text('Oldest First'),
+                    const SizedBox(width: 8),
+                    Text(
+                      '(Oldest to Newest)',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+                value: 'oldest',
+                groupValue: sortOrder.value,
+                activeColor: const Color.fromRGBO(0, 140, 170, 1),
+                onChanged: (value) {
+                  sortOrder.value = value!;
+                },
+              ),
+            ],
+          ),
+        ),
+      ],
+    ));
+  }
+
   /// Clear all filters
   void clearFilters() {
     filterCategory.value = null;
@@ -2223,6 +2305,7 @@ class RequestController extends GetxController {
     filterMaxVolunteers.value = 10;
     filterMinHours.value = 0;
     filterMaxHours.value = 24;
+    sortOrder.value = 'latest';
     hasActiveFilters.value = false;
 
     // Reload requests without filters
@@ -2285,6 +2368,23 @@ class RequestController extends GetxController {
       request.hoursNeeded <= filterMaxHours.value
     ).toList();
 
+    // Sort the filtered list
+    if (sortOrder.value == 'latest') {
+      // Latest first (newest to oldest)
+      filtered.sort((a, b) {
+        final dateA = a.requestedTime ?? a.timestamp;
+        final dateB = b.requestedTime ?? b.timestamp;
+        return dateB.compareTo(dateA); // Descending order
+      });
+    } else {
+      // Oldest first (oldest to newest)
+      filtered.sort((a, b) {
+        final dateA = a.requestedTime ?? a.timestamp;
+        final dateB = b.requestedTime ?? b.timestamp;
+        return dateA.compareTo(dateB); // Ascending order
+      });
+    }
+
     // Update the request list
     requestList.assignAll(filtered);
 
@@ -2296,7 +2396,8 @@ class RequestController extends GetxController {
                              filterMinVolunteers.value > 0 ||
                              filterMaxVolunteers.value < 10 ||
                              filterMinHours.value > 0 ||
-                             filterMaxHours.value < 24;
+                             filterMaxHours.value < 24 ||
+                             sortOrder.value != 'latest';
 
     Get.snackbar(
       'Filters Applied',
