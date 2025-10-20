@@ -21,6 +21,7 @@ class LocationPickerDialog extends StatefulWidget {
 
 class _LocationPickerDialogState extends State<LocationPickerDialog> {
   final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
   GoogleMapController? _mapController;
 
   // Default location (Kochi, Kerala)
@@ -30,6 +31,10 @@ class _LocationPickerDialogState extends State<LocationPickerDialog> {
   bool _isSearching = false;
   String? _errorMessage;
   Set<Marker> _markers = {};
+
+  // Autocomplete suggestions
+  List<Location> _searchSuggestions = [];
+  bool _showSuggestions = false;
 
   @override
   void initState() {
@@ -47,8 +52,60 @@ class _LocationPickerDialogState extends State<LocationPickerDialog> {
   @override
   void dispose() {
     _searchController.dispose();
+    _searchFocusNode.dispose();
     _mapController?.dispose();
     super.dispose();
+  }
+
+  // Fetch autocomplete suggestions as user types
+  Future<void> _fetchSuggestions(String query) async {
+    if (query.trim().isEmpty) {
+      setState(() {
+        _searchSuggestions = [];
+        _showSuggestions = false;
+      });
+      return;
+    }
+
+    if (query.length < 3) {
+      return; // Wait for at least 3 characters
+    }
+
+    try {
+      // Fetch multiple location suggestions
+      final locations = await locationFromAddress(query);
+
+      setState(() {
+        _searchSuggestions = locations.take(5).toList(); // Show top 5 results
+        _showSuggestions = locations.isNotEmpty;
+      });
+    } catch (e) {
+      setState(() {
+        _searchSuggestions = [];
+        _showSuggestions = false;
+      });
+    }
+  }
+
+  // Select a suggestion from the dropdown
+  Future<void> _selectSuggestion(Location location) async {
+    setState(() {
+      _showSuggestions = false;
+      _isSearching = true;
+    });
+
+    final newPosition = LatLng(location.latitude, location.longitude);
+
+    // Animate camera to selected location
+    _mapController?.animateCamera(
+      CameraUpdate.newLatLngZoom(newPosition, 15),
+    );
+
+    await _onPositionChanged(newPosition);
+
+    setState(() {
+      _isSearching = false;
+    });
   }
 
   void _updateMarker() {
@@ -290,7 +347,7 @@ class _LocationPickerDialogState extends State<LocationPickerDialog> {
               ),
             ),
 
-            // Search Bar
+            // Search Bar with Autocomplete
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -300,6 +357,7 @@ class _LocationPickerDialogState extends State<LocationPickerDialog> {
                       Expanded(
                         child: TextField(
                           controller: _searchController,
+                          focusNode: _searchFocusNode,
                           decoration: InputDecoration(
                             hintText: 'Search location...',
                             hintStyle: TextStyle(
@@ -325,6 +383,9 @@ class _LocationPickerDialogState extends State<LocationPickerDialog> {
                               vertical: 12,
                             ),
                           ),
+                          onChanged: (value) {
+                            _fetchSuggestions(value);
+                          },
                           onSubmitted: _searchLocation,
                         ),
                       ),
@@ -366,6 +427,68 @@ class _LocationPickerDialogState extends State<LocationPickerDialog> {
                           color: Colors.red,
                           fontSize: 12,
                         ),
+                      ),
+                    ),
+
+                  // Autocomplete Suggestions Dropdown
+                  if (_showSuggestions && _searchSuggestions.isNotEmpty)
+                    Container(
+                      margin: const EdgeInsets.only(top: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: const Color.fromRGBO(0, 140, 170, 1),
+                          width: 1,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      constraints: const BoxConstraints(
+                        maxHeight: 200,
+                      ),
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: _searchSuggestions.length,
+                        itemBuilder: (context, index) {
+                          final suggestion = _searchSuggestions[index];
+                          return ListTile(
+                            dense: true,
+                            leading: const Icon(
+                              Icons.location_on,
+                              color: Color.fromRGBO(0, 140, 170, 1),
+                              size: 20,
+                            ),
+                            title: FutureBuilder<List<Placemark>>(
+                              future: placemarkFromCoordinates(
+                                suggestion.latitude,
+                                suggestion.longitude,
+                              ),
+                              builder: (context, snapshot) {
+                                if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                                  final place = snapshot.data!.first;
+                                  return Text(
+                                    '${place.locality ?? place.subLocality ?? 'Unknown'}, ${place.administrativeArea ?? ''}',
+                                    style: const TextStyle(fontSize: 14),
+                                  );
+                                }
+                                return Text(
+                                  '${suggestion.latitude.toStringAsFixed(4)}, ${suggestion.longitude.toStringAsFixed(4)}',
+                                  style: const TextStyle(fontSize: 14),
+                                );
+                              },
+                            ),
+                            onTap: () {
+                              _selectSuggestion(suggestion);
+                              _searchFocusNode.unfocus();
+                            },
+                          );
+                        },
                       ),
                     ),
                 ],
