@@ -8,7 +8,7 @@ import 'package:tiri/controllers/request_controller.dart';
 import 'package:tiri/infrastructure/routes.dart';
 import 'package:tiri/screens/widgets/home_widgets/community_requests.dart';
 import 'package:tiri/screens/widgets/home_widgets/my_requests.dart';
-import 'package:tiri/screens/location_demo_page.dart';
+import 'package:tiri/screens/location_page.dart';
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -135,7 +135,7 @@ class HomeScreen extends StatelessWidget {
                       GestureDetector(
                         behavior: HitTestBehavior.opaque,
                         onTap: () {
-                          Get.to(() => const LocationDemoPage());
+                          Get.to(() => const LocationPage());
                         },
                         child: const Icon(
                           Icons.location_on,

@@ -76,7 +76,8 @@
       "Bash(timeout 30 ~/flutter/bin/flutter analyze:*)",
       "Bash(~/flutter/bin/flutter build ios --release --no-codesign)",
       "Bash(~/flutter/bin/flutter clean)",
-      "Bash(~/flutter/bin/flutter build ipa --release)"
+      "Bash(~/flutter/bin/flutter build ipa --release)",
+      "Bash(~/flutter/bin/flutter run)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",
