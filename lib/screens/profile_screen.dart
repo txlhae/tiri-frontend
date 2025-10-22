@@ -121,529 +121,530 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
               SafeArea(
-                child: SingleChildScrollView(
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      minHeight: MediaQuery.of(context).size.height,
-                    ),
-                    child: IntrinsicHeight(
-                      child: Column(
+                child: Column(
+                  children: [
+                    // Sticky header section
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10.0, vertical: 10.0),
+                      child: Row(
                         children: [
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10.0, vertical: 10.0),
-                            child: Row(
-                              children: [
-                                CustomBackButton(controller: authController),
-                                const Spacer(),
-                              if (isCurrentUser) ...[
-                                // QR Code Scanner Button (only for current user)
-                                GestureDetector(
-                                  behavior: HitTestBehavior.opaque,
-                                  onTap: () => Get.toNamed('/qrScanner'),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.9),
-                                      borderRadius: BorderRadius.circular(20),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.black.withValues(alpha: 0.1),
-                                          blurRadius: 4,
-                                          offset: const Offset(0, 2),
+                          CustomBackButton(controller: authController),
+                          const Spacer(),
+                          if (isCurrentUser) ...[
+                            // QR Code Scanner Button (only for current user)
+                            GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () => Get.toNamed('/qrScanner'),
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.9),
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.1),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: const Icon(
+                                  Icons.qr_code_scanner,
+                                  color: Color.fromRGBO(3, 80, 135, 1),
+                                  size: 24,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () async {
+                                await Get.dialog(EditDialog(
+                                    user: authController.currentUserStore.value!));
+                                // Reload user profile after edit dialog closes
+                                await _loadUserProfile();
+                              },
+                              child: SvgPicture.asset(
+                                "assets/icons/edit_icon.svg",
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    // Scrollable content
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          children: [
+                            const SizedBox(height: 10),
+                            buildAvatar(user.imageUrl, context),
+                            const SizedBox(height: 20),
+                            // Display user's full name
+                            Text(
+                              user.username,
+                              style: const TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 5),
+                            // Stats row with reactive user data
+                            Obx(() {
+                              final currentUser = shownUser.value;
+                              if (currentUser == null) {
+                                return const Center(child: CircularProgressIndicator());
+                              }
+
+                              final displayHours = currentUser.hours ?? 0;
+                              final displayRating = currentUser.rating ?? 0.0;
+
+                              return buildStatsRow(displayHours, displayRating);
+                            }),
+                            const SizedBox(height: 15),
+                            // CURRENT USER LAYOUT
+                            if (isCurrentUser) ...[
+                              // Referral Code Section (improved design)
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 30.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      "Your Referral Code",
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Container(
+                                      width: double.infinity,
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        border: Border.all(
+                                          color: Theme.of(context).colorScheme.primary,
+                                          width: 2,
                                         ),
-                                      ],
-                                    ),
-                                    child: const Icon(
-                                      Icons.qr_code_scanner,
-                                      color: Color.fromRGBO(3, 80, 135, 1),
-                                      size: 24,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                GestureDetector(
-                                  behavior: HitTestBehavior.opaque,
-                                  onTap: () async {
-                                    await Get.dialog(EditDialog(
-                                        user: authController.currentUserStore.value!));
-                                    // Reload user profile after edit dialog closes
-                                    await _loadUserProfile();
-                                  },
-                                  child: SvgPicture.asset(
-                                    "assets/icons/edit_icon.svg",
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        buildAvatar(user.imageUrl, context),
-                        const SizedBox(height: 20),
-                        // Display user's full name
-                        Text(
-                          user.username,
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 5),
-                        // Stats row with reactive user data
-                        Obx(() {
-                          final currentUser = shownUser.value;
-                          if (currentUser == null) {
-                            return const Center(child: CircularProgressIndicator());
-                          }
+                                        borderRadius: BorderRadius.circular(8),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withValues(alpha: 0.04),
+                                            blurRadius: 4,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ],
+                                      ),
+                                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                                      child: Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Expanded(
+                                            child: FittedBox(
+                                              fit: BoxFit.scaleDown,
+                                              alignment: Alignment.centerLeft,
+                                              child: Text(
+                                                user.referralCode?.toString() ?? 'null',
+                                                style: TextStyle(
+                                                  fontSize: 22,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Theme.of(context).colorScheme.primary,
+                                                  letterSpacing: 2.5,
+                                                ),
+                                                maxLines: 1,
+                                              ),
+                                            ),
+                                          ),
+                                          Row(
+                                            children: [
+                                              GestureDetector(
+                                                onTap: () {
+                                                  // Debug logging
 
-                          final displayHours = currentUser.hours ?? 0;
-                          final displayRating = currentUser.rating ?? 0.0;
-
-                          return buildStatsRow(displayHours, displayRating);
-                        }),
-                        const SizedBox(height: 15),
-                        // CURRENT USER LAYOUT
-                        if (isCurrentUser) ...[
-                          // Referral Code Section (improved design)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 30.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  "Your Referral Code",
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white,
-                                  ),
+                                                  Get.dialog(QrCodeDialog(
+                                                    referralCode: user.referralCode?.toString() ?? 'null',
+                                                    username: user.username,
+                                                    userId: user.userId,
+                                                  ));
+                                                },
+                                                child: Container(
+                                                  padding: const EdgeInsets.all(8),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.white,
+                                                    border: Border.all(
+                                                      color: Theme.of(context).colorScheme.primary,
+                                                      width: 1,
+                                                    ),
+                                                    borderRadius: BorderRadius.circular(6),
+                                                    boxShadow: [
+                                                      BoxShadow(
+                                                        color: Colors.black.withValues(alpha: 0.08),
+                                                        blurRadius: 2,
+                                                        offset: const Offset(0, 1),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  child: Icon(
+                                                    Icons.qr_code,
+                                                    color: Theme.of(context).colorScheme.primary,
+                                                    size: 20,
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              GestureDetector(
+                                                onTap: () async {
+                                                  await Clipboard.setData(ClipboardData(text: user.referralCode?.toString() ?? 'null'));
+                                                  if (context.mounted) {
+                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                    SnackBar(
+                                                      content: const Text(
+                                                        'Referral code copied to clipboard!',
+                                                        style: TextStyle(color: Colors.white),
+                                                      ),
+                                                      backgroundColor: Theme.of(context).colorScheme.primary,
+                                                      duration: const Duration(seconds: 2),
+                                                      behavior: SnackBarBehavior.floating,
+                                                      shape: RoundedRectangleBorder(
+                                                        borderRadius: BorderRadius.circular(8),
+                                                      ),
+                                                    ),
+                                                  );
+                                                  }
+                                                },
+                                                child: Container(
+                                                  padding: const EdgeInsets.all(8),
+                                                  decoration: BoxDecoration(
+                                                    color: Theme.of(context).colorScheme.primary,
+                                                    borderRadius: BorderRadius.circular(6),
+                                                    boxShadow: [
+                                                      BoxShadow(
+                                                        color: Colors.black.withValues(alpha: 0.08),
+                                                        blurRadius: 2,
+                                                        offset: const Offset(0, 1),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  child: Icon(
+                                                    Icons.content_copy,
+                                                    color: Colors.white,
+                                                    size: 20,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 20),
+                                  ],
                                 ),
-                                const SizedBox(height: 10),
-                                Container(
-                                  width: double.infinity,
+                              ),
+                              // Profile Menu Navigation (only for current user)
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 30.0),
+                                child: Column(
+                                  children: [
+                                    ProfileNavButton(
+                                      icon: 'assets/icons/help_icon.svg',
+                                      buttonText: 'My Helps',
+                                      navDestination: Routes.myHelpsPage,
+                                      haveDialog: false,
+                                    ),
+                                    const SizedBox(height: 12),
+                                    // Approval Dashboard - only show for users with referral capability
+                                    Obx(() {
+                                      if (authController.pendingApprovalsCount.value > 0) {
+                                        // Show with badge if there are pending approvals
+                                        return Column(
+                                          children: [
+                                            Stack(
+                                              children: [
+                                                ProfileNavButton(
+                                                  icon: 'assets/icons/star_icon.svg',
+                                                  buttonText: 'Manage Approvals',
+                                                  navDestination: Routes.approvalDashboardPage,
+                                                  haveDialog: false,
+                                                ),
+                                                // Notification badge
+                                                Positioned(
+                                                  right: 20,
+                                                  top: 15,
+                                                  child: Container(
+                                                    padding: const EdgeInsets.symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 4,
+                                                    ),
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.red,
+                                                      borderRadius: BorderRadius.circular(12),
+                                                    ),
+                                                    child: Text(
+                                                      '${authController.pendingApprovalsCount.value}',
+                                                      style: const TextStyle(
+                                                        color: Colors.white,
+                                                        fontSize: 12,
+                                                        fontWeight: FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 12),
+                                          ],
+                                        );
+                                      } else {
+                                        // Check if user has ever had approvals (has referral code)
+                                        final currentUser = authController.currentUserStore.value;
+                                        if (currentUser?.referralCode != null &&
+                                            currentUser!.referralCode!.isNotEmpty) {
+                                          return Column(
+                                            children: [
+                                              ProfileNavButton(
+                                                icon: 'assets/icons/star_icon.svg',
+                                                buttonText: 'Manage Approvals',
+                                                navDestination: Routes.approvalDashboardPage,
+                                                haveDialog: false,
+                                              ),
+                                              const SizedBox(height: 12),
+                                            ],
+                                          );
+                                        }
+                                      }
+                                      return Container(); // Don't show if no referral capability
+                                    }),
+                                    ProfileNavButton(
+                                      icon: 'assets/icons/feedback_icon.svg',
+                                      buttonText: 'Feedbacks',
+                                      navDestination: Routes.feedbackPage,
+                                      haveDialog: false,
+                                    ),
+                                    const SizedBox(height: 12),
+                                    ProfileNavButton(
+                                      icon: 'assets/icons/contact_icon.svg',
+                                      buttonText: 'Contact us',
+                                      navDestination: Routes.contactUsPage,
+                                      haveDialog: false,
+                                    ),
+                                    const SizedBox(height: 12),
+                                    ProfileNavButton(
+                                      icon: 'assets/icons/logout_icon.svg',
+                                      buttonText: 'Logout',
+                                      navDestination: '',
+                                      haveDialog: true,
+                                      dialog: LogoutDialog(
+                                        questionText: 'Are you sure you want to logout?',
+                                        submitText: 'Logout',
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    ProfileNavButton(
+                                      icon: 'assets/icons/delete_icon.svg',
+                                      buttonText: 'Delete account',
+                                      navDestination: '',
+                                      haveDialog: true,
+                                      dialog: DeleteDialog(),
+                                    ),
+                                    // Removed final SizedBox(height: 20) to avoid extra white space
+                                  ],
+                                ),
+                              ),
+                            ] else ...[
+                              // OTHER USER LAYOUT - only show feedback section
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 30.0),
+                                child: Container(
                                   decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    border: Border.all(
-                                      color: Theme.of(context).colorScheme.primary,
-                                      width: 2,
-                                    ),
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius: BorderRadius.circular(12),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Colors.black.withValues(alpha: 0.04),
-                                        blurRadius: 4,
-                                        offset: const Offset(0, 2),
+                                        color: Colors.black.withValues(alpha: 0.1),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 4),
                                       ),
                                     ],
                                   ),
-                                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
                                     children: [
-                                      Expanded(
-                                        child: FittedBox(
-                                          fit: BoxFit.scaleDown,
-                                          alignment: Alignment.centerLeft,
-                                          child: Text(
-                                            user.referralCode?.toString() ?? 'null',
-                                            style: TextStyle(
-                                              fontSize: 22,
-                                              fontWeight: FontWeight.bold,
-                                              color: Theme.of(context).colorScheme.primary,
-                                              letterSpacing: 2.5,
-                                            ),
-                                            maxLines: 1,
-                                          ),
+                                      const Text(
+                                        "What others say:",
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
                                         ),
                                       ),
-                                      Row(
-                                        children: [
-                                          GestureDetector(
-                                            onTap: () {
-                                              // Debug logging
+                                      const SizedBox(height: 15),
+                                      Obx(() {
 
-                                              Get.dialog(QrCodeDialog(
-                                                referralCode: user.referralCode?.toString() ?? 'null',
-                                                username: user.username,
-                                                userId: user.userId,
-                                              ));
-                                            },
-                                            child: Container(
-                                              padding: const EdgeInsets.all(8),
-                                              decoration: BoxDecoration(
-                                                color: Colors.white,
-                                                border: Border.all(
-                                                  color: Theme.of(context).colorScheme.primary,
-                                                  width: 1,
-                                                ),
-                                                borderRadius: BorderRadius.circular(6),
-                                                boxShadow: [
-                                                  BoxShadow(
-                                                    color: Colors.black.withValues(alpha: 0.08),
-                                                    blurRadius: 2,
-                                                    offset: const Offset(0, 1),
-                                                  ),
-                                                ],
-                                              ),
-                                              child: Icon(
-                                                Icons.qr_code,
-                                                color: Theme.of(context).colorScheme.primary,
-                                                size: 20,
+                                        if (requestController.profileFeedbackList.isEmpty) {
+                                          return const Padding(
+                                            padding: EdgeInsets.all(20.0),
+                                            child: Text(
+                                              'No feedback yet',
+                                              style: TextStyle(
+                                                color: Colors.white70,
+                                                fontSize: 14,
                                               ),
                                             ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          GestureDetector(
-                                            onTap: () async {
-                                              await Clipboard.setData(ClipboardData(text: user.referralCode?.toString() ?? 'null'));
-                                              if (context.mounted) {
-                                                ScaffoldMessenger.of(context).showSnackBar(
-                                                SnackBar(
-                                                  content: const Text(
-                                                    'Referral code copied to clipboard!',
-                                                    style: TextStyle(color: Colors.white),
-                                                  ),
-                                                  backgroundColor: Theme.of(context).colorScheme.primary,
-                                                  duration: const Duration(seconds: 2),
-                                                  behavior: SnackBarBehavior.floating,
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius: BorderRadius.circular(8),
-                                                  ),
+                                          );
+                                        }
+
+                                        return Column(
+                                          children: requestController.profileFeedbackList.take(2).map((item) {
+                                            final feedback = item['feedback'] as FeedbackModel;
+                                            final username = item['username'];
+                                            final title = item['title'];
+                                            return GestureDetector(
+                                              onTap: () => _showFeedbackDetails(feedback, username, title),
+                                              child: Container(
+                                                margin: const EdgeInsets.symmetric(vertical: 6),
+                                                padding: const EdgeInsets.all(16),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.white,
+                                                  borderRadius: BorderRadius.circular(12),
+                                                  boxShadow: [
+                                                    BoxShadow(
+                                                      color: Colors.black.withValues(alpha: 0.05),
+                                                      blurRadius: 4,
+                                                      offset: const Offset(0, 2),
+                                                    ),
+                                                  ],
                                                 ),
-                                              );
-                                              }
-                                            },
-                                            child: Container(
-                                              padding: const EdgeInsets.all(8),
-                                              decoration: BoxDecoration(
-                                                color: Theme.of(context).colorScheme.primary,
-                                                borderRadius: BorderRadius.circular(6),
-                                                boxShadow: [
-                                                  BoxShadow(
-                                                    color: Colors.black.withValues(alpha: 0.08),
-                                                    blurRadius: 2,
-                                                    offset: const Offset(0, 1),
-                                                  ),
-                                                ],
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Row(
+                                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                      children: [
+                                                        Expanded(
+                                                          child: Text(
+                                                            "Given by: $username",
+                                                            style: const TextStyle(
+                                                              fontSize: 14,
+                                                              fontWeight: FontWeight.w600,
+                                                              color: Color.fromRGBO(3, 80, 135, 1),
+                                                            ),
+                                                            overflow: TextOverflow.ellipsis,
+                                                            maxLines: 1,
+                                                          ),
+                                                        ),
+                                                        const SizedBox(width: 8),
+                                                        Icon(
+                                                          Icons.arrow_forward_ios,
+                                                          size: 16,
+                                                          color: Colors.grey[400],
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    const SizedBox(height: 8),
+                                                    Text(
+                                                      feedback.review.length > 100
+                                                        ? '${feedback.review.substring(0, 100)}...'
+                                                        : feedback.review,
+                                                      style: const TextStyle(
+                                                        fontSize: 13,
+                                                        color: Colors.black87,
+                                                        height: 1.4,
+                                                      ),
+                                                      maxLines: 3,
+                                                      overflow: TextOverflow.ellipsis,
+                                                    ),
+                                                    const SizedBox(height: 8),
+                                                    Row(
+                                                      children: [
+                                                        Container(
+                                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                          decoration: BoxDecoration(
+                                                            color: Colors.amber.withValues(alpha: 0.1),
+                                                            borderRadius: BorderRadius.circular(6),
+                                                          ),
+                                                          child: Text(
+                                                            "${feedback.rating} ⭐",
+                                                            style: const TextStyle(
+                                                              fontSize: 12,
+                                                              fontWeight: FontWeight.w600,
+                                                              color: Colors.amber,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                        const SizedBox(width: 8),
+                                                        Container(
+                                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                          decoration: BoxDecoration(
+                                                            color: const Color.fromRGBO(3, 80, 135, 0.1),
+                                                            borderRadius: BorderRadius.circular(6),
+                                                          ),
+                                                          child: Text(
+                                                            "${feedback.hours} hrs",
+                                                            style: const TextStyle(
+                                                              fontSize: 12,
+                                                              fontWeight: FontWeight.w600,
+                                                              color: Color.fromRGBO(3, 80, 135, 1),
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ],
+                                                ),
                                               ),
-                                              child: Icon(
-                                                Icons.content_copy,
+                                            );
+                                          }).toList(),
+                                        );
+                                      }),
+                                      const SizedBox(height: 10),
+                                      if (requestController.profileFeedbackList.length > 2)
+                                        GestureDetector(
+                                          onTap: () => _showAllFeedback(),
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white.withValues(alpha: 0.9),
+                                              borderRadius: BorderRadius.circular(8),
+                                              border: Border.all(
                                                 color: Colors.white,
-                                                size: 20,
+                                                width: 1,
                                               ),
                                             ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text(
+                                                  "View all ${requestController.profileFeedbackList.length} reviews",
+                                                  style: const TextStyle(
+                                                    color: Color.fromRGBO(3, 80, 135, 1),
+                                                    fontWeight: FontWeight.w600,
+                                                    fontSize: 13,
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 6),
+                                                const Icon(
+                                                  Icons.arrow_forward,
+                                                  size: 16,
+                                                  color: Color.fromRGBO(3, 80, 135, 1),
+                                                ),
+                                              ],
+                                            ),
                                           ),
-                                        ],
-                                      ),
+                                        ),
                                     ],
                                   ),
                                 ),
-                                const SizedBox(height: 20),
-                              ],
-                            ),
-                          ),
-                          // Profile Menu Navigation (only for current user)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 30.0),
-                            child: Column(
-                              children: [
-                                ProfileNavButton(
-                                  icon: 'assets/icons/help_icon.svg',
-                                  buttonText: 'My Helps',
-                                  navDestination: Routes.myHelpsPage,
-                                  haveDialog: false,
-                                ),
-                                const SizedBox(height: 12),
-                                // Approval Dashboard - only show for users with referral capability
-                                Obx(() {
-                                  if (authController.pendingApprovalsCount.value > 0) {
-                                    // Show with badge if there are pending approvals
-                                    return Column(
-                                      children: [
-                                        Stack(
-                                          children: [
-                                            ProfileNavButton(
-                                              icon: 'assets/icons/star_icon.svg',
-                                              buttonText: 'Manage Approvals',
-                                              navDestination: Routes.approvalDashboardPage,
-                                              haveDialog: false,
-                                            ),
-                                            // Notification badge
-                                            Positioned(
-                                              right: 20,
-                                              top: 15,
-                                              child: Container(
-                                                padding: const EdgeInsets.symmetric(
-                                                  horizontal: 8,
-                                                  vertical: 4,
-                                                ),
-                                                decoration: BoxDecoration(
-                                                  color: Colors.red,
-                                                  borderRadius: BorderRadius.circular(12),
-                                                ),
-                                                child: Text(
-                                                  '${authController.pendingApprovalsCount.value}',
-                                                  style: const TextStyle(
-                                                    color: Colors.white,
-                                                    fontSize: 12,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 12),
-                                      ],
-                                    );
-                                  } else {
-                                    // Check if user has ever had approvals (has referral code)
-                                    final currentUser = authController.currentUserStore.value;
-                                    if (currentUser?.referralCode != null && 
-                                        currentUser!.referralCode!.isNotEmpty) {
-                                      return Column(
-                                        children: [
-                                          ProfileNavButton(
-                                            icon: 'assets/icons/star_icon.svg',
-                                            buttonText: 'Manage Approvals',
-                                            navDestination: Routes.approvalDashboardPage,
-                                            haveDialog: false,
-                                          ),
-                                          const SizedBox(height: 12),
-                                        ],
-                                      );
-                                    }
-                                  }
-                                  return Container(); // Don't show if no referral capability
-                                }),
-                                ProfileNavButton(
-                                  icon: 'assets/icons/feedback_icon.svg',
-                                  buttonText: 'Feedbacks',
-                                  navDestination: Routes.feedbackPage,
-                                  haveDialog: false,
-                                ),
-                                const SizedBox(height: 12),
-                                ProfileNavButton(
-                                  icon: 'assets/icons/contact_icon.svg',
-                                  buttonText: 'Contact us',
-                                  navDestination: Routes.contactUsPage,
-                                  haveDialog: false,
-                                ),
-                                const SizedBox(height: 12),
-                                ProfileNavButton(
-                                  icon: 'assets/icons/logout_icon.svg',
-                                  buttonText: 'Logout',
-                                  navDestination: '',
-                                  haveDialog: true,
-                                  dialog: LogoutDialog(
-                                    questionText: 'Are you sure you want to logout?',
-                                    submitText: 'Logout',
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                ProfileNavButton(
-                                  icon: 'assets/icons/delete_icon.svg',
-                                  buttonText: 'Delete account',
-                                  navDestination: '',
-                                  haveDialog: true,
-                                  dialog: DeleteDialog(),
-                                ),
-                                // Removed final SizedBox(height: 20) to avoid extra white space
-                              ],
-                            ),
-                          ),
-                        ] else ...[
-                          // OTHER USER LAYOUT - only show feedback section
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 30.0),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(12),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.1),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
                               ),
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                children: [
-                                  const Text(
-                                    "What others say:",
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 15),
-                                  Obx(() {
-
-                                    if (requestController.profileFeedbackList.isEmpty) {
-                                      return const Padding(
-                                        padding: EdgeInsets.all(20.0),
-                                        child: Text(
-                                          'No feedback yet',
-                                          style: TextStyle(
-                                            color: Colors.white70,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                      );
-                                    }
-
-                                    return Column(
-                                      children: requestController.profileFeedbackList.take(2).map((item) {
-                                        final feedback = item['feedback'] as FeedbackModel;
-                                        final username = item['username'];
-                                        final title = item['title'];
-                                        return GestureDetector(
-                                          onTap: () => _showFeedbackDetails(feedback, username, title),
-                                          child: Container(
-                                            margin: const EdgeInsets.symmetric(vertical: 6),
-                                            padding: const EdgeInsets.all(16),
-                                            decoration: BoxDecoration(
-                                              color: Colors.white,
-                                              borderRadius: BorderRadius.circular(12),
-                                              boxShadow: [
-                                                BoxShadow(
-                                                  color: Colors.black.withValues(alpha: 0.05),
-                                                  blurRadius: 4,
-                                                  offset: const Offset(0, 2),
-                                                ),
-                                              ],
-                                            ),
-                                            child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                Row(
-                                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                                  children: [
-                                                    Expanded(
-                                                      child: Text(
-                                                        "Given by: $username",
-                                                        style: const TextStyle(
-                                                          fontSize: 14,
-                                                          fontWeight: FontWeight.w600,
-                                                          color: Color.fromRGBO(3, 80, 135, 1),
-                                                        ),
-                                                        overflow: TextOverflow.ellipsis,
-                                                        maxLines: 1,
-                                                      ),
-                                                    ),
-                                                    const SizedBox(width: 8),
-                                                    Icon(
-                                                      Icons.arrow_forward_ios,
-                                                      size: 16,
-                                                      color: Colors.grey[400],
-                                                    ),
-                                                  ],
-                                                ),
-                                                const SizedBox(height: 8),
-                                                Text(
-                                                  feedback.review.length > 100
-                                                    ? '${feedback.review.substring(0, 100)}...'
-                                                    : feedback.review,
-                                                  style: const TextStyle(
-                                                    fontSize: 13,
-                                                    color: Colors.black87,
-                                                    height: 1.4,
-                                                  ),
-                                                  maxLines: 3,
-                                                  overflow: TextOverflow.ellipsis,
-                                                ),
-                                                const SizedBox(height: 8),
-                                                Row(
-                                                  children: [
-                                                    Container(
-                                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                                      decoration: BoxDecoration(
-                                                        color: Colors.amber.withValues(alpha: 0.1),
-                                                        borderRadius: BorderRadius.circular(6),
-                                                      ),
-                                                      child: Text(
-                                                        "${feedback.rating} ⭐",
-                                                        style: const TextStyle(
-                                                          fontSize: 12,
-                                                          fontWeight: FontWeight.w600,
-                                                          color: Colors.amber,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                    const SizedBox(width: 8),
-                                                    Container(
-                                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                                      decoration: BoxDecoration(
-                                                        color: const Color.fromRGBO(3, 80, 135, 0.1),
-                                                        borderRadius: BorderRadius.circular(6),
-                                                      ),
-                                                      child: Text(
-                                                        "${feedback.hours} hrs",
-                                                        style: const TextStyle(
-                                                          fontSize: 12,
-                                                          fontWeight: FontWeight.w600,
-                                                          color: Color.fromRGBO(3, 80, 135, 1),
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        );
-                                      }).toList(),
-                                    );
-                                  }),
-                                  const SizedBox(height: 10),
-                                  if (requestController.profileFeedbackList.length > 2)
-                                    GestureDetector(
-                                      onTap: () => _showAllFeedback(),
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withValues(alpha: 0.9),
-                                          borderRadius: BorderRadius.circular(8),
-                                          border: Border.all(
-                                            color: Colors.white,
-                                            width: 1,
-                                          ),
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Text(
-                                              "View all ${requestController.profileFeedbackList.length} reviews",
-                                              style: const TextStyle(
-                                                color: Color.fromRGBO(3, 80, 135, 1),
-                                                fontWeight: FontWeight.w600,
-                                                fontSize: 13,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 6),
-                                            const Icon(
-                                              Icons.arrow_forward,
-                                              size: 16,
-                                              color: Color.fromRGBO(3, 80, 135, 1),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          // Removed final SizedBox(height: 20) to avoid extra white space
-                        ],
-                      ],
+                              // Removed final SizedBox(height: 20) to avoid extra white space
+                            ],
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-                ),
+                  ],
                 ),
               ),
             ],
