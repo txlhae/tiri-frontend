@@ -1226,9 +1226,7 @@ class RequestController extends GetxController {
                    ? 'No Location'
                    : (selectedRequestLocation.value?.displayName ??
                       '${selectedRequestLocation.value?.locality ?? selectedRequestLocation.value?.subLocality ?? ''}, ${selectedRequestLocation.value?.administrativeArea ?? ''}'), // Display name as address
-        'city': isLocationOptional.value
-                ? 'No Location'
-                : (selectedRequestLocation.value?.locality ?? selectedRequestLocation.value?.administrativeArea ?? ''), // City from location
+        'city': '', // Don't populate city field - as per requirement
 
         // ✅ TIMEZONE FIX: Convert local datetime to UTC before sending to backend
         'date_needed': selectedDateTime.value?.toUtc().toIso8601String(), // Convert to UTC
@@ -1249,7 +1247,7 @@ class RequestController extends GetxController {
       debugLog("   - Description: '${requestData['description']}' (${requestData['description']?.runtimeType})");
       debugLog("   - Category: ${requestData['category']} (${requestData['category']?.runtimeType})");
       debugLog("   - Address: '${requestData['address']}' (${requestData['address']?.runtimeType})");
-      debugLog("   - City: '${requestData['city']}' (${requestData['city']?.runtimeType})");
+      debugLog("   - City: '${requestData['city']}' (empty - as per requirement)");
       debugLog("   - Date needed: '${requestData['date_needed']}' (${requestData['date_needed']?.runtimeType})");
       debugLog("   - Volunteers needed: ${requestData['volunteers_needed']} (${requestData['volunteers_needed']?.runtimeType})");
       debugLog("   - Estimated hours: ${requestData['estimated_hours']} (${requestData['estimated_hours']?.runtimeType})");
@@ -1334,7 +1332,7 @@ class RequestController extends GetxController {
         'description': request.description,
         'date_needed': request.requestedTime?.toUtc().toIso8601String(),
         'address': request.location ?? '',
-        'city': request.location ?? '',
+        'city': '', // Don't populate city field - as per requirement
         'latitude': request.latitude,
         'longitude': request.longitude,
         'volunteers_needed': request.numberOfPeople,
