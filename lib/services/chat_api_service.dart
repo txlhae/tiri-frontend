@@ -342,7 +342,7 @@ class ChatApiService {
       participantIds: List<String>.from(json['participants'] ?? []),
       lastMessage: json['last_message']?['message'],
       lastMessageTime: json['last_message']?['timestamp'] != null
-          ? DateTime.parse(json['last_message']['timestamp'])
+          ? DateTime.parse(json['last_message']['timestamp']).toUtc().toLocal()
           : null,
       unreadCountForReceiver: json['unread_count'] ?? 0,
       lastSenderId: json['last_message']?['sender']?.toString(),
@@ -378,7 +378,7 @@ class ChatApiService {
       receiverId: receiverId,
       message: messageContent,
       isSeen: json['is_read'] ?? false,
-      timestamp: DateTime.parse(json['timestamp']),
+      timestamp: DateTime.parse(json['timestamp']).toUtc().toLocal(),
       senderName: json['sender_name'],
       senderProfilePic: json['sender_profile_pic'],
     );

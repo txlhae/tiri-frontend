@@ -179,7 +179,10 @@ class _RejectionDialogState extends State<RejectionDialog> {
                         Expanded(
                           child: Text(
                             reason,
-                            style: const TextStyle(fontSize: 14),
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Colors.black,
+                            ),
                           ),
                         ),
                       ],

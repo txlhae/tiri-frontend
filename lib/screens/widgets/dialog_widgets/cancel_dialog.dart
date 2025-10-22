@@ -36,12 +36,9 @@ class _CancelDialogState extends State<CancelDialog> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 15.0),
-        child: SizedBox(
-          height: widget.request.acceptedUser.isNotEmpty
-              ? MediaQuery.of(context).size.height * 0.4
-              : MediaQuery.of(context).size.height * 0.25,
+        child: IntrinsicHeight(
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
@@ -57,11 +54,13 @@ class _CancelDialogState extends State<CancelDialog> {
                   ),
                 ],
               ),
+              const SizedBox(height: 10),
               Text(
                 widget.questionText,
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 18, color: Colors.black),
               ),
+              const SizedBox(height: 20),
               if (widget.request.acceptedUser.isNotEmpty)
                 Obx(() => Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -80,6 +79,7 @@ class _CancelDialogState extends State<CancelDialog> {
                           style: const TextStyle(color: Colors.red),
                         ),
                       ),
+                    const SizedBox(height: 20),
                   ],
                 )),
 
@@ -163,6 +163,7 @@ class _CancelDialogState extends State<CancelDialog> {
                   },
                 ),
               ),
+              const SizedBox(height: 12),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 40.0),
                 child: CustomCancel(

@@ -54,7 +54,7 @@ class HomeScreen extends StatelessWidget {
           children: <Widget>[
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10),
-              height: MediaQuery.of(context).size.height < 700 ? 130 : 170,
+              height: MediaQuery.of(context).size.height < 700 ? 131 : 170,
               decoration: const BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
@@ -69,11 +69,11 @@ class HomeScreen extends StatelessWidget {
               child: Column(
                 children: [
                   SizedBox(height: MediaQuery.of(context).size.height < 700 ? 35 : 60),
-                  Row(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(2.0),
-                        child: GestureDetector(
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 2.0),
+                    child: Row(
+                      children: [
+                        GestureDetector(
                           behavior: HitTestBehavior.opaque,
                           onTap: () {
                             if (authController.currentUserStore.value != null) {
@@ -130,55 +130,66 @@ class HomeScreen extends StatelessWidget {
                             ],
                           ),
                         ),
-                      ),
-                      const Spacer(),
-                      GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () {
-                          Get.to(() => const LocationPage());
-                        },
-                        child: const Icon(
-                          Icons.location_on,
-                          color: Colors.white,
+                        const Spacer(),
+                        GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () {
+                            Get.to(() => const LocationPage());
+                          },
+                          child: const Icon(
+                            Icons.location_on,
+                            color: Colors.white,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 15),
-                      GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () {
-                          try {
-                            Get.toNamed(Routes.notificationsPage);
-                          } catch (e) {
+                        const SizedBox(width: 15),
+                        GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () {
+                            try {
+                              Get.toNamed(Routes.notificationsPage);
+                            } catch (e) {
       // Error handled silently
-                            Get.snackbar(
-                              "Error",
-                              "Could not open notifications. Please try again.",
-                              snackPosition: SnackPosition.BOTTOM,
-                              backgroundColor: Colors.red,
-                              colorText: Colors.white,
-                            );
-                          }
-                        },
-                        child: const Icon(
-                          Icons.notifications,
-                          color: Colors.white,
+                              Get.snackbar(
+                                "Error",
+                                "Could not open notifications. Please try again.",
+                                snackPosition: SnackPosition.BOTTOM,
+                                backgroundColor: Colors.red,
+                                colorText: Colors.white,
+                              );
+                            }
+                          },
+                          child: const Icon(
+                            Icons.notifications,
+                            color: Colors.white,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
+                  const Spacer(),
                   TabBar.secondary(
+                    controller: homeController.tabController!,
                     labelStyle: const TextStyle(
                       color: Color.fromRGBO(255, 255, 255, 1),
                       fontWeight: FontWeight.bold,
-                      fontSize: 14,
                     ),
-                    controller: homeController.tabController!,
                     unselectedLabelStyle: const TextStyle(
                       color: Color.fromRGBO(218, 218, 218, 1),
+                      fontWeight: FontWeight.bold,
                     ),
                     tabs: const <Widget>[
-                      Tab(text: 'Community Posts'),
-                      Tab(text: 'My Posts'),
+                      Tab(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text('Community Posts'),
+                        ),
+                      ),
+                      Tab(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text('My Posts'),
+                        ),
+                      ),
                     ],
                     dividerColor: Colors.transparent,
                     indicatorColor: Colors.transparent,

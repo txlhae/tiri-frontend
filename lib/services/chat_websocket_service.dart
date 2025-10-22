@@ -345,8 +345,8 @@ class ChatWebSocketService {
         senderId: senderId,
         receiverId: receiverId,
         message: messagePayload['content'] ?? '',
-        timestamp: messagePayload['timestamp'] != null 
-            ? DateTime.parse(messagePayload['timestamp'])
+        timestamp: messagePayload['timestamp'] != null
+            ? DateTime.parse(messagePayload['timestamp']).toUtc().toLocal()
             : DateTime.now(),
         isSeen: messagePayload['is_read'] ?? false,
         senderName: messagePayload['sender_name'],

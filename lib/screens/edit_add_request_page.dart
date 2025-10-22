@@ -6,9 +6,11 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:tiri/controllers/request_controller.dart';
 import 'package:tiri/controllers/request_details_controller.dart';
+import 'package:tiri/models/location_model.dart';
 import 'package:tiri/models/request_model.dart';
 import 'package:tiri/screens/widgets/custom_widgets/custom_back_button.dart';
 import 'package:tiri/screens/widgets/custom_widgets/custom_form_field.dart';
+import 'package:tiri/screens/widgets/dialog_widgets/location_picker_dialog.dart';
 
 class EditAddRequestPage extends StatefulWidget {
   final RequestModel request;
@@ -47,7 +49,16 @@ void didChangeDependencies() {
   // Fill other form fields
   requestController.titleController.value.text = widget.request.title;
   requestController.descriptionController.value.text = widget.request.description;
-  requestController.locationController.value.text = widget.request.location ?? '';
+
+  // Initialize location from request coordinates if available
+  if (widget.request.latitude != 0.0 && widget.request.longitude != 0.0) {
+    requestController.selectedRequestLocation.value = LocationModel(
+      latitude: widget.request.latitude,
+      longitude: widget.request.longitude,
+      displayName: widget.request.location,
+    );
+  }
+
   requestController.numberOfPeopleController.value.text =
       widget.request.numberOfPeople.toString();
       requestController.hoursNeededController.value.text =
@@ -59,7 +70,7 @@ void didChangeDependencies() {
     // Validate required fields
     if (requestController.titleController.value.text.isEmpty ||
         requestController.descriptionController.value.text.isEmpty ||
-        requestController.locationController.value.text.isEmpty ||
+        (requestController.selectedRequestLocation.value == null && !requestController.isLocationOptional.value) ||
         requestController.selectedDateController.value.text.isEmpty ||
         requestController.selectedTimeController.value.text.isEmpty) {
       Get.snackbar(
@@ -120,7 +131,12 @@ void didChangeDependencies() {
       final updatedRequest = widget.request.copyWith(
         title: requestController.titleController.value.text,
         description: requestController.descriptionController.value.text,
-        location: requestController.locationController.value.text,
+        location: requestController.isLocationOptional.value
+            ? 'No Location'
+            : (requestController.selectedRequestLocation.value?.displayName ??
+                '${requestController.selectedRequestLocation.value?.locality ?? ''}, ${requestController.selectedRequestLocation.value?.administrativeArea ?? ''}'),
+        latitude: requestController.isLocationOptional.value ? 0.0 : (requestController.selectedRequestLocation.value?.latitude ?? 0.0),
+        longitude: requestController.isLocationOptional.value ? 0.0 : (requestController.selectedRequestLocation.value?.longitude ?? 0.0),
         requestedTime: requestController.selectedDateTime.value,
         numberOfPeople: number,
         hoursNeeded: hours,
@@ -413,15 +429,123 @@ void didChangeDependencies() {
                     ),
                     Obx(() => Column(
                           children: [
-                            CustomFormField(
-                              hintText: "Location",
-                              haveObscure: false,
-                              textController:
-                                  requestController.locationController.value,
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: GestureDetector(
+                                    onTap: requestController.isLocationOptional.value
+                                        ? null
+                                        : () {
+                                            showDialog(
+                                              context: context,
+                                              builder: (context) => LocationPickerDialog(
+                                                initialLocation: requestController.selectedRequestLocation.value,
+                                                onLocationSelected: (location) {
+                                                  requestController.selectedRequestLocation.value = location;
+                                                  requestController.locationError.value = null;
+                                                },
+                                              ),
+                                            );
+                                          },
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 16),
+                                      decoration: BoxDecoration(
+                                        color: requestController.isLocationOptional.value
+                                            ? Colors.grey.shade300
+                                            : Colors.white,
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(
+                                          color: requestController.locationError.value != null
+                                              ? Colors.red
+                                              : Colors.black,
+                                          width: 0.5,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            Icons.location_on,
+                                            color: requestController.isLocationOptional.value
+                                                ? Colors.grey.shade400
+                                                : (requestController.selectedRequestLocation.value != null
+                                                    ? const Color.fromRGBO(0, 140, 170, 1)
+                                                    : Colors.grey),
+                                            size: 20,
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                            child: Text(
+                                              requestController.isLocationOptional.value
+                                                  ? 'Location not required'
+                                                  : (requestController.selectedRequestLocation.value != null
+                                                      ? (requestController.selectedRequestLocation.value!.displayName ??
+                                                         '${requestController.selectedRequestLocation.value!.locality ?? requestController.selectedRequestLocation.value!.subLocality ?? ''}, ${requestController.selectedRequestLocation.value!.administrativeArea ?? ''}')
+                                                      : 'Select Location'),
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                color: requestController.isLocationOptional.value
+                                                    ? Colors.grey.shade500
+                                                    : (requestController.selectedRequestLocation.value != null
+                                                        ? Colors.black87
+                                                        : Colors.grey.shade600),
+                                              ),
+                                            ),
+                                          ),
+                                          if (!requestController.isLocationOptional.value)
+                                            const Icon(
+                                              Icons.arrow_forward_ios,
+                                              size: 16,
+                                              color: Colors.grey,
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                // Skip location button
+                                const SizedBox(width: 10),
+                                GestureDetector(
+                                  onTap: () {
+                                    requestController.isLocationOptional.value = !requestController.isLocationOptional.value;
+                                    if (requestController.isLocationOptional.value) {
+                                      requestController.locationError.value = null;
+                                      requestController.selectedRequestLocation.value = null;
+                                    }
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      color: requestController.isLocationOptional.value
+                                          ? Colors.red.shade50
+                                          : Colors.grey.shade100,
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(
+                                        color: requestController.isLocationOptional.value
+                                            ? Colors.red.shade300
+                                            : Colors.grey.shade300,
+                                      ),
+                                    ),
+                                    child: Icon(
+                                      requestController.isLocationOptional.value
+                                          ? Icons.close
+                                          : Icons.location_off,
+                                      color: requestController.isLocationOptional.value
+                                          ? Colors.red.shade700
+                                          : Colors.grey.shade600,
+                                      size: 20,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                            if (requestController.locationError.value != null)
-                              Text(requestController.locationError.value!,
-                                  style: const TextStyle(color: Colors.red)),
+                            if (requestController.locationError.value != null && !requestController.isLocationOptional.value)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8.0, left: 15.0),
+                                child: Text(
+                                  requestController.locationError.value!,
+                                  style: const TextStyle(color: Colors.red, fontSize: 12),
+                                ),
+                              ),
                           ],
                         )),
                     const SizedBox(height: 20),

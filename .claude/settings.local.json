@@ -78,7 +78,9 @@
       "Bash(~/flutter/bin/flutter clean)",
       "Bash(~/flutter/bin/flutter build ipa --release)",
       "Bash(~/flutter/bin/flutter run)",
-      "Bash(~/flutter/bin/dart run build_runner build --delete-conflicting-outputs)"
+      "Bash(~/flutter/bin/dart run build_runner build --delete-conflicting-outputs)",
+      "Bash(timeout 30 flutter analyze --no-fatal-infos lib/screens/edit_add_request_page.dart lib/controllers/request_controller.dart)",
+      "Bash(timeout 30 flutter analyze lib/screens/add_request_page.dart --no-fatal-infos)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits",

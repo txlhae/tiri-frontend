@@ -31,44 +31,39 @@ class AddRequestPage extends StatelessWidget {
                     left: 10,
                     right: 10,
                     top: MediaQuery.of(context).size.height < 700 ? 30 : 50,
-                    bottom: 10,
+                    bottom: 20,
                   ),
                   decoration: const BoxDecoration(
                       color: Color.fromRGBO(0, 140, 170, 1),
                       borderRadius: BorderRadius.vertical(
                         bottom: Radius.circular(20),
                       )),
-                  height: MediaQuery.of(context).size.height < 700 ? 120 : 170,
                   child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
+                      const SizedBox(height: 20),
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           CustomBackButton(
                             controller: controller,
                           ),
+                          const Text(
+                            'Add request',
+                            style: TextStyle(
+                                fontSize: 20, fontWeight: FontWeight.w600, color: Colors.white),
+                          ),
+                          const SizedBox(width: 48),
                         ],
                       ),
-                    const SizedBox(
-                      height: 20,
-                    ),
-                    const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Add request',
-                          style: TextStyle(
-                              fontSize: 20, fontWeight: FontWeight.w600),
-                        ),
-                      ],
-                    ),
-                  ],
+                      const SizedBox(height: 5),
+                    ],
+                  ),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 25.0),
+                Padding(
+                padding: const EdgeInsets.fromLTRB(25.0, 0, 25.0, 30.0),
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  mainAxisAlignment: MainAxisAlignment.start,
                   children: [
                     const SizedBox(
                       height: 20,
@@ -425,7 +420,7 @@ class AddRequestPage extends StatelessWidget {
           ),
         ),
       ),
-    ),
+      ),
     );
   }
 }

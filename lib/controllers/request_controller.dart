@@ -1335,6 +1335,8 @@ class RequestController extends GetxController {
         'date_needed': request.requestedTime?.toUtc().toIso8601String(),
         'address': request.location ?? '',
         'city': request.location ?? '',
+        'latitude': request.latitude,
+        'longitude': request.longitude,
         'volunteers_needed': request.numberOfPeople,
         'estimated_hours': request.hoursNeeded,
       };

@@ -199,13 +199,16 @@ class _RequestDetailsState extends State<RequestDetails> {
                   },
                   child: SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
-                    child: Obx(() {
-                      if (requestController.isLoadingRequestDetails.value) {
-                        return _buildLoadingContent();
-                      }
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 24.0),
+                      child: Obx(() {
+                        if (requestController.isLoadingRequestDetails.value) {
+                          return _buildLoadingContent();
+                        }
 
-                      return _buildLoadedContent();
-                    }),
+                        return _buildLoadedContent();
+                      }),
+                    ),
                   ),
                 ),
               ),
@@ -509,7 +512,7 @@ class _RequestDetailsState extends State<RequestDetails> {
             },
           ),
 
-        // Start Request button for request owners (ACCEPTED status only)
+        // Start Task button for task owners (ACCEPTED status only)
         if (request.status == RequestStatus.accepted &&
             authController.currentUserStore.value?.userId == request.userId &&
             request.acceptedUser.isNotEmpty)
@@ -523,7 +526,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                     await requestController.startManualRequest(request.requestId);
                     Get.snackbar(
                       'Success',
-                      'Request started successfully! Work can now begin.',
+                      'Task started successfully! Work can now begin.',
                       backgroundColor: Colors.green.shade600,
                       colorText: Colors.white,
                       snackPosition: SnackPosition.BOTTOM,
@@ -554,7 +557,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                       )
                     : const Icon(Icons.play_arrow, size: 24),
                 label: Text(
-                  requestController.isLoading.value ? "Starting..." : "Start Request",
+                  requestController.isLoading.value ? "Starting..." : "Start Task",
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -573,7 +576,7 @@ class _RequestDetailsState extends State<RequestDetails> {
             )),
           ),
 
-        // Start Anyway button for request owners (DELAYED status only)
+        // Start Anyway button for task owners (DELAYED status only)
         if (request.status == RequestStatus.delayed &&
             authController.currentUserStore.value?.userId == request.userId)
           Padding(
@@ -599,7 +602,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              "Request Delayed",
+                              "Task Delayed",
                               style: TextStyle(
                                 color: Colors.orange.shade900,
                                 fontWeight: FontWeight.bold,
@@ -630,7 +633,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                         AlertDialog(
                           title: const Text('Start Anyway?'),
                           content: const Text(
-                            'This request does not have enough volunteers. Are you sure you want to start it anyway?',
+                            'This task does not have enough volunteers. Are you sure you want to start it anyway?',
                           ),
                           actions: [
                             TextButton(
@@ -653,7 +656,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                           await requestController.startDelayedRequest(request.requestId);
                           Get.snackbar(
                             'Success',
-                            'Request started with available volunteers!',
+                            'Task started with available volunteers!',
                             backgroundColor: Colors.green.shade600,
                             colorText: Colors.white,
                             snackPosition: SnackPosition.BOTTOM,
@@ -751,10 +754,7 @@ class _RequestDetailsState extends State<RequestDetails> {
     
     // 1. Show delete button if user owns the request ✅
     if (request.userId == currentUser?.userId) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 50.0),
-        child: _buildOwnerDeleteButton(request),
-      );
+      return _buildOwnerDeleteButton(request);
     }
     
     // 2. Check if current user has already volunteered (pending/approved) ✅
@@ -771,28 +771,19 @@ class _RequestDetailsState extends State<RequestDetails> {
     );
     
     if (isAcceptedVolunteer) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 50.0),
-        child: _buildApprovedRequestState(request),
-      );
+      return _buildApprovedRequestState(request);
     }
     
     // Check for pending volunteer status (user has volunteered but not yet accepted)
-    if (userRequestStatus == 'pending' || 
+    if (userRequestStatus == 'pending' ||
         (hasVolunteered && canCancelRequest) ||
         (volunteerMessage != null && volunteerMessage.isNotEmpty)) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 50.0),
-        child: _buildPendingRequestState(request),
-      );
+      return _buildPendingRequestState(request);
     }
     
     // Check for approved/accepted status that might not be in acceptedUser list yet
     if (userRequestStatus == 'approved' || userRequestStatus == 'accepted') {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 50.0),
-        child: _buildApprovedRequestState(request),
-      );
+      return _buildApprovedRequestState(request);
     }
     
     // 3. ONLY NOW check if request is full for NEW volunteers ✅
@@ -801,10 +792,7 @@ class _RequestDetailsState extends State<RequestDetails> {
     }
     
     // 4. Show "I'm Interested" button for new volunteers ✅
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 50.0),
-      child: _buildInitialRequestState(request, canRequest),
-    );
+    return _buildInitialRequestState(request, canRequest);
   }
 
   /// Builds the pending request state UI with status and cancel option
@@ -812,14 +800,17 @@ class _RequestDetailsState extends State<RequestDetails> {
     // 🔍 NEW: Get the actual volunteer status from backend
     final actualVolunteerStatus = _getCurrentUserVolunteerStatus(request);
 
+    // Don't show cancel button if request is in progress
+    if (request.status == RequestStatus.inprogress) {
+      return Container();
+    }
+
     // For approved status, don't show the status card - the "Accepted by" section will handle it
     if (actualVolunteerStatus?.toLowerCase() == 'approved') {
       // Return the cancel button for approved volunteers
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 50.0),
-        child: Obx(() => SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
+      return Obx(() => SizedBox(
+        width: double.infinity,
+        child: OutlinedButton.icon(
             onPressed: requestController.isLoading.value ? null : () async {
 
               // Show cancel reason dialog
@@ -869,8 +860,7 @@ class _RequestDetailsState extends State<RequestDetails> {
               ),
             ),
           ),
-        )),
-      );
+        ));
     }
 
     // Note: Status variables removed as they were unused after assignment
@@ -1005,11 +995,9 @@ class _RequestDetailsState extends State<RequestDetails> {
 
     // ✅ Show delete button for pending/accepted/delayed requests (not in progress or complete)
     if (!isInProgress && !isComplete) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 50.0),
-        child: Obx(() => SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
+      return Obx(() => SizedBox(
+        width: double.infinity,
+        child: OutlinedButton.icon(
           onPressed: requestController.isLoading.value ? null : () async {
             // Show confirmation dialog with consistent design
             final bool? confirmed = await Get.dialog<bool>(
@@ -1142,8 +1130,7 @@ class _RequestDetailsState extends State<RequestDetails> {
             ),
           ),
         ),
-      )),
-      );
+      ));
     }
 
     // Return empty container if conditions not met (no message shown)
@@ -1282,6 +1269,7 @@ class _RequestDetailsState extends State<RequestDetails> {
               border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
             ),
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(Icons.volunteer_activism, color: Colors.blue.shade700, size: 20),
                 const SizedBox(width: 8),
@@ -2493,7 +2481,7 @@ class _RequestDetailsState extends State<RequestDetails> {
           headerTitle = "Accepted by:";
         } else {
           // For users who haven't sent a request yet
-          headerTitle = "Request Details:";
+          headerTitle = "Requester Details:";
         }
     }
     
