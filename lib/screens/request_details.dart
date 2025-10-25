@@ -1811,7 +1811,12 @@ class _RequestDetailsState extends State<RequestDetails> {
             const Text("Approve Volunteer"),
           ],
         ),
-        content: Text("Are you sure you want to approve $volunteerName as a volunteer for this request?"),
+        content: SingleChildScrollView(
+          child: Text(
+            "Are you sure you want to approve $volunteerName as a volunteer for this request?",
+            softWrap: true,
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Get.back(),
@@ -1845,7 +1850,12 @@ class _RequestDetailsState extends State<RequestDetails> {
             const Text("Reject Volunteer"),
           ],
         ),
-        content: Text("Are you sure you want to reject $volunteerName's volunteer request?"),
+        content: SingleChildScrollView(
+          child: Text(
+            "Are you sure you want to reject $volunteerName's volunteer request?",
+            softWrap: true,
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Get.back(),
@@ -2441,11 +2451,15 @@ class _RequestDetailsState extends State<RequestDetails> {
               children: [
                 Icon(Icons.person, size: 16, color: Colors.grey.shade600),
                 const SizedBox(width: 8),
-                Text(
-                  volunteer.displayName,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Colors.black87,
+                Expanded(
+                  child: Text(
+                    volunteer.displayName,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.black87,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                   ),
                 ),
               ],

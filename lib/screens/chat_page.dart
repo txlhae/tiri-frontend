@@ -296,6 +296,7 @@ class _ChatPageState extends State<ChatPage> {
                 return const Center(
                   child: Text(
                     'No messages yet. Start the conversation!',
+                    textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 16,
                       color: Colors.grey,

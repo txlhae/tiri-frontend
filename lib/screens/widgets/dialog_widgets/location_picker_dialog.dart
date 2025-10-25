@@ -395,9 +395,10 @@ class _LocationPickerDialogState extends State<LocationPickerDialog> {
         ),
         child: Stack(
           children: [
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
+            SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
             // Header
             Container(
               width: double.infinity,
@@ -596,9 +597,10 @@ class _LocationPickerDialogState extends State<LocationPickerDialog> {
             const SizedBox(height: 12),
 
             // Map View
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: SizedBox(
+                height: 250,
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: Stack(
@@ -719,6 +721,7 @@ class _LocationPickerDialogState extends State<LocationPickerDialog> {
               ),
             ),
               ],
+            ),
             ),
             // Floating autocomplete dropdown - positioned absolutely on top
             if (_showSuggestions && _searchSuggestions.isNotEmpty)

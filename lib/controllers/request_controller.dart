@@ -2462,13 +2462,22 @@ class RequestController extends GetxController {
                       const SizedBox(width: 16),
                       const Icon(Icons.arrow_downward, size: 18, color: Color.fromRGBO(0, 140, 170, 1)),
                       const SizedBox(width: 8),
-                      const Text('Latest First'),
-                      const SizedBox(width: 8),
-                      Text(
-                        '(Newest to Oldest)',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade600,
+                      Expanded(
+                        child: Row(
+                          children: [
+                            const Text('Latest First'),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                '(Newest to Oldest)',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade600,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -2493,13 +2502,22 @@ class RequestController extends GetxController {
                       const SizedBox(width: 16),
                       const Icon(Icons.arrow_upward, size: 18, color: Color.fromRGBO(0, 140, 170, 1)),
                       const SizedBox(width: 8),
-                      const Text('Oldest First'),
-                      const SizedBox(width: 8),
-                      Text(
-                        '(Oldest to Newest)',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade600,
+                      Expanded(
+                        child: Row(
+                          children: [
+                            const Text('Oldest First'),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                '(Oldest to Newest)',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade600,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],

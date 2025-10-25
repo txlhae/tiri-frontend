@@ -55,9 +55,6 @@ class ApiService {
   
   /// Track when the access token was last refreshed
   DateTime? _tokenLastRefreshed;
-  
-  /// Access token lifetime in minutes (Django JWT default is 60 minutes)
-  static const int _accessTokenLifetimeMinutes = 60;
 
   // =============================================================================
   // SECURE STORAGE KEYS
@@ -121,13 +118,6 @@ class ApiService {
             options.path == ApiConfig.authRegister) {
           handler.next(options);
           return;
-        }
-
-        // Check if token needs proactive refresh before making the request
-        if (_shouldProactivelyRefreshToken()) {
-          final refreshSuccess = await refreshTokenIfNeeded();
-          if (!refreshSuccess && _accessToken == null) {
-          }
         }
 
         // Add access token to other requests if available
@@ -251,11 +241,6 @@ class ApiService {
       }
       
       if (ApiConfig.enableLogging) {
-      }
-      
-      // Check if token needs proactive refresh
-      if (_shouldProactivelyRefreshToken()) {
-        await refreshTokenIfNeeded();
       }
     } catch (e) {
       // Error handled silently
@@ -386,12 +371,9 @@ class ApiService {
       }
       
     } catch (e) {
-      // Error handled silently
-      
-      // Handle invalid refresh token
       if (e is DioException) {
         final statusCode = e.response?.statusCode;
-        
+
         if (statusCode == 401 || statusCode == 403) {
           await clearTokens();
         }
@@ -403,38 +385,6 @@ class ApiService {
     return false;
   }
 
-  /// Check if access token should be proactively refreshed
-  /// Refreshes when token is within 5 minutes of expiry
-  bool _shouldProactivelyRefreshToken() {
-    if (_accessToken == null || _refreshToken == null || _tokenLastRefreshed == null) {
-      return false;
-    }
-    
-    final now = DateTime.now();
-    final tokenAge = now.difference(_tokenLastRefreshed!);
-    final refreshThreshold = const Duration(minutes: _accessTokenLifetimeMinutes - 5); // 55 minutes
-    
-    final shouldRefresh = tokenAge > refreshThreshold;
-    
-    if (ApiConfig.enableLogging && shouldRefresh) {
-    }
-    
-    return shouldRefresh;
-  }
-
-  /// Get the time remaining before access token expires
-  Duration? getTokenTimeRemaining() {
-    if (_accessToken == null || _tokenLastRefreshed == null) {
-      return null;
-    }
-    
-    final now = DateTime.now();
-    final tokenAge = now.difference(_tokenLastRefreshed!);
-    final tokenLifetime = const Duration(minutes: _accessTokenLifetimeMinutes);
-    
-    final remaining = tokenLifetime - tokenAge;
-    return remaining.isNegative ? Duration.zero : remaining;
-  }
 
   // =============================================================================
   // NETWORK CONNECTIVITY

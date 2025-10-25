@@ -64,7 +64,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
             ),
             child: SafeArea(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
                 child: Column(
                   children: [
                     Row(
@@ -77,11 +77,18 @@ class _NotificationsPageState extends State<NotificationsPage> {
                           child: IconButton(
                             icon: const Icon(Icons.arrow_back, color: Colors.white, size: 24),
                             onPressed: () => Get.back(),
+                            padding: const EdgeInsets.all(8),
+                            constraints: const BoxConstraints(
+                              minWidth: 48,
+                              minHeight: 48,
+                            ),
                           ),
                         ),
+                        const SizedBox(width: 12),
                         Expanded(
                           child: FittedBox(
                             fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
                             child: Text(
                               'Notifications',
                               style: TextStyle(
@@ -93,6 +100,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                             ),
                           ),
                         ),
+                        const SizedBox(width: 12),
                         Obx(() => notifyController.unreadCount.value > 0
                             ? Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -102,11 +110,11 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                 ),
                                 child: InkWell(
                                   onTap: () => notifyController.markAllAsRead(),
-                                  child: const Text(
+                                  child: Text(
                                     'Mark all read',
                                     style: TextStyle(
                                       color: Colors.white,
-                                      fontSize: 13,
+                                      fontSize: MediaQuery.of(context).size.width < 350 ? 11 : 13,
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
