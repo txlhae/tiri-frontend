@@ -730,7 +730,7 @@ class _RequestDetailsState extends State<RequestDetails> {
                   elevation: 2,
                 ),
                 child: const Text(
-                  "Complete Request",
+                  "Complete Task",
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,

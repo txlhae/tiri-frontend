@@ -185,10 +185,21 @@ extension RequestModelExtension on RequestModel {
     }
     
     if (json['completion_confirmed_by_requester'] != null) {
-      RequestModelExtension._completionConfirmedCache[requestModel.requestId] = 
+      RequestModelExtension._completionConfirmedCache[requestModel.requestId] =
           json['completion_confirmed_by_requester'] as bool? ?? false;
     }
-    
+
+    // Store notification data if available
+    if (json['has_pending_notifications'] != null) {
+      RequestModelExtension._hasPendingNotificationsCache[requestModel.requestId] =
+          json['has_pending_notifications'] as bool? ?? false;
+    }
+
+    if (json['notification_count'] != null) {
+      RequestModelExtension._notificationCountCache[requestModel.requestId] =
+          json['notification_count'] as int? ?? 0;
+    }
+
     return requestModel;
   }
   
@@ -204,6 +215,10 @@ extension RequestModelExtension on RequestModel {
   // Cache to store completion data
   static final Map<String, DateTime?> _completedAtCache = {};
   static final Map<String, bool> _completionConfirmedCache = {};
+
+  // Cache to store notification data
+  static final Map<String, bool> _hasPendingNotificationsCache = {};
+  static final Map<String, int> _notificationCountCache = {};
   
   // Cache management methods
   /// Clear user request status cache for a specific request
@@ -248,4 +263,8 @@ extension RequestModelExtension on RequestModel {
   dynamic get feedback => _feedbackCache[requestId];
   DateTime? get completedAt => _completedAtCache[requestId];
   bool get completionConfirmedByRequester => _completionConfirmedCache[requestId] ?? false;
+
+  // Notification data accessors
+  bool get hasPendingNotifications => _hasPendingNotificationsCache[requestId] ?? false;
+  int get notificationCount => _notificationCountCache[requestId] ?? 0;
 }

@@ -171,6 +171,12 @@ class _MyRequestsState extends State<MyRequests> {
                                 ),
                               ),
                               const SizedBox(width: 8),
+                              // Show notification badge if there are pending notifications
+                              if (request.hasPendingNotifications && request.notificationCount > 0)
+                                Padding(
+                                  padding: const EdgeInsets.only(right: 6),
+                                  child: _buildNotificationBadge(request.notificationCount),
+                                ),
                               _buildStatusBadge(request.status),
                             ],
                           ),
@@ -275,6 +281,26 @@ class _MyRequestsState extends State<MyRequests> {
       return const Color(0xFF4CAF50); // Material Green 500
     }
     return getStatusColor(statusString);
+  }
+
+  /// Build notification badge widget
+  Widget _buildNotificationBadge(int count) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.red.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.red, width: 2),
+      ),
+      child: Text(
+        'New',
+        style: const TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+          color: Colors.red,
+        ),
+      ),
+    );
   }
 
   /// Build status badge widget

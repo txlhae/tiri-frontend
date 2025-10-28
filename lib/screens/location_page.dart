@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:tiri/controllers/location_controller.dart';
+import 'package:tiri/controllers/request_controller.dart';
 import 'package:tiri/models/location_model.dart';
 import 'package:tiri/screens/widgets/dialog_widgets/location_picker_dialog.dart';
 
@@ -16,6 +17,7 @@ class LocationPage extends StatefulWidget {
 class _LocationPageState extends State<LocationPage> {
   // Get or create LocationController instance (singleton)
   late final LocationController locationController;
+  bool _locationChanged = false;
 
   @override
   void initState() {
@@ -37,6 +39,9 @@ class _LocationPageState extends State<LocationPage> {
           // Store location in state management
           locationController.setLocation(location);
 
+          // Mark that location has changed
+          _locationChanged = true;
+
           // Show success message
           Get.snackbar(
             'Location Set! 📍',
@@ -54,9 +59,20 @@ class _LocationPageState extends State<LocationPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop && _locationChanged) {
+          // Refresh requests when going back if location was changed
+          if (Get.isRegistered<RequestController>()) {
+            final requestController = Get.find<RequestController>();
+            await requestController.loadRequests();
+          }
+        }
+      },
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
         title: const Text(
           'Location',
           style: TextStyle(
@@ -245,6 +261,7 @@ class _LocationPageState extends State<LocationPage> {
             );
           }),
         ),
+      ),
       ),
     );
   }

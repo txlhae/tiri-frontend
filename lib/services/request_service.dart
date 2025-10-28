@@ -239,6 +239,10 @@ class RequestService extends GetxController {
         'completed_at': djangoJson['completed_at']?.toString(),
         'completion_confirmed_by_requester': djangoJson['completion_confirmed_by_requester'],
 
+        // Add notification data from API
+        'has_pending_notifications': djangoJson['has_pending_notifications'],
+        'notification_count': djangoJson['notification_count'],
+
         // Category data from API
         'category': djangoJson['category'],
       };
