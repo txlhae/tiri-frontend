@@ -171,13 +171,18 @@ class _MyRequestsState extends State<MyRequests> {
                                 ),
                               ),
                               const SizedBox(width: 8),
-                              // Show notification badge if there are pending notifications
-                              if (request.hasPendingNotifications && request.notificationCount > 0)
-                                Padding(
-                                  padding: const EdgeInsets.only(right: 6),
-                                  child: _buildNotificationBadge(request.notificationCount),
-                                ),
-                              _buildStatusBadge(request.status),
+                              // Notification and status badge in top right corner
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  if (request.hasPendingNotifications && request.notificationCount > 0)
+                                    Padding(
+                                      padding: const EdgeInsets.only(bottom: 4),
+                                      child: _buildNotificationBadge(request.notificationCount),
+                                    ),
+                                  _buildStatusBadge(request.status),
+                                ],
+                              ),
                             ],
                           ),
                           const SizedBox(height: 5),
@@ -285,20 +290,11 @@ class _MyRequestsState extends State<MyRequests> {
 
   /// Build notification badge widget
   Widget _buildNotificationBadge(int count) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.red.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.red, width: 2),
-      ),
-      child: Text(
-        'New',
-        style: const TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
-          color: Colors.red,
-        ),
+    return const Text(
+      'New Notification',
+      style: TextStyle(
+        fontSize: 10,
+        color: Colors.red,
       ),
     );
   }
