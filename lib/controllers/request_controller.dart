@@ -344,6 +344,9 @@ class RequestController extends GetxController {
   final RxBool isLoadingPendingVolunteers = false.obs;
   final RxString pendingVolunteersError = ''.obs;
 
+  /// Notification indicator - shows if user has unread notifications
+  final RxBool hasUnreadNotifications = false.obs;
+
   // =============================================================================
   // 🚨 DEBUG: Enhanced initialization with detailed logging
   // =============================================================================
@@ -489,6 +492,9 @@ class RequestController extends GetxController {
       hasCommunityMore.value = communityResponse['hasMore'] as bool;
       totalCommunityCount.value = communityResponse['count'] as int;
       totalRequestsFromApi.value = communityRequestsFromApi.length;
+
+      // Update notification indicator
+      hasUnreadNotifications.value = communityResponse['has_unread_notifications'] as bool? ?? false;
       
       debugLog("   - Raw community requests from API: ${communityRequestsFromApi.length}");
       if (communityRequestsFromApi.isNotEmpty) {

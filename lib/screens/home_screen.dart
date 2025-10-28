@@ -158,10 +158,31 @@ class HomeScreen extends StatelessWidget {
                               );
                             }
                           },
-                          child: const Icon(
-                            Icons.notifications,
-                            color: Colors.white,
-                          ),
+                          child: Obx(() {
+                            final hasUnread = requestController.hasUnreadNotifications.value;
+                            return Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                const Icon(
+                                  Icons.notifications,
+                                  color: Colors.white,
+                                ),
+                                if (hasUnread)
+                                  Positioned(
+                                    right: 0,
+                                    top: 0,
+                                    child: Container(
+                                      width: 8,
+                                      height: 8,
+                                      decoration: const BoxDecoration(
+                                        color: Colors.red,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            );
+                          }),
                         ),
                       ],
                     ),

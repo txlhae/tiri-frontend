@@ -515,6 +515,7 @@ class RequestService extends GetxController {
             'next': responseData['next'],
             'previous': responseData['previous'],
             'hasMore': responseData['next'] != null,
+            'has_unread_notifications': responseData['has_unread_notifications'] ?? false,
           };
         } else {
           // Fallback for non-paginated response
@@ -532,6 +533,7 @@ class RequestService extends GetxController {
             'next': null,
             'previous': null,
             'hasMore': false,
+            'has_unread_notifications': false,
           };
         }
       } else {
@@ -582,6 +584,7 @@ class RequestService extends GetxController {
             'next': responseData['next'],
             'previous': responseData['previous'],
             'hasMore': responseData['next'] != null,
+            'has_unread_notifications': responseData['has_unread_notifications'] ?? false,
           };
         } else {
           // Fallback for non-paginated response
@@ -599,6 +602,7 @@ class RequestService extends GetxController {
             'next': null,
             'previous': null,
             'hasMore': false,
+            'has_unread_notifications': false,
           };
         }
       } else {
