@@ -29,7 +29,7 @@ class CustomButton extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.symmetric(
               vertical: 18.0,
-              horizontal: 20.0,
+              horizontal: 12.0,
             ),
             child: Obx(
               () {
@@ -48,11 +48,14 @@ class CustomButton extends StatelessWidget {
                         )
                       : Text(
                           buttonText,
+                          maxLines: 1,
+                          overflow: TextOverflow.visible,
+                          textAlign: TextAlign.center,
                           style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 16,
+                              fontSize: 15,
                               fontWeight: FontWeight.bold,
-                              letterSpacing: 0.5),
+                              letterSpacing: 0.3),
                         ),
                 );
               },

@@ -84,7 +84,7 @@ class _CancelDialogState extends State<CancelDialog> {
                 )),
 
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 40.0),
+                padding: const EdgeInsets.symmetric(horizontal: 30.0),
                 child: CustomButton(
                   buttonText: "Proceed to cancel",
                   onButtonPressed: () async {
@@ -165,7 +165,7 @@ class _CancelDialogState extends State<CancelDialog> {
               ),
               const SizedBox(height: 12),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 40.0),
+                padding: const EdgeInsets.symmetric(horizontal: 30.0),
                 child: CustomCancel(
                   buttonText: 'No',
                   onButtonPressed: () {
