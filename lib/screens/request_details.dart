@@ -992,12 +992,56 @@ class _RequestDetailsState extends State<RequestDetails> {
     // Check if request is in progress or completed
     final bool isInProgress = request.status == RequestStatus.inprogress;
     final bool isComplete = request.status == RequestStatus.complete;
+    final bool isCancelled = request.status == RequestStatus.cancelled;
 
-    // ✅ Show delete button for pending/accepted/delayed requests (not in progress or complete)
+    // ✅ Show delete button for pending/accepted/delayed/cancelled requests (not in progress or complete)
     if (!isInProgress && !isComplete) {
-      return Obx(() => SizedBox(
-        width: double.infinity,
-        child: OutlinedButton.icon(
+      return Column(
+        children: [
+          // Show cancelled note if request is cancelled
+          if (isCancelled)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.red.shade200),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.cancel_outlined, color: Colors.red.shade700, size: 24),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Request Cancelled",
+                          style: TextStyle(
+                            color: Colors.red.shade900,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          "This request was automatically cancelled because the time has passed with no accepted volunteers. You can only delete the request.",
+                          style: TextStyle(
+                            color: Colors.red.shade800,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          Obx(() => SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
           onPressed: requestController.isLoading.value ? null : () async {
             // Show confirmation dialog with consistent design
             final bool? confirmed = await Get.dialog<bool>(
@@ -1130,7 +1174,9 @@ class _RequestDetailsState extends State<RequestDetails> {
             ),
           ),
         ),
-      ));
+      )),
+        ],
+      );
     }
 
     // Return empty container if conditions not met (no message shown)

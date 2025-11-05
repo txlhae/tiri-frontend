@@ -49,6 +49,7 @@ class StatusRow extends StatelessWidget {
 /// - COMPLETED: White (#FFFFFF) with green border
 /// - DELAYED: Orange (#FF9800) (formerly EXPIRED)
 /// - INCOMPLETE: Orange (#FF9800)
+/// - CANCELLED: Red (#F44336)
 Color getStatusColor(String status) {
   switch (status.toLowerCase().replaceAll(' ', '')) {
     case 'pending':
@@ -65,6 +66,8 @@ Color getStatusColor(String status) {
       return const Color(0xFFFF9800); // Material Orange 500 (warning color)
     case 'incomplete':
       return const Color(0xFFFF9800); // Material Orange 500
+    case 'cancelled':
+      return const Color(0xFFF44336); // Material Red 500
     default:
       return const Color(0xFF9E9E9E); // Default to gray for unknown status
   }
@@ -88,6 +91,8 @@ Color getTextColor(String status) {
       return const Color(0xFFFFFFFF); // White text on orange background
     case 'incomplete':
       return const Color(0xFFFFFFFF); // White text on orange background
+    case 'cancelled':
+      return const Color(0xFFFFFFFF); // White text on red background
     default:
       return const Color(0xFFFFFFFF); // Default to white text
   }

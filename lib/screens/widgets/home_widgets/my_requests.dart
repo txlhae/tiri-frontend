@@ -63,7 +63,6 @@ class _MyRequestsState extends State<MyRequests> {
 
       final myRequests = allRequests
           .where((request) => request.userId == currentUser.userId)
-          .where((request) => request.status != RequestStatus.cancelled)
           .toList();
 
       if (myRequests.isEmpty) {
