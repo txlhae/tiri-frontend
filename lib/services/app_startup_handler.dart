@@ -22,15 +22,16 @@ class AppStartupHandler {
   static Future<String> determineInitialRoute() async {
     try {
 
-      // Check if we have stored tokens
-      final hasTokens = await AuthStorage.hasValidTokens();
+      // 🔥 FIX #1: Load tokens from ApiService (single source of truth)
+      await _loadTokensIntoApiService();
+
+      // Check if we have valid tokens in ApiService
+      final apiService = Get.find<ApiService>();
+      final hasTokens = apiService.isAuthenticated;
 
       if (!hasTokens) {
         return Routes.loginPage;
       }
-
-      // Load tokens into API service
-      await _loadTokensIntoApiService();
 
       // Validate tokens with backend
       final isValid = await _validateStoredTokens();
@@ -84,7 +85,10 @@ class AppStartupHandler {
   /// Validate stored tokens with the backend
   static Future<bool> _validateStoredTokens() async {
     try {
-      final accessToken = await AuthStorage.getAccessToken();
+      // 🔥 FIX #1: Get token from ApiService (single source of truth)
+      final apiService = Get.find<ApiService>();
+      final accessToken = apiService.accessToken;
+
       if (accessToken == null || accessToken.isEmpty) {
         return false;
       }
@@ -111,38 +115,17 @@ class AppStartupHandler {
   /// Attempt to refresh the token
   static Future<bool> _tryRefreshToken() async {
     try {
-      final refreshToken = await AuthStorage.getRefreshToken();
-      if (refreshToken == null || refreshToken.isEmpty) {
+      // 🔥 FIX #1: Use ApiService's built-in refresh logic (single source of truth)
+      final apiService = Get.find<ApiService>();
+
+      if (apiService.refreshToken == null || apiService.refreshToken!.isEmpty) {
         return false;
       }
 
-      final dio = Dio();
-      final response = await dio.post(
-        '${ApiConfig.baseUrl}/api/auth/token/refresh/',
-        data: {'refresh': refreshToken},
-        options: Options(
-          headers: {'Content-Type': 'application/json'},
-          validateStatus: (status) => status != null && status < 500,
-        ),
-      );
+      // Use ApiService's refresh method which handles all storage
+      final refreshed = await apiService.refreshTokenIfNeeded();
 
-      if (response.statusCode == 200 && response.data != null) {
-        final data = response.data as Map<String, dynamic>;
-        final newAccessToken = data['access'];
-
-        if (newAccessToken != null) {
-          // Update tokens in storage
-          await AuthStorage.updateTokens(newAccessToken, refreshToken);
-
-          // Update API service with new token
-          final apiService = Get.find<ApiService>();
-          await apiService.saveTokens(newAccessToken, refreshToken);
-
-          return true;
-        }
-      }
-
-      return false;
+      return refreshed;
 
     } catch (e) {
       // Error handled silently

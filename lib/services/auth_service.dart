@@ -272,16 +272,17 @@ class AuthService {
           // Try to parse enhanced response with next_step
           if (data['next_step'] != null && data['account_status'] != null) {
 
-            // Store complete auth response using AuthStorage
-            await AuthStorage.storeAuthData(data);
-
             // Parse user and tokens
             final userData = data['user'] ?? {};
             final tokens = data['tokens'] ?? {};
 
+            // 🔥 FIX #1: Use ONLY ApiService for token storage (single source of truth)
             if (tokens['access'] != null && tokens['refresh'] != null) {
               await _apiService.saveTokens(tokens['access'], tokens['refresh']);
             }
+
+            // Store auth metadata (account_status, next_step) but NOT tokens
+            await AuthStorage.storeAuthData(data);
 
             if (userData.isNotEmpty) {
               final mappedData = _mapUserSnakeToCamel(userData);
@@ -394,14 +395,15 @@ class AuthService {
               final mappedData = _mapUserSnakeToCamel(userData);
               final user = UserModel.fromJson(mappedData);
 
+              // 🔥 FIX #1: Save tokens first to ApiService (single source of truth)
               await _apiService.saveTokens(tokens['access'], tokens['refresh']);
               await _saveUserToStorage(user);
               _currentUser = user;
 
-              // For legacy responses, store basic auth data
+              // Store auth metadata (account_status, next_step) but NOT tokens
               await AuthStorage.storeAuthData({
                 'user': userData,
-                'tokens': tokens,
+                'tokens': tokens,  // Keep for metadata, but tokens are in SecureStorage
                 'account_status': user.isApproved ? 'active' : 'pending_approval',
                 'next_step': user.isApproved ? 'ready' : 'waiting_for_approval',
                 'message': data['message'] ?? 'Login successful',
@@ -639,26 +641,12 @@ class AuthService {
   /// Check current user's verification status with enhanced auto-login support
   ///
   /// Returns: Map with verification status, auto_login flag, and JWT tokens
-
-  static bool _isCheckingVerificationStatus = false; // 🚨 MUTEX to prevent concurrent calls
+  /// 🔥 FIX #4: Removed mutex - let the API interceptor handle concurrent requests naturally
 
   Future<Map<String, dynamic>> checkVerificationStatus() async {
-    // 🚨 PREVENT CONCURRENT CALLS: Only allow one verification check at a time
-    if (_isCheckingVerificationStatus) {
-      // Wait for ongoing check to complete
-      while (_isCheckingVerificationStatus) {
-        await Future.delayed(const Duration(milliseconds: 100));
-      }
-      // Return empty result for subsequent calls
-      return {'status': 'already_checking'};
-    }
-
-    _isCheckingVerificationStatus = true;
-
     try {
-      // 🚨 CRITICAL FIX: Ensure API service has latest tokens before making the call
+      // 🔥 FIX #4: Ensure API service has latest tokens before making the call
       await _apiService.loadTokensFromStorage();
-
 
       final response = await _apiService.get(ApiConfig.authVerificationStatus);
 
@@ -712,9 +700,6 @@ class AuthService {
         'refresh_token': null,
         'user': null,
       };
-    } finally {
-      // 🚨 CRITICAL: Always release the mutex
-      _isCheckingVerificationStatus = false;
     }
   }
 

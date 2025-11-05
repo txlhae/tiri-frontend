@@ -89,15 +89,27 @@ class SplashController extends GetxController {
       initializationStatus.value = 'Checking authentication...';
       await _authController.reloadTokens(); // Load JWT tokens
 
-      // 🚨 CRITICAL FIX: Check verification status before routing (only if connected)
+      // 🔥 FIX #2: Proactively refresh tokens BEFORE making any API calls
       if (_authController.isLoggedIn.value && _authController.currentUserStore.value != null) {
-        initializationStatus.value = 'Checking account status...';
+        initializationStatus.value = 'Refreshing session...';
 
         try {
           // Verify connectivity before making API call
           if (!_connectivityService.canMakeApiCalls) {
             throw Exception('No network connectivity for API calls');
           }
+
+          // 🔥 FIX #2: Try to refresh token proactively (prevents 401 errors)
+          final apiService = Get.find<ApiService>();
+          final refreshed = await apiService.refreshTokenIfNeeded();
+
+          if (!refreshed && apiService.accessToken == null) {
+            // Token refresh failed and no access token available
+            throw Exception('Token refresh failed');
+          }
+
+          // Now safe to make API calls with fresh tokens
+          initializationStatus.value = 'Checking account status...';
 
           // Call verification-status API to check auto_login
           final authService = Get.find<AuthService>();

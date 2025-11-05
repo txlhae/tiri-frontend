@@ -1,5 +1,7 @@
 // lib/services/api_service.dart
 
+import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -49,12 +51,18 @@ class ApiService {
   
   /// Track if token refresh is in progress to avoid multiple refresh calls
   bool _isRefreshing = false;
-  
+
+  /// 🔥 FIX #3: Use Completer to notify waiting requests when refresh completes
+  Completer<bool>? _refreshCompleter;
+
   /// Queue for requests waiting for token refresh (for future use)
   // final List<RequestOptions> _requestQueue = [];
-  
+
   /// Track when the access token was last refreshed
   DateTime? _tokenLastRefreshed;
+
+  /// 🔥 FIX #5: Track when the access token expires
+  DateTime? _tokenExpiresAt;
 
   // =============================================================================
   // SECURE STORAGE KEYS
@@ -120,12 +128,18 @@ class ApiService {
           return;
         }
 
+        // 🔥 FIX #5: Check if token is expired before making request
+        if (isTokenExpired && _refreshToken != null) {
+          // Token is expired or about to expire - refresh it proactively
+          await refreshTokenIfNeeded();
+        }
+
         // Add access token to other requests if available
         if (_accessToken != null) {
           options.headers['Authorization'] = 'Bearer $_accessToken';
         } else {
         }
-        
+
         handler.next(options);
       },
       
@@ -225,11 +239,13 @@ class ApiService {
   // =============================================================================
   
   /// Load tokens from secure storage on app start
+  /// 🔥 FIX #5: Now also loads token expiry time
+  /// 🔥 FIX #6: Added comprehensive logging
   Future<void> loadTokensFromStorage() async {
     try {
       _accessToken = await _secureStorage.read(key: _accessTokenKey);
       _refreshToken = await _secureStorage.read(key: _refreshTokenKey);
-      
+
       // Load token refresh timestamp
       final refreshTimeStr = await _secureStorage.read(key: 'token_refresh_time');
       if (refreshTimeStr != null) {
@@ -239,29 +255,73 @@ class ApiService {
       // Error handled silently
         }
       }
-      
+
+      // 🔥 FIX #5: Load token expiry time
+      final expiryTimeStr = await _secureStorage.read(key: 'token_expires_at');
+      if (expiryTimeStr != null) {
+        try {
+          _tokenExpiresAt = DateTime.parse(expiryTimeStr);
+        } catch (e) {
+          // Error handled silently - will decode from token if needed
+        }
+      } else if (_accessToken != null) {
+        // No stored expiry - try to decode from token
+        _tokenExpiresAt = _decodeTokenExpiry(_accessToken!);
+      }
+
+      // 🔥 FIX #6: Add detailed logging
       if (ApiConfig.enableLogging) {
+        print('📂 [ApiService] Loaded tokens from storage');
+        print('   🔑 Access token: ${_accessToken != null ? "Present" : "Missing"}');
+        print('   🔄 Refresh token: ${_refreshToken != null ? "Present" : "Missing"}');
+        if (_tokenExpiresAt != null) {
+          final isExpired = DateTime.now().isAfter(_tokenExpiresAt!);
+          print('   📅 Token expires at: ${_tokenExpiresAt!.toLocal()}');
+          print('   ${isExpired ? "⚠️  Token is EXPIRED" : "✅ Token is valid"}');
+          if (!isExpired) {
+            print('   ⏰ Time until expiry: ${_tokenExpiresAt!.difference(DateTime.now()).inMinutes} minutes');
+          }
+        }
       }
     } catch (e) {
       // Error handled silently
+      if (ApiConfig.enableLogging) {
+        print('❌ [ApiService] Failed to load tokens: $e');
+      }
     }
   }
 
   /// Save tokens to secure storage
+  /// 🔥 FIX #5: Now extracts and stores token expiry time
+  /// 🔥 FIX #6: Added comprehensive logging
   Future<void> saveTokens(String accessToken, String refreshToken) async {
     try {
       _accessToken = accessToken;
       _refreshToken = refreshToken;
       _tokenLastRefreshed = DateTime.now();
-      
+
+      // 🔥 FIX #5: Decode JWT and extract expiry time
+      _tokenExpiresAt = _decodeTokenExpiry(accessToken);
+
       await _secureStorage.write(key: _accessTokenKey, value: accessToken);
       await _secureStorage.write(key: _refreshTokenKey, value: refreshToken);
       await _secureStorage.write(key: 'token_refresh_time', value: _tokenLastRefreshed!.toIso8601String());
-      
+
+      if (_tokenExpiresAt != null) {
+        await _secureStorage.write(key: 'token_expires_at', value: _tokenExpiresAt!.toIso8601String());
+      }
+
+      // 🔥 FIX #6: Add detailed logging
       if (ApiConfig.enableLogging) {
+        print('✅ [ApiService] Tokens saved successfully');
+        print('   📅 Token expires at: ${_tokenExpiresAt?.toLocal()}');
+        print('   ⏰ Time until expiry: ${_tokenExpiresAt?.difference(DateTime.now()).inMinutes ?? 0} minutes');
       }
     } catch (e) {
       // Error handled silently
+      if (ApiConfig.enableLogging) {
+        print('❌ [ApiService] Failed to save tokens: $e');
+      }
     }
   }
 
@@ -303,22 +363,32 @@ class ApiService {
   }
 
   /// Refresh access token using refresh token
+  /// 🔥 FIX #3: Uses Completer to handle concurrent refresh requests properly
+  /// 🔥 FIX #6: Added comprehensive logging
   Future<bool> refreshTokenIfNeeded() async {
-    if (_isRefreshing) {
-      // Wait for ongoing refresh to complete
-      await Future.doWhile(() async {
-        await Future.delayed(const Duration(milliseconds: 100));
-        return _isRefreshing;
-      });
-      return _accessToken != null;
+    // 🔥 FIX #6: Log refresh attempt
+    if (ApiConfig.enableLogging) {
+      print('🔄 [ApiService] Token refresh requested at ${DateTime.now().toLocal()}');
+    }
+
+    // 🔥 FIX #3: If refresh is already in progress, wait for it to complete
+    if (_isRefreshing && _refreshCompleter != null) {
+      if (ApiConfig.enableLogging) {
+        print('⏳ [ApiService] Token refresh already in progress, waiting...');
+      }
+      return await _refreshCompleter!.future;
     }
 
     if (_refreshToken == null) {
+      if (ApiConfig.enableLogging) {
+        print('❌ [ApiService] No refresh token available');
+      }
       return false;
     }
 
     _isRefreshing = true;
-    
+    _refreshCompleter = Completer<bool>();
+
     try {
       
       // Create a separate Dio instance to avoid interceptor loops
@@ -361,25 +431,55 @@ class ApiService {
             _refreshToken = newRefreshToken;
             await _secureStorage.write(key: _refreshTokenKey, value: newRefreshToken);
           }
-          
+
+          // 🔥 FIX #3: Notify all waiting requests that refresh succeeded
+          _refreshCompleter?.complete(true);
+
+          // 🔥 FIX #6: Log successful refresh
+          if (ApiConfig.enableLogging) {
+            print('✅ [ApiService] Token refresh successful');
+            print('   📅 New token expires at: ${_tokenExpiresAt?.toLocal()}');
+          }
+
           return true;
         } else {
+          if (ApiConfig.enableLogging) {
+            print('❌ [ApiService] Token refresh response missing access token');
+          }
         }
       } else {
         if (response.data != null) {
+          if (ApiConfig.enableLogging) {
+            print('❌ [ApiService] Token refresh failed with status ${response.statusCode}');
+          }
         }
       }
-      
+
+      // 🔥 FIX #3: Notify all waiting requests that refresh failed
+      _refreshCompleter?.complete(false);
+
     } catch (e) {
+      // 🔥 FIX #6: Log refresh errors
+      if (ApiConfig.enableLogging) {
+        print('❌ [ApiService] Token refresh exception: $e');
+      }
+
       if (e is DioException) {
         final statusCode = e.response?.statusCode;
 
         if (statusCode == 401 || statusCode == 403) {
+          if (ApiConfig.enableLogging) {
+            print('⚠️  [ApiService] Refresh token is invalid (${statusCode}), clearing all tokens');
+          }
           await clearTokens();
         }
       }
+
+      // 🔥 FIX #3: Notify all waiting requests that refresh failed
+      _refreshCompleter?.complete(false);
     } finally {
       _isRefreshing = false;
+      _refreshCompleter = null;
     }
 
     return false;
@@ -638,9 +738,55 @@ class ApiService {
   }
 
   // =============================================================================
+  // HELPER METHODS
+  // =============================================================================
+
+  /// 🔥 FIX #5: Decode JWT token and extract expiry time
+  /// Returns null if token is invalid or doesn't have exp claim
+  DateTime? _decodeTokenExpiry(String token) {
+    try {
+      // JWT format: header.payload.signature
+      final parts = token.split('.');
+      if (parts.length != 3) {
+        return null;
+      }
+
+      // Decode the payload (second part)
+      final payload = parts[1];
+      // Add padding if needed for base64 decoding
+      final normalized = base64Url.normalize(payload);
+      final decoded = utf8.decode(base64Url.decode(normalized));
+      final Map<String, dynamic> payloadMap = json.decode(decoded);
+
+      // Extract exp claim (expiry timestamp in seconds since epoch)
+      final exp = payloadMap['exp'];
+      if (exp is int) {
+        return DateTime.fromMillisecondsSinceEpoch(exp * 1000);
+      }
+
+      return null;
+    } catch (e) {
+      // Failed to decode token
+      return null;
+    }
+  }
+
+  /// 🔥 FIX #5: Check if the current access token is expired or about to expire
+  /// Returns true if token is expired or will expire within the next 60 seconds
+  bool get isTokenExpired {
+    if (_tokenExpiresAt == null) {
+      return false; // No expiry info, assume valid
+    }
+
+    // Add 60 second buffer - refresh if token expires in less than 1 minute
+    final expiryWithBuffer = _tokenExpiresAt!.subtract(const Duration(seconds: 60));
+    return DateTime.now().isAfter(expiryWithBuffer);
+  }
+
+  // =============================================================================
   // GETTERS
   // =============================================================================
-  
+
   /// Check if user is authenticated (has valid access token)
   bool get isAuthenticated => _accessToken != null;
   

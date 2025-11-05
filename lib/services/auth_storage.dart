@@ -25,11 +25,13 @@ class AuthStorage {
   static const String _registrationStageKey = 'registration_stage';
 
   /// Store complete authentication data from login/register response
+  /// 🔥 FIX #1: This now stores ONLY metadata. Tokens are stored in ApiService's SecureStorage.
   static Future<void> storeAuthData(Map<String, dynamic> authResponse) async {
     try {
       final prefs = await SharedPreferences.getInstance();
 
-      // Store tokens
+      // ⚠️ DEPRECATED: Token storage moved to ApiService's SecureStorage
+      // These are kept for backward compatibility but are NOT the source of truth
       if (authResponse['tokens'] != null) {
         final tokens = authResponse['tokens'] as Map<String, dynamic>;
         await prefs.setString(_accessTokenKey, tokens['access'] ?? '');
