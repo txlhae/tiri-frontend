@@ -59,3 +59,7 @@ Dev_Assets_Archive/
 
 # Documentation files
 docs/
+
+# Android signing keys - keep these secure!
+*.jks
+key.properties
